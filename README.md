@@ -71,3 +71,10 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 chiba@chiba:~/ewel8_backend$ php artisan serve
 
 http://127.0.0.1:8000/
+
+
+
+## 次やること
+### 2024/03/07
+- ログイン認証機能apiの作成
+- https://toshpit.com/laravel-sanctum-api-userlogin/

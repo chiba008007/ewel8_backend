@@ -6,6 +6,9 @@ chiba@chiba:~/ewel8_backend/example-app$ sudo service mysql start
 - 接続
 chiba@chiba:~/ewel8_backend/example-app$ sudo mysql -u root
 
+- 接続 パスワード設定後
+chiba@chiba:~/ewel8_backend/example-app$ sudo mysql -u root -proot
+
 - mysql接続失敗してmigrateが動かなかったとき
 参考
 https://supersoftware.jp/tech/20230901/18991/

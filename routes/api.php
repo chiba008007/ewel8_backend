@@ -25,6 +25,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // sanctumでtokenが有効時のみアクセス可能
 Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::apiResource('products', ApiProductController::class);
+    Route::post("logout", [UserController::class, 'logout']);
 });
 
 Route::post("login", [UserController::class, 'index']);
+

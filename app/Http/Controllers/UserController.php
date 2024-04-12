@@ -33,4 +33,5 @@ class UserController extends Controller
     function logout(){
         auth('sanctum')->user()->tokens()->delete();
         return response(['message' => 'You have been successfully logged out.'], 200);
+    }
 }

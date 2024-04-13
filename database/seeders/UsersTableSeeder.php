@@ -15,10 +15,50 @@ class UsersTableSeeder extends Seeder
     public function run(): void
     {
         //
+        DB::table('users')->delete();
         DB::table('users')->insert([
+            [
+            'type' => 'admin',
             'name' => 'John Doe',
             'email' => 'john@doe.com',
-            'password' => Hash::make('password')
+            'password' => Hash::make('password'),
+            'company_name'=>'サンプル企業',
+            'login_id'=>'sample',
+            'post_code'=>'063-0123',
+            'pref'=>'1',
+            'address1'=>'サンプル札幌',
+            'address2'=>'サンプル住所2',
+            'tel'=>'090-1234-1234',
+            'fax'=>'000-1111-1111',
+            'requestFlag'=>0,
+            'person'=>'担当者1',
+            'person_address'=>'tanto@sample.com',
+            'person2'=>'担当者2',
+            'person_address2'=>'tanto2@sample.com',
+            'person_tel'=>'090-0000-0000',
+            'system_name'=>'さんぷるず',
+            ],
+            [
+            'type' => 'partner',
+            'name' => 'John Doe2',
+            'email' => 'john2@doe.com',
+            'password' => Hash::make('password'),
+            'company_name'=>'サンプル企業',
+            'login_id'=>'sample2',
+            'post_code'=>'063-0123',
+            'pref'=>'1',
+            'address1'=>'サンプル札幌',
+            'address2'=>'サンプル住所2',
+            'tel'=>'090-1234-1234',
+            'fax'=>'000-1111-1111',
+            'requestFlag'=>0,
+            'person'=>'担当者1',
+            'person_address'=>'tanto@sample.com',
+            'person2'=>'担当者2',
+            'person_address2'=>'tanto2@sample.com',
+            'person_tel'=>'090-0000-0000',
+            'system_name'=>'さんぷるず',
+            ]
         ]);
     }
 }

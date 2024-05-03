@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiProductController;
+use App\Http\Controllers\PrefContrller;
 use App\Http\Controllers\UserController;
 
 /*
@@ -31,3 +32,4 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 });
 
 Route::post("login", [UserController::class, 'index']);
+Route::apiResource('pref', PrefContrller::class);

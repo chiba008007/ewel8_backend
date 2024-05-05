@@ -7,6 +7,7 @@ use Illuminate\Database\Seeder;
 use Database\Seeders\UsersTableSeeder;
 use Database\Seeders\ProductTableSeeder;
 use Database\Seeders\PrefecturesTableSeeder;
+use Database\Seeders\ElementsTable;
 
 class DatabaseSeeder extends Seeder
 {
@@ -25,5 +26,6 @@ class DatabaseSeeder extends Seeder
         $this->call(UsersTableSeeder::class);
         $this->call(ProductTableSeeder::class);
         $this->call(PrefecturesTableSeeder::class);
+        $this->call(ElementsTable::class);
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\ApiProductController;
 use App\Http\Controllers\PrefContrller;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ElementController;
+use App\Http\Controllers\LicenseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,3 +36,4 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 Route::post("login", [UserController::class, 'index']);
 Route::apiResource('pref', PrefContrller::class);
 Route::apiResource('element', ElementController::class);
+Route::apiResource('license', LicenseController::class);

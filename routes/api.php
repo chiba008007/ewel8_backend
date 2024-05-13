@@ -7,6 +7,7 @@ use App\Http\Controllers\PrefContrller;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ElementController;
 use App\Http\Controllers\LicenseController;
+use App\Http\Controllers\PdfController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,3 +38,4 @@ Route::post("login", [UserController::class, 'index']);
 Route::apiResource('pref', PrefContrller::class);
 Route::apiResource('element', ElementController::class);
 Route::apiResource('license', LicenseController::class);
+Route::apiResource('pdf', PdfController::class);

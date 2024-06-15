@@ -45,6 +45,11 @@ class UserController extends Controller
         }
         return response(true, 201);
     }
+    function setUserData(Request $request)
+    {
+        $response = true;
+        return response($response, 201);
+    }
     function logout()
     {
         auth('sanctum')->user()->tokens()->delete();

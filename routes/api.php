@@ -31,6 +31,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::apiResource('products', ApiProductController::class);
     Route::post('user/admin', [UserController::class, 'getAdmin']);
     Route::post('user/adminEdit', [UserController::class, 'editAdmin']);
+    Route::post('user/setUserData', [UserController::class, 'setUserData']);
     Route::post("logout", [UserController::class, 'logout']);
 });
 

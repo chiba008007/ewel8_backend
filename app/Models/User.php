@@ -58,4 +58,6 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    protected $rules = ['email' => 'required|unique'];
 }

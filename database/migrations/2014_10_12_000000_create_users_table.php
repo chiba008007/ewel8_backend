@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('company_name',128)->nullable()->comment("企業名");
             $table->string('login_id',128)->unique()->nullable()->comment("ログインID");
             $table->string('post_code',128)->nullable()->comment("郵便番号");
-            $table->string('pref',2)->nullable()->comment("都道府県");
+            $table->string('pref',11)->nullable()->comment("都道府県");
             $table->string('address1',256)->nullable()->comment("住所1");
             $table->string('address2',256)->nullable()->comment("住所2");
             $table->string('tel',128)->nullable()->comment("電話番号");
@@ -33,6 +33,18 @@ return new class extends Migration
             $table->string('person_address2',256)->nullable()->comment("担当者アドレス2");
             $table->string('person_tel',128)->nullable()->comment("担当者連絡先");
             $table->string('system_name',256)->nullable()->comment("システム名");
+            $table->string('element1',256)->nullable()->comment("要素");
+            $table->string('element2',256)->nullable()->comment("要素");
+            $table->string('element3',256)->nullable()->comment("要素");
+            $table->string('element4',256)->nullable()->comment("要素");
+            $table->string('element5',256)->nullable()->comment("要素");
+            $table->string('element6',256)->nullable()->comment("要素");
+            $table->string('element7',256)->nullable()->comment("要素");
+            $table->string('element8',256)->nullable()->comment("要素");
+            $table->string('element9',256)->nullable()->comment("要素");
+            $table->string('element10',256)->nullable()->comment("要素");
+            $table->string('element11',256)->nullable()->comment("要素");
+            $table->string('element12',256)->nullable()->comment("要素");
             $table->rememberToken();
             $table->timestamp('deleted_at')->nullable();
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));

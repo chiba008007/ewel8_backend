@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\userlisence;
+use App\Models\userpdf;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +34,15 @@ class UserController extends Controller
 
         return response($response, 201);
     }
+    function getPartner(Request $request)
+    {
+        $user = User::where('type', $request->type)->get();
+        $response = [
+            'user' => $user,
+        ];
+
+        return response($response, 201);
+    }
     function editAdmin(Request $request)
     {
         for ($i = 0; $i <= 3; $i++) {
@@ -51,18 +62,18 @@ class UserController extends Controller
         DB::beginTransaction();
         try{
 
-            $request->validate([
-                'email' => 'required|unique:users',
-                //'fax' => 'required',
-            ]);
+        //     $request->validate([
+        //         'email' => 'required|unique:users',
+        //         //'fax' => 'required',
+        //     ]);
 
             User::insert([
                 'type' => $request['type'],
                 'name' => $request['name'],
                 'email' => $request['email'],
                 'password' => Hash::make($request['password']),
-                'company_name' => $request['company_name'],
-                'login_id' => $request['login_id'],
+                // 'company_name' => $request['company_name'],
+                // 'login_id' => $request['login_id'],
                 'post_code' => $request['post_code'],
                 'pref' => $request['pref'],
                 'address1' => $request['address1'],
@@ -76,17 +87,89 @@ class UserController extends Controller
                 'person_address2' => $request['person_address2'],
                 'person_tel' => $request['person_tel'],
                 'system_name' => $request['system_name'],
+                'element1' => $request['element1'],
+                'element2' => $request['element2'],
+                'element3' => $request['element3'],
+                'element4' => $request['element4'],
+                'element5' => $request['element5'],
+                'element6' => $request['element6'],
+                'element7' => $request['element7'],
+                'element8' => $request['element8'],
+                'element9' => $request['element9'],
+                'element10' => $request['element10'],
+                'element11' => $request['element11'],
+                'element12' => $request['element12'],
             ]);
+
+            $id = DB::getPdo()->lastInsertId();
+
             DB::commit();
+            return response($id, 200);
         } catch (\Exception $exception){
             DB::rollback();
             throw $exception;
         }
-        return response($response, 200);
-
     }
-
-
+    function setUserLicense(Request $request)
+    {
+        DB::beginTransaction();
+        try{
+            $user_id = $request['res']['data'];
+            $licensesKey = $request['licensesKey'];
+            $licensesBody = $request['licensesBody'];
+            $pdfList = $request['pdfList'];
+            foreach($licensesKey as $key=>$value){
+                $license = userlisence::where('code', $value)->where('user_id',$user_id)->first();
+                if($license){
+                    $data = userlisence::find($license->id);
+                    $data->update([
+                        'num' => $licensesBody[$key],
+                        'updated_at'=>date('Y-m-d H:i:s'),
+                    ]);
+                }else{
+                    userlisence::insert([
+                        'user_id' => $user_id,
+                        'code' => $value,
+                        'num' => $licensesBody[$key],
+                        'created_at'=>date('Y-m-d H:i:s'),
+                        'updated_at'=>date('Y-m-d H:i:s'),
+                    ]);
+                }
+            }
+            foreach($pdfList as $key=>$value){
+                $license = userpdf::where('code', $value)->where('user_id',$user_id)->first();
+                if($license){
+                    $data = userpdf::find($license->id);
+                    $data->update([
+                        'num' => $licensesBody[$key],
+                        'updated_at'=>date('Y-m-d H:i:s'),
+                    ]);
+                }else{
+                    userpdf::insert([
+                        'user_id' => $user_id,
+                        'code' => $value,
+                        'created_at'=>date('Y-m-d H:i:s'),
+                        'updated_at'=>date('Y-m-d H:i:s'),
+                    ]);
+                }
+            }
+            DB::commit();
+            return response($licensesKey, 200);
+        } catch (\Exception $exception){
+            DB::rollback();
+            throw $exception;
+        }
+    }
+    function checkEmail(Request $request){
+        $email = $request['email'];
+        $user = User::where('email', $email)->first();
+        if($user){
+            // すでにメールが登録されている
+            return response(true, 200);
+        }else{
+            return response(true, 400);
+        }
+    }
     function logout()
     {
         auth('sanctum')->user()->tokens()->delete();

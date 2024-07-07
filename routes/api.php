@@ -32,6 +32,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/admin', [UserController::class, 'getAdmin']);
     Route::post('user/adminEdit', [UserController::class, 'editAdmin']);
     Route::post('user/setUserData', [UserController::class, 'setUserData']);
+    Route::post('user/setUserLicense', [UserController::class, 'setUserLicense']);
+    Route::get('user/checkEmail', [UserController::class, 'checkEmail']);
+    Route::post('user/getPartner', [UserController::class, 'getPartner']);
     Route::post("logout", [UserController::class, 'logout']);
 });
 

@@ -36,7 +36,13 @@ class UserController extends Controller
     }
     function getPartner(Request $request)
     {
-        $user = User::where('type', $request->type)->get();
+        $user = User::where('type', $request->type)
+        ->select('users.*')
+        ->orderBy('users.updated_at','DESC')
+        ->selectRaw('SUM(userlisences.num) as total')
+        ->join('userlisences', 'users.id', '=', 'userlisences.user_id')
+        ->groupBy('users.id')
+        ->get();
         $response = [
             'user' => $user,
         ];

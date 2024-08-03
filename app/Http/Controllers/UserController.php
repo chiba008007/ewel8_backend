@@ -21,14 +21,18 @@ class UserController extends Controller
         $token = "";
         if (password_verify($request->password, $user['password'])) {
             $token = $user->createToken('my-app-token')->plainTextToken;
+
+
+            $response = [
+                'user' => $user,
+                'token' => $token
+            ];
+
+            return response($response, 201);
         }
 
-        $response = [
-            'user' => $user,
-            'token' => $token
-        ];
+        return response([], 401);
 
-        return response($response, 201);
     }
 
     function getAdmin(Request $request)

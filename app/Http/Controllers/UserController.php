@@ -14,9 +14,15 @@ class UserController extends Controller
     //
     function index(Request $request)
     {
-        $user = User::where('email', $request->email)->first();
 
-        $token = $user->createToken('my-app-token')->plainTextToken;
+        $userdata = User::where('email', $request->email)->first();
+        $user = User::find($userdata[ 'id' ]);
+
+        $token = "";
+        if (password_verify($request->password, $user['password'])) {
+            $token = $user->createToken('my-app-token')->plainTextToken;
+        }
+
         $response = [
             'user' => $user,
             'token' => $token
@@ -40,7 +46,7 @@ class UserController extends Controller
         ->select('users.*')
         ->orderBy('users.updated_at','DESC')
         ->selectRaw('SUM(userlisences.num) as total')
-        ->join('userlisences', 'users.id', '=', 'userlisences.user_id')
+        ->leftjoin('userlisences', 'users.id', '=', 'userlisences.user_id')
         ->groupBy('users.id')
         ->get();
         $response = [
@@ -77,7 +83,7 @@ class UserController extends Controller
                 'type' => $request['type'],
                 'name' => $request['name'],
                 'email' => $request['email'],
-                'password' => Hash::make($request['password']),
+                'password' => password_hash($request['password'],PASSWORD_DEFAULT),
                 // 'company_name' => $request['company_name'],
                 // 'login_id' => $request['login_id'],
                 'post_code' => $request['post_code'],

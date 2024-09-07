@@ -19,10 +19,9 @@ class UserController extends Controller
         $user = User::find($userdata[ 'id' ]);
 
         $token = "";
+
         if (password_verify($request->password, $user['password'])) {
             $token = $user->createToken('my-app-token')->plainTextToken;
-
-
             $response = [
                 'user' => $user,
                 'token' => $token
@@ -31,7 +30,7 @@ class UserController extends Controller
             return response($response, 201);
         }
 
-        return response([], 401);
+        return response("error", 401);
 
     }
 
@@ -56,9 +55,85 @@ class UserController extends Controller
         $response = [
             'user' => $user,
         ];
+        return response($response, 201);
+    }
+
+    function getPartnerForCustomer($data)
+    {
+        $user = User::where('type', $data['type'])
+        ->where('id',$data['partner_id'])
+        ->where('admin_id',$data['admin_id'])
+        ->first();
+        $response = [
+            'user' => $user,
+        ];
+
+        return $response;
+    }
+    function editPartner(Request $request)
+    {
+        $response = true;
+        // ログインしているユーザー情報取得
+        $loginUser = auth()->user()->currentAccessToken();
+
+        DB::beginTransaction();
+        try{
+
+            $params = [
+               // 'name' => $request['name'],
+               // 'email' => $request['email'],
+                'password' => password_hash($request['password'],PASSWORD_DEFAULT),
+                'post_code' => $request['post_code'],
+                'pref' => $request['pref'],
+                'address1' => $request['address1'],
+                'address2' => $request['address2'],
+                'tel' => $request['tel'],
+                'fax' => $request['fax'],
+                'person' => $request['person'],
+                'person_address' => $request['person_address'],
+                'person2' => $request['person2'],
+                'person_address2' => $request['person_address2'],
+                'person_tel' => $request['person_tel'],
+                'system_name' => $request['system_name'],
+
+            ];
+            if(!$request['password']){
+                unset($params['password']);
+            }
+            User::where('id', $request['id'])
+            ->where('admin_id', $loginUser->tokenable->id)
+            ->update($params);
+
+            DB::commit();
+            return response("success", 200);
+        } catch (\Exception $exception){
+            DB::rollback();
+            throw $exception;
+        }
 
         return response($response, 201);
     }
+    function getPartnerDetail(Request $request)
+    {
+
+        // ログインしているユーザー情報取得
+        $loginUser = auth()->user()->currentAccessToken();
+        // 今選択しているパートナー情報の取得
+        $user = User::where('type', $request->type)
+        ->where('id',$request->partnerId)
+        ->where('admin_id',$loginUser->tokenable->id)
+        ->first();
+
+        if(!$user){
+            return response($user, 401);
+        }
+        $response = [
+            'user' => $user,
+        ];
+
+        return response($response, 201);
+    }
+
     function editAdmin(Request $request)
     {
         for ($i = 0; $i <= 3; $i++) {
@@ -121,6 +196,26 @@ class UserController extends Controller
 
             DB::commit();
             return response($id, 200);
+        } catch (\Exception $exception){
+            DB::rollback();
+            throw $exception;
+        }
+    }
+    function editUserData(Request $request)
+    {
+        $response = true;
+        DB::beginTransaction();
+        try{
+
+            $user = User::find(5);
+            $user->update([
+                "name" => "佐藤太郎123",
+            ]);
+
+
+
+            DB::commit();
+            return response('OK', 200);
         } catch (\Exception $exception){
             DB::rollback();
             throw $exception;

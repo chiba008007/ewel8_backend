@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('type')->comment("admin/partner/test");
+            $table->integer('admin_id')->default(0)->comment("親ID");
+            $table->integer('partner_id')->default(0)->comment("パートナーID");
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();

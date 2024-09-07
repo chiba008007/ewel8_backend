@@ -19,6 +19,8 @@ class UsersTableSeeder extends Seeder
         DB::table('users')->insert([
             [
             'type' => 'admin',
+            'admin_id'=>0,
+            'partner_id'=>0,
             'name' => 'John Doe',
             'email' => 'john@doe.com',
             'password' => password_hash('password',PASSWORD_DEFAULT),
@@ -40,6 +42,8 @@ class UsersTableSeeder extends Seeder
             ],
             [
             'type' => 'admin',
+            'admin_id'=>0,
+            'partner_id'=>0,
             'name' => 'admin1',
             'email' => 'admin@admin.com',
             'password' => password_hash('password',PASSWORD_DEFAULT),
@@ -61,6 +65,8 @@ class UsersTableSeeder extends Seeder
             ],
             [
             'type' => 'admin',
+            'admin_id'=>0,
+            'partner_id'=>0,
             'name' => 'admin3',
             'email' => 'admin3@admin.com',
             'password' => password_hash('password',PASSWORD_DEFAULT),
@@ -82,6 +88,8 @@ class UsersTableSeeder extends Seeder
             ],
             [
             'type' => 'admin',
+            'admin_id'=>0,
+            'partner_id'=>0,
             'name' => 'admin4',
             'email' => 'admin4@admin.com',
             'password' => password_hash('password',PASSWORD_DEFAULT),
@@ -103,6 +111,8 @@ class UsersTableSeeder extends Seeder
             ],
             [
             'type' => 'partner',
+            'admin_id'=>1,
+            'partner_id'=>0,
             'name' => 'John Doe2',
             'email' => 'john2@doe.com',
             'password' => password_hash('password',PASSWORD_DEFAULT),

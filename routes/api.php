@@ -32,9 +32,12 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/admin', [UserController::class, 'getAdmin']);
     Route::post('user/adminEdit', [UserController::class, 'editAdmin']);
     Route::post('user/setUserData', [UserController::class, 'setUserData']);
+    Route::post('user/editUserData', [UserController::class, 'editUserData']);
     Route::post('user/setUserLicense', [UserController::class, 'setUserLicense']);
     Route::get('user/checkEmail', [UserController::class, 'checkEmail']);
     Route::post('user/getPartner', [UserController::class, 'getPartner']);
+    Route::post('user/getPartnerDetail', [UserController::class, 'getPartnerDetail']);
+    Route::post('user/editPartner', [UserController::class, 'editPartner']);
     Route::post("logout", [UserController::class, 'logout']);
 });
 

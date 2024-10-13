@@ -32,7 +32,10 @@ class UserController extends Controller
         return response("error", 401);
 
     }
-
+    function test(Request $request){
+        var_dump($request);
+        return response("success", 401);
+    }
     function getAdmin(Request $request)
     {
         $user = User::where('type', $request->type)->get();

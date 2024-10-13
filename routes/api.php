@@ -46,3 +46,4 @@ Route::apiResource('pref', PrefContrller::class);
 Route::apiResource('element', ElementController::class);
 Route::apiResource('license', LicenseController::class);
 Route::apiResource('pdf', PdfController::class);
+Route::apiResource('test', [UserController::class, 'test']);

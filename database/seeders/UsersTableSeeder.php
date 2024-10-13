@@ -14,6 +14,9 @@ class UsersTableSeeder extends Seeder
      */
     public function run(): void
     {
+        $options = [
+            'cost' => 12,
+        ];
         //
         DB::table('users')->delete();
         DB::table('users')->insert([
@@ -23,7 +26,7 @@ class UsersTableSeeder extends Seeder
             'partner_id'=>0,
             'name' => 'John Doe',
             'email' => 'john@doe.com',
-            'password' => password_hash('password',PASSWORD_DEFAULT,["salt" => "salt5678"]),
+            'password' => password_hash('password',PASSWORD_BCRYPT, $options),
             'company_name'=>'サンプル企業',
             'login_id'=>'sample',
             'post_code'=>'063-0123',
@@ -46,7 +49,7 @@ class UsersTableSeeder extends Seeder
             'partner_id'=>0,
             'name' => 'admin1',
             'email' => 'admin@admin.com',
-            'password' => password_hash('password',PASSWORD_DEFAULT,["salt" => "salt5678"]),
+            'password' => password_hash('password',PASSWORD_BCRYPT, $options),
             'company_name'=>'サンプル企業admin',
             'login_id'=>'admin2',
             'post_code'=>'063-0123',
@@ -69,7 +72,7 @@ class UsersTableSeeder extends Seeder
             'partner_id'=>0,
             'name' => 'admin3',
             'email' => 'admin3@admin.com',
-            'password' => password_hash('password',PASSWORD_DEFAULT,["salt" => "salt5678"]),
+            'password' => password_hash('password',PASSWORD_BCRYPT, $options),
             'company_name'=>'サンプル企業admin',
             'login_id'=>'admin3',
             'post_code'=>'063-0123',
@@ -92,7 +95,7 @@ class UsersTableSeeder extends Seeder
             'partner_id'=>0,
             'name' => 'admin4',
             'email' => 'admin4@admin.com',
-            'password' => password_hash('password',PASSWORD_DEFAULT,["salt" => "salt5678"]),
+            'password' => password_hash('password',PASSWORD_BCRYPT, $options),
             'company_name'=>'サンプル企業admin',
             'login_id'=>'admin4',
             'post_code'=>'063-0123',
@@ -115,7 +118,7 @@ class UsersTableSeeder extends Seeder
             'partner_id'=>0,
             'name' => 'John Doe2',
             'email' => 'john2@doe.com',
-            'password' => password_hash('password',PASSWORD_DEFAULT,["salt" => "salt5678"]),
+            'password' => password_hash('password',PASSWORD_BCRYPT, $options),
             'company_name'=>'サンプル企業',
             'login_id'=>'sample2',
             'post_code'=>'063-0123',

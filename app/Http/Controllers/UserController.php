@@ -17,8 +17,7 @@ class UserController extends Controller
         $passwd = config('const.consts.PASSWORD');
         $userdata = User::where('email', $request->email)->first();
         $user = User::find($userdata[ 'id' ]);
-return response($user, 201);
-/*
+
         $token = "";
         if (openssl_decrypt($user['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']) == $request->password) {
             $token = $user->createToken('my-app-token')->plainTextToken;
@@ -31,7 +30,7 @@ return response($user, 201);
         }
 
         return response("error", 401);
-*/
+
     }
 
     function getAdmin(Request $request)

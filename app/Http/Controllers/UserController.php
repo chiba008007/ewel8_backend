@@ -14,13 +14,12 @@ class UserController extends Controller
     //
     function index(Request $request)
     {
-
+        $passwd = config('const.consts.PASSWORD');
         $userdata = User::where('email', $request->email)->first();
         $user = User::find($userdata[ 'id' ]);
 
         $token = "";
-
-        if (password_verify($request->password, $user['password'])) {
+        if (openssl_decrypt($user['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']) == $request->password) {
             $token = $user->createToken('my-app-token')->plainTextToken;
             $response = [
                 'user' => $user,
@@ -75,14 +74,14 @@ class UserController extends Controller
         $response = true;
         // ログインしているユーザー情報取得
         $loginUser = auth()->user()->currentAccessToken();
-
+        $passwd = config('const.consts.PASSWORD');
         DB::beginTransaction();
         try{
 
             $params = [
                // 'name' => $request['name'],
                // 'email' => $request['email'],
-                'password' => password_hash($request['password'],PASSWORD_DEFAULT),
+                'password' => openssl_encrypt($request['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']),
                 'post_code' => $request['post_code'],
                 'pref' => $request['pref'],
                 'address1' => $request['address1'],
@@ -157,12 +156,12 @@ class UserController extends Controller
         //         'email' => 'required|unique:users',
         //         //'fax' => 'required',
         //     ]);
-
+            $passwd = config('const.consts.PASSWORD');
             User::insert([
                 'type' => $request['type'],
                 'name' => $request['name'],
                 'email' => $request['email'],
-                'password' => password_hash($request['password'],PASSWORD_DEFAULT),
+                'password' => openssl_encrypt($request['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']),
                 // 'company_name' => $request['company_name'],
                 // 'login_id' => $request['login_id'],
                 'post_code' => $request['post_code'],

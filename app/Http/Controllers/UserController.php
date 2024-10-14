@@ -33,7 +33,7 @@ class UserController extends Controller
 
     }
     function test(){
-        return response("success", 401);
+        return response("success", 200);
     }
     function getAdmin(Request $request)
     {

@@ -32,8 +32,7 @@ class UserController extends Controller
         return response("error", 401);
 
     }
-    function test(Request $request){
-        var_dump($request);
+    function test(){
         return response("success", 401);
     }
     function getAdmin(Request $request)

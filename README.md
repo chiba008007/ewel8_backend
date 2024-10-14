@@ -53,7 +53,7 @@ cors.php を編集
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => ['https://smp.uh-oh.jp'],
 
     'allowed_origins_patterns' => [],
 
@@ -66,6 +66,18 @@ cors.php を編集
     'supports_credentials' => true, // ここを追加
 
 ];
+```
+
+    protected $except = [
+        //
+        'api/*',
+    ];
+
+```
+VerifyCsrfToken.php
+
+
+
 ```
 
 php artisan config:cache

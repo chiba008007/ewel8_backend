@@ -67,3 +67,5 @@ cors.php を編集
 
 ];
 ```
+
+php artisan config:cache

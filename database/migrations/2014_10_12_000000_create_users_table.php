@@ -47,6 +47,25 @@ return new class extends Migration
             $table->string('element10',256)->nullable()->comment("要素");
             $table->string('element11',256)->nullable()->comment("要素");
             $table->string('element12',256)->nullable()->comment("要素");
+            $table->integer('trendFlag')->nullable()->comment("受検者傾向確認ボタン表示");
+            $table->integer('csvFlag')->nullable()->comment("CSVアップロードボタン表示");
+            $table->integer('pdfFlag')->nullable()->comment("PDFボタン表示");
+            $table->integer('weightFlag')->nullable()->comment("PDF重みマスタ表示");
+            $table->integer('excelFlag')->nullable()->comment("エクセル重みマスタ表示");
+            $table->integer('customFlag')->nullable()->comment("顧客ファイルアップロード表示");
+            $table->integer('sslFlag')->nullable()->comment("SSL設定");
+            $table->string('logoImagePath',512)->nullable()->comment("アップロード画像選択");
+            $table->integer('privacy')->nullable()->comment("プライバシーポリシー表示 1:デフォルト表示 2:編集表示");
+            $table->longText('privacyText')->nullable()->comment("プライバシーポリシー編集テキスト");
+            $table->integer('displayFlag')->nullable()->comment("顧客の表示/非表示");
+            $table->string('tanto_name',512)->nullable()->comment("担当者氏名");
+            $table->string('tanto_address',512)->nullable()->comment("担当者アドレス");
+            $table->string('tanto_busyo',512)->nullable()->comment("部署名");
+            $table->string('tanto_tel1',512)->nullable()->comment("連絡先1");
+            $table->string('tanto_tel2',512)->nullable()->comment("連絡先2");
+            $table->string('tanto_name2',512)->nullable()->comment("担当者氏名2");
+            $table->string('tanto_address2',512)->nullable()->comment("担当者アドレス2");
+
             $table->rememberToken();
             $table->timestamp('deleted_at')->nullable();
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));

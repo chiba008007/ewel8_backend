@@ -122,7 +122,6 @@ class UserController extends Controller
         // 今選択しているパートナー情報の取得
         $user = User::where('type', $request->type)
         ->where('id',$request->partnerId)
-        ->where('admin_id',$loginUser->tokenable->id)
         ->first();
 
         if(!$user){
@@ -221,6 +220,51 @@ class UserController extends Controller
             DB::rollback();
             throw $exception;
         }
+    }
+    function setCustomerAdd(Request $request){
+        $req = $request[ 'type' ];
+
+        $passwd = config('const.consts.PASSWORD');
+        User::insert([
+            'type' => $request['type'],
+            'admin_id' => $request['admin_id'],
+            'name' => $request['name'],
+            'email' => $request['email'],
+            'login_id' => $request['login_id'],
+            'password' => openssl_encrypt($request['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']),
+            'company_name' => $request['company_name'],
+            'post_code' => $request['post_code'],
+            'pref' => $request['pref'],
+            'address1' => $request['address1'],
+            'address2' => $request['address2'],
+            'tel' => $request['tel'],
+            'fax' => $request['fax'],
+            'trendFlag' => $request['trendFlag'],
+            'csvFlag' => $request['csvFlag'],
+            'pdfFlag' => $request['pdfFlag'],
+            'weightFlag' => $request['weightFlag'],
+            'excelFlag' => $request['excelFlag'],
+            'customFlag' => $request['customFlag'],
+            'sslFlag' => $request['sslFlag'],
+            'logoImagePath' => $request['logoImagePath'],
+            'privacy'=>$request['privacy'],
+            'privacyText'=>$request['privacyText'],
+            'displayFlag'=>$request['displayFlag'],
+            'tanto_name'=>$request['tanto_name'],
+            'tanto_address'=>$request['tanto_address'],
+            'tanto_busyo'=>$request['tanto_busyo'],
+            'tanto_tel1'=>$request['tanto_tel1'],
+            'tanto_tel2'=>$request['tanto_tel2'],
+            'tanto_name2'=>$request['tanto_name2'],
+            'tanto_address2'=>$request['tanto_address2']
+        ]);
+
+
+        DB::commit();
+
+
+
+        return response("success", 201);
     }
     function setUserLicense(Request $request)
     {

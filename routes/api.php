@@ -41,7 +41,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/setCustomerAdd', [UserController::class, 'setCustomerAdd']);
     Route::post("logout", [UserController::class, 'logout']);
 });
-
+Route::post("user/upload", [UserController::class, 'upload']);
 Route::post("login", [UserController::class, 'index']);
 Route::apiResource('pref', PrefContrller::class);
 Route::apiResource('element', ElementController::class);

@@ -35,6 +35,11 @@ class UserController extends Controller
     function test(){
         return response("success", 200);
     }
+    function upload(Request $request){
+        $filename = uniqid().time().".jpg";
+        $request->photo->storeAs('public/app/myImage', $filename);
+        return response($filename, 201);
+    }
     function getAdmin(Request $request)
     {
         $user = User::where('type', $request->type)->get();
@@ -228,6 +233,7 @@ class UserController extends Controller
         User::insert([
             'type' => $request['type'],
             'admin_id' => $request['admin_id'],
+            'partner_id' => $request['partner_id'],
             'name' => $request['name'],
             'email' => $request['email'],
             'login_id' => $request['login_id'],

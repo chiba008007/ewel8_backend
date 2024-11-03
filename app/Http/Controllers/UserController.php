@@ -51,17 +51,21 @@ class UserController extends Controller
     }
     function getPartner(Request $request)
     {
-        $user = User::where('type', $request->type)
-        ->select('users.*')
-        ->orderBy('users.updated_at','DESC')
-        ->selectRaw('SUM(userlisences.num) as total')
-        ->leftjoin('userlisences', 'users.id', '=', 'userlisences.user_id')
-        ->groupBy('users.id')
-        ->get();
-        $response = [
-            'user' => $user,
-        ];
-        return response($response, 201);
+        try{
+            $user = User::where('type', $request->type)
+            ->select('users.*')
+            ->orderBy('users.updated_at','DESC')
+            ->selectRaw('SUM(userlisences.num) as total')
+            ->leftjoin('userlisences', 'users.id', '=', 'userlisences.user_id')
+            ->groupBy('users.id')
+            ->get();
+            $response = [
+                'user' => $user,
+            ];
+            return response($response, 201);
+        }catch(\Exception $e){
+            return response([], 400);
+        }
     }
 
     function getPartnerForCustomer($data)
@@ -228,49 +232,47 @@ class UserController extends Controller
     }
     function setCustomerAdd(Request $request){
         $req = $request[ 'type' ];
-
-        $passwd = config('const.consts.PASSWORD');
-        User::insert([
-            'type' => $request['type'],
-            'admin_id' => $request['admin_id'],
-            'partner_id' => $request['partner_id'],
-            'name' => $request['name'],
-            'email' => $request['email'],
-            'login_id' => $request['login_id'],
-            'password' => openssl_encrypt($request['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']),
-            'company_name' => $request['company_name'],
-            'post_code' => $request['post_code'],
-            'pref' => $request['pref'],
-            'address1' => $request['address1'],
-            'address2' => $request['address2'],
-            'tel' => $request['tel'],
-            'fax' => $request['fax'],
-            'trendFlag' => $request['trendFlag'],
-            'csvFlag' => $request['csvFlag'],
-            'pdfFlag' => $request['pdfFlag'],
-            'weightFlag' => $request['weightFlag'],
-            'excelFlag' => $request['excelFlag'],
-            'customFlag' => $request['customFlag'],
-            'sslFlag' => $request['sslFlag'],
-            'logoImagePath' => $request['logoImagePath'],
-            'privacy'=>$request['privacy'],
-            'privacyText'=>$request['privacyText'],
-            'displayFlag'=>$request['displayFlag'],
-            'tanto_name'=>$request['tanto_name'],
-            'tanto_address'=>$request['tanto_address'],
-            'tanto_busyo'=>$request['tanto_busyo'],
-            'tanto_tel1'=>$request['tanto_tel1'],
-            'tanto_tel2'=>$request['tanto_tel2'],
-            'tanto_name2'=>$request['tanto_name2'],
-            'tanto_address2'=>$request['tanto_address2']
-        ]);
-
-
-        DB::commit();
-
-
-
-        return response("success", 201);
+        try{
+            $passwd = config('const.consts.PASSWORD');
+            User::insert([
+                'type' => $request['type'],
+                'admin_id' => $request['admin_id'],
+                'partner_id' => $request['partner_id'],
+                'name' => $request['name'],
+                'email' => $request['email'],
+                'login_id' => $request['login_id'],
+                'password' => openssl_encrypt($request['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']),
+                'company_name' => $request['company_name'],
+                'post_code' => $request['post_code'],
+                'pref' => $request['pref'],
+                'address1' => $request['address1'],
+                'address2' => $request['address2'],
+                'tel' => $request['tel'],
+                'fax' => $request['fax'],
+                'trendFlag' => $request['trendFlag'],
+                'csvFlag' => $request['csvFlag'],
+                'pdfFlag' => $request['pdfFlag'],
+                'weightFlag' => $request['weightFlag'],
+                'excelFlag' => $request['excelFlag'],
+                'customFlag' => $request['customFlag'],
+                'sslFlag' => $request['sslFlag'],
+                'logoImagePath' => $request['logoImagePath'],
+                'privacy'=>$request['privacy'],
+                'privacyText'=>$request['privacyText'],
+                'displayFlag'=>$request['displayFlag'],
+                'tanto_name'=>$request['tanto_name'],
+                'tanto_address'=>$request['tanto_address'],
+                'tanto_busyo'=>$request['tanto_busyo'],
+                'tanto_tel1'=>$request['tanto_tel1'],
+                'tanto_tel2'=>$request['tanto_tel2'],
+                'tanto_name2'=>$request['tanto_name2'],
+                'tanto_address2'=>$request['tanto_address2']
+            ]);
+            DB::commit();
+            return response("success", 201);
+        }catch(\Exception $e){
+            return response("error", 401);
+        }
     }
     function setUserLicense(Request $request)
     {
@@ -322,6 +324,28 @@ class UserController extends Controller
             throw $exception;
         }
     }
+
+    function getCustomerList(Request $request){
+        try{
+            $result = User::where("type","customer")->where("partner_id",$request->partner_id)->where("deleted_at",null)
+            ->get();
+            return response($result, 201);
+        }catch(\Exception $e){
+            return response([],401);
+        }
+    }
+    function getLisencesList(Request $request){
+        // $loginUser = auth()->user()->currentAccessToken();
+        // var_dump($loginUser->tokenable->id);
+        try{
+            $result = userlisence::where("user_id",$request->user_id)->orderby("code")->get();
+            return response($result, 201);
+        }catch(\Exception $e){
+            return response([],401);
+        }
+    }
+
+
     function checkEmail(Request $request){
         $email = $request['email'];
         $user = User::where('email', $email)->first();

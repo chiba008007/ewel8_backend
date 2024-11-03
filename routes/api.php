@@ -40,6 +40,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/editPartner', [UserController::class, 'editPartner']);
     Route::post('user/setCustomerAdd', [UserController::class, 'setCustomerAdd']);
     Route::post("logout", [UserController::class, 'logout']);
+    Route::post("user/getCustomerList", [UserController::class, 'getCustomerList']);
+    Route::post("user/getLisencesList", [UserController::class, 'getLisencesList']);
+
+
 });
 Route::post("user/upload", [UserController::class, 'upload']);
 Route::post("login", [UserController::class, 'index']);

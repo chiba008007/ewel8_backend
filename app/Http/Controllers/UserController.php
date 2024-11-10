@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\userlisence;
 use App\Models\userpdf;
+use Exception;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -128,21 +129,46 @@ class UserController extends Controller
 
         // ログインしているユーザー情報取得
         $loginUser = auth()->user()->currentAccessToken();
-        // 今選択しているパートナー情報の取得
-        $user = User::where('type', $request->type)
-        ->where('id',$request->partnerId)
-        ->first();
+        // 顧客画面から利用の場合は親のIDを取得
+        $partner_id = $request->partnerId;
+        try{
+            $type = $request->type;
+            if($request->type == "customer"){
+                $customer = User::where('type', $request->type)
+                ->where('id',$partner_id)
+                ->select("partner_id")
+                ->first();
+                $partner_id = $customer->partner_id;
+                $type = "partner";
+            }
+            if($request->type == "guest"){
+                $type = "customer";
+            }
+            /*
+            else{
+                $type = "customer";
+            }
+            */
+            // 今選択しているパートナー情報の取得
 
-        if(!$user){
+            $user = User::where('type', $type)
+            ->where('id',$partner_id);
+            if($loginUser->tokenable->type == "admin"){
+                $user = $user->where('admin_id',$loginUser->tokenable->id);
+            }
+            $user = $user->first();
+            if(!$user){
+                throw new Exception();
+            }
+            $response = [
+                'user' => $user,
+            ];
+            return response($response, 201);
+        }catch(\Exception $e){
+
             return response($user, 401);
         }
-        $response = [
-            'user' => $user,
-        ];
-
-        return response($response, 201);
     }
-
     function editAdmin(Request $request)
     {
         for ($i = 0; $i <= 3; $i++) {
@@ -159,6 +185,7 @@ class UserController extends Controller
     function setUserData(Request $request)
     {
         $response = true;
+        $loginUser = auth()->user()->currentAccessToken();
         DB::beginTransaction();
         try{
 
@@ -168,6 +195,7 @@ class UserController extends Controller
         //     ]);
             $passwd = config('const.consts.PASSWORD');
             User::insert([
+                "admin_id"=>$loginUser->tokenable->id,
                 'type' => $request['type'],
                 'name' => $request['name'],
                 'email' => $request['email'],
@@ -332,6 +360,16 @@ class UserController extends Controller
             return response($result, 201);
         }catch(\Exception $e){
             return response([],401);
+        }
+    }
+
+    function getPartnerid(Request $request){
+        try{
+            $result = User::select('partner_id')->where("type",$request->type)->where("id",$request->id)->where("deleted_at",null)
+            ->first();
+            return response($result->partner_id, 201);
+        }catch(\Exception $e){
+            return response(0,401);
         }
     }
     function getLisencesList(Request $request){

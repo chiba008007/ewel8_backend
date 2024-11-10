@@ -38,6 +38,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/getPartner', [UserController::class, 'getPartner']);
     Route::post('user/getPartnerDetail', [UserController::class, 'getPartnerDetail']);
     Route::post('user/editPartner', [UserController::class, 'editPartner']);
+    Route::post('user/getPartnerid', [UserController::class, 'getPartnerid']);
     Route::post('user/setCustomerAdd', [UserController::class, 'setCustomerAdd']);
     Route::post("logout", [UserController::class, 'logout']);
     Route::post("user/getCustomerList", [UserController::class, 'getCustomerList']);

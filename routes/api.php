@@ -43,8 +43,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("logout", [UserController::class, 'logout']);
     Route::post("user/getCustomerList", [UserController::class, 'getCustomerList']);
     Route::post("user/getLisencesList", [UserController::class, 'getLisencesList']);
-
-
+    Route::post("user/getUserLisence", [UserController::class, 'getUserLisence']);
+    Route::post("user/getUserLisenceCalc", [UserController::class, 'getUserLisenceCalc']);
 });
 Route::post("user/upload", [UserController::class, 'upload']);
 Route::post("login", [UserController::class, 'index']);

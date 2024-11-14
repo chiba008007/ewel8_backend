@@ -64,6 +64,14 @@ class ElementsTable extends Seeder
                 'code' => '12',
                 'note' => '集団適応力',
             ],
+            [
+                'code' => '13',
+                'note' => '平均点',
+            ],
+            [
+                'code' => '14',
+                'note' => '標準偏差値',
+            ],
         ]);
     }
 }

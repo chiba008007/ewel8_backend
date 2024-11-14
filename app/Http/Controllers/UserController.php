@@ -319,15 +319,19 @@ class UserController extends Controller
                         'updated_at'=>date('Y-m-d H:i:s'),
                     ]);
                 }else{
-                    userlisence::insert([
-                        'user_id' => $user_id,
-                        'code' => $value,
-                        'num' => $licensesBody[$key],
-                        'created_at'=>date('Y-m-d H:i:s'),
-                        'updated_at'=>date('Y-m-d H:i:s'),
-                    ]);
+                    if($licensesBody[$key] > 0 ){
+                        userlisence::insert([
+                            'user_id' => $user_id,
+                            'code' => $value,
+                            'num' => $licensesBody[$key],
+                            'created_at'=>date('Y-m-d H:i:s'),
+                            'updated_at'=>date('Y-m-d H:i:s'),
+                        ]);
+                    }
                 }
             }
+
+            /*
             foreach($pdfList as $key=>$value){
                 $license = userpdf::where('code', $value)->where('user_id',$user_id)->first();
                 if($license){
@@ -345,6 +349,7 @@ class UserController extends Controller
                     ]);
                 }
             }
+                */
             DB::commit();
             return response($licensesKey, 200);
         } catch (\Exception $exception){
@@ -382,8 +387,44 @@ class UserController extends Controller
             return response([],401);
         }
     }
+    function getUserLisence(Request $request){
+        $license = $this->getLicenseListsJP();
+        $user_id = $request->user_id;
+        $loginUser = auth()->user()->currentAccessToken();
 
+        $admin = $loginUser->tokenable;
+        $customer = User::find($user_id);
+        $partner = User::where("admin_id",$admin->id)->where("id",$customer->partner_id)->where("deleted_at",null)->first();
+        $result = userlisence::where("user_id",$partner->id)->orderby("code")->get();
+        foreach($result as $k=>$value){
+            $result[ $k ][ 'jp' ] = $license[$value[ 'code' ]];
+        }
+        return response($result,200);
+    }
+    function getUserLisenceCalc(Request $request){
+        $license = $this->getLicenseListsJP();
+        $user_id = $request->user_id;
+        $loginUser = auth()->user()->currentAccessToken();
 
+        $admin = $loginUser->tokenable;
+        $customer = User::find($user_id);
+        $partner = User::where("admin_id",$admin->id)->where("id",$customer->partner_id)->where("deleted_at",null)->first();
+        $result = userlisence::where("user_id",$partner->id)->orderby("code")->get();
+        foreach($result as $k=>$value){
+            $result[ $k ][ 'jp' ] = $license[$value[ 'code' ]];
+        }
+        return response($result,200);
+    }
+    function getLicenseListsJP(){
+        $data = [];
+        $license = config('const.consts.LISENCE');
+        foreach($license as $value){
+            foreach($value['list'] as $val){
+                $data[$val['code']] = $val[ 'text' ];
+            }
+        }
+        return $data;
+    }
     function checkEmail(Request $request){
         $email = $request['email'];
         $user = User::where('email', $email)->first();

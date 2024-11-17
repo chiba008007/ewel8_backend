@@ -6,8 +6,10 @@ use App\Http\Controllers\ApiProductController;
 use App\Http\Controllers\PrefContrller;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ElementController;
+use App\Http\Controllers\ExamController;
 use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\PdfController;
+use App\Http\Controllers\TestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,9 +28,13 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 //Route::apiResource('products', ApiProductController::class);
 
+//Route::group(['middleware' => 'auth:exam'], function () {
+//});
 // sanctumでtokenが有効時のみアクセス可能
 Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::apiResource('products', ApiProductController::class);
+    Route::get("exam/test", [ExamController::class, 'test']);
+
     Route::post('user/admin', [UserController::class, 'getAdmin']);
     Route::post('user/adminEdit', [UserController::class, 'editAdmin']);
     Route::post('user/setUserData', [UserController::class, 'setUserData']);
@@ -45,6 +51,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("user/getLisencesList", [UserController::class, 'getLisencesList']);
     Route::post("user/getUserLisence", [UserController::class, 'getUserLisence']);
     Route::post("user/getUserLisenceCalc", [UserController::class, 'getUserLisenceCalc']);
+    Route::post("test/setTest", [TestController::class, 'setTest']);
 });
 Route::post("user/upload", [UserController::class, 'upload']);
 Route::post("login", [UserController::class, 'index']);
@@ -53,3 +60,6 @@ Route::apiResource('element', ElementController::class);
 Route::apiResource('license', LicenseController::class);
 Route::apiResource('pdf', PdfController::class);
 Route::get('test', [UserController::class, 'test']);
+
+Route::post("exam/login", [ExamController::class, 'index']);
+

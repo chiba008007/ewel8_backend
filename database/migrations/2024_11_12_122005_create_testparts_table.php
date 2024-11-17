@@ -13,27 +13,26 @@ return new class extends Migration
     {
         Schema::create('testparts', function (Blueprint $table) {
             $table->id();
-            $table->integer('testgrp_id')->length(11);
             $table->integer('test_id')->length(11);
-            $table->integer('timelimit')->length(11);
-            $table->integer('type')->length(11);
-            $table->integer('threeflag')->length(1)->default(0);
-            $table->integer('weightflag')->length(1)->default(0);
-            $table->string('weight1',11)->default('0');
-            $table->string('weight2',11)->default('0');
-            $table->string('weight3',11)->default('0');
-            $table->string('weight4',11)->default('0');
-            $table->string('weight5',11)->default('0');
-            $table->string('weight6',11)->default('0');
-            $table->string('weight7',11)->default('0');
-            $table->string('weight8',11)->default('0');
-            $table->string('weight9',11)->default('0');
-            $table->string('weight10',11)->default('0');
-            $table->string('weight11',11)->default('0');
-            $table->string('weight12',11)->default('0');
-            $table->string('weight13',11)->default('0');
-            $table->string('weight14',11)->default('0');
-            $table->integer('status')->length(1)->default('0');
+            $table->integer('timelimit')->length(11)->nullable();
+            $table->string('code',11);
+            $table->integer('threeflag')->length(1)->default(0)->nullable();
+            $table->integer('weightflag')->length(1)->default(0)->nullable();
+            $table->string('weight1',11)->default('0')->nullable();
+            $table->string('weight2',11)->default('0')->nullable();
+            $table->string('weight3',11)->default('0')->nullable();
+            $table->string('weight4',11)->default('0')->nullable();
+            $table->string('weight5',11)->default('0')->nullable();
+            $table->string('weight6',11)->default('0')->nullable();
+            $table->string('weight7',11)->default('0')->nullable();
+            $table->string('weight8',11)->default('0')->nullable();
+            $table->string('weight9',11)->default('0')->nullable();
+            $table->string('weight10',11)->default('0')->nullable();
+            $table->string('weight11',11)->default('0')->nullable();
+            $table->string('weight12',11)->default('0')->nullable();
+            $table->string('weight13',11)->default('0')->nullable();
+            $table->string('weight14',11)->default('0')->nullable();
+            $table->integer('status')->length(1)->default('0')->nullable();
 
             $table->timestamps();
         });

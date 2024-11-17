@@ -1,5 +1,6 @@
 <?php
 return[
+    'alpha'=>'abcdefghijklmnopqrstuvwxyz',
     'PASSWORD'=>[
         'key'=>"ewel_secret_key",
         'iv'=>"1234567890123456",

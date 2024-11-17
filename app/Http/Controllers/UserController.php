@@ -440,4 +440,18 @@ class UserController extends Controller
         auth('sanctum')->user()->tokens()->delete();
         return response(['message' => 'You have been successfully logged out.'], 200);
     }
+    // アクセスしていいユーザIDかどうかの確認
+    function checkUserIDData($user_id){
+        $loginUser = auth()->user()->currentAccessToken();
+        // 管理者でログインしたとき
+        if($loginUser->tokenable->type === "admin"){
+            $admin_id = $loginUser->tokenable->id;
+            $result = User::find($user_id)->where("admin_id",$admin_id)->count();
+            if($result < 1){
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
 }

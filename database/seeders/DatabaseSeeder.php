@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+
+use App\Http\Controllers\ExamController;
 use Illuminate\Database\Seeder;
 use Database\Seeders\UsersTableSeeder;
 use Database\Seeders\ProductTableSeeder;
@@ -27,5 +29,6 @@ class DatabaseSeeder extends Seeder
         $this->call(ProductTableSeeder::class);
         $this->call(PrefecturesTableSeeder::class);
         $this->call(ElementsTable::class);
+        $this->call(ExamsTable::class);
     }
 }

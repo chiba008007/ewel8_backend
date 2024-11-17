@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->integer('test_id')->length(11);
             $table->integer('pdf_id')->length(11);
-            $table->integer('pdfgroup_id')->length(11);
             $table->integer('status')->length(11)->default(1);
             $table->timestamps();
         });

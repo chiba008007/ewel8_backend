@@ -199,7 +199,6 @@ class UserController extends Controller
                 'type' => $request['type'],
                 'login_id' => $request['login_id'],
                 'name' => $request['name'],
-                'name' => $request['name'],
                 'email' => $request['email'],
                 'password' => openssl_encrypt($request['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']),
                 // 'company_name' => $request['company_name'],

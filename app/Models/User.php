@@ -59,5 +59,20 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    protected $rules = ['email' => 'required|unique'];
+    protected $rules = ['email' => 'required|unique','login_id'=>'required|unique'];
+
+
+
+    /**
+     * PassportやSanctumがユーザーを認証する際に使用するメソッド。
+     *
+     * @param  string  $identifier
+     * @return \Illuminate\Database\Eloquent\Model|null
+     */
+    public static function findForPassport($identifier)
+    {
+        // ここで、認証に使用するフィールドを変更します
+        // 例えば、usernameを使用する場合
+        return static::where('login_id', $identifier)->first();
+    }
 }

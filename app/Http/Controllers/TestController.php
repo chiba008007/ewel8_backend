@@ -13,9 +13,32 @@ use Illuminate\Support\Facades\DB;
 
 class TestController extends UserController
 {
-    /**
-     * Display a listing of the resource.
-     */
+
+    private function checkuser($user_id){
+        $loginUser = auth()->user()->currentAccessToken();
+        $admin_id = $loginUser->tokenable->id;
+        // 管理者でログインしたとき
+        if($loginUser->tokenable->type == "admin"){
+            $result = User::find($user_id)->where("admin_id",$admin_id)->count();
+            if($result < 1){
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+    public function getTestList(Request $request){
+        $user_id = $request->user_id;
+        try{
+            if(!$this->checkuser($user_id)){
+                throw new Exception();
+            }
+            $result = Test::Where("user_id",$user_id)->get();
+        }catch(Exception $e){
+            return response([], 400);
+        }
+        return response($result, 200);
+    }
 
     public function setTest(Request $request)
     {

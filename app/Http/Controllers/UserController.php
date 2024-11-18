@@ -16,7 +16,7 @@ class UserController extends Controller
     function index(Request $request)
     {
         $passwd = config('const.consts.PASSWORD');
-        $userdata = User::where('email', $request->email)->first();
+        $userdata = User::where('login_id', $request->login_id)->first();
         $user = User::find($userdata[ 'id' ]);
 
         $token = "";
@@ -197,6 +197,8 @@ class UserController extends Controller
             User::insert([
                 "admin_id"=>$loginUser->tokenable->id,
                 'type' => $request['type'],
+                'login_id' => $request['login_id'],
+                'name' => $request['name'],
                 'name' => $request['name'],
                 'email' => $request['email'],
                 'password' => openssl_encrypt($request['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']),
@@ -428,6 +430,16 @@ class UserController extends Controller
     function checkEmail(Request $request){
         $email = $request['email'];
         $user = User::where('email', $email)->first();
+        if($user){
+            // すでにメールが登録されている
+            return response(true, 200);
+        }else{
+            return response(true, 400);
+        }
+    }
+    function checkLoginID(Request $request){
+        $login_id = $request['loginid'];
+        $user = User::where('login_id', $login_id)->first();
         if($user){
             // すでにメールが登録されている
             return response(true, 200);

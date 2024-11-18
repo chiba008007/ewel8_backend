@@ -17,11 +17,11 @@ return new class extends Migration
             $table->integer('admin_id')->default(0)->comment("親ID");
             $table->integer('partner_id')->default(0)->comment("パートナーID");
             $table->string('name');
-            $table->string('email')->unique();
+            $table->string('email')->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('company_name',128)->nullable()->comment("企業名");
-            $table->string('login_id',128)->unique()->nullable()->comment("ログインID");
+            $table->string('login_id',128)->unique()->comment("ログインID");
             $table->string('post_code',128)->nullable()->comment("郵便番号");
             $table->string('pref',11)->nullable()->comment("都道府県");
             $table->string('address1',256)->nullable()->comment("住所1");

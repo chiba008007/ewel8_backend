@@ -438,12 +438,18 @@ class UserController extends Controller
     }
     function checkLoginID(Request $request){
         $login_id = $request['loginid'];
-        $user = User::where('login_id', $login_id)->first();
-        if($user){
-            // すでにメールが登録されている
-            return response(true, 200);
-        }else{
-            return response(true, 400);
+        try{
+            $user = User::where('login_id', $login_id)->first();
+
+            if($user){
+                // すでにメールが登録されている
+                return response("success", 200);
+            }else{
+                return response("error", 200);
+
+            }
+        }catch(Exception $e){
+                return response("error", 200);
         }
     }
     function logout()

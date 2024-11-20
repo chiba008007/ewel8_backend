@@ -38,6 +38,7 @@ return new class extends Migration
             $table->dateTime('pdfendday')->nullable();
             $table->integer('pdfcountflag')->default(1)->nullable();
             $table->integer('pdflimitcount')->length(11)->nullable();
+            $table->integer('status')->default(1)->nullable();
             $table->timestamps();
         });
     }

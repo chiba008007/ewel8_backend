@@ -54,6 +54,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("user/getUserLisenceCalc", [UserController::class, 'getUserLisenceCalc']);
     Route::post("test/setTest", [TestController::class, 'setTest']);
     Route::post("test/getTestList", [TestController::class, 'getTestList']);
+    Route::post("test/getQRParam", [TestController::class, 'getQRParam']);
 });
 Route::post("user/upload", [UserController::class, 'upload']);
 Route::post("login", [UserController::class, 'index']);
@@ -63,5 +64,8 @@ Route::apiResource('license', LicenseController::class);
 Route::apiResource('pdf', PdfController::class);
 Route::get('test', [UserController::class, 'test']);
 
+
+
 Route::post("exam/login", [ExamController::class, 'index']);
+Route::post("exam/getExam", [ExamController::class, 'getExam']);
 

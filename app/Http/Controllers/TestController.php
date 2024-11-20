@@ -19,13 +19,31 @@ class TestController extends UserController
         $admin_id = $loginUser->tokenable->id;
         // 管理者でログインしたとき
         if($loginUser->tokenable->type == "admin"){
-            $result = User::find($user_id)->where("admin_id",$admin_id)->count();
+            $result = User::select("id")->where("id",$user_id)->where("admin_id",$admin_id)->count();
             if($result < 1){
                 return false;
             }
             return true;
         }
         return false;
+    }
+
+    public function getTest(Request $request){
+        echo "test";
+        exit();
+    }
+    public function getQRParam(Request $request){
+        $user_id = $request->user_id;
+        $test_id = $request->test_id;
+        try{
+            if(!$this->checkuser($user_id)){
+                throw new Exception();
+            }
+            $result = Test::Where("id",$test_id)->where("user_id",$user_id)->first();
+        }catch(Exception $e){
+            return response([], 400);
+        }
+        return response($result, 200);
     }
     public function getTestList(Request $request){
         $user_id = $request->user_id;

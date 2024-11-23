@@ -95,6 +95,19 @@ class ExamController extends Controller
         }
     }
 
+    public function getTestExamMenu(Request $request){
+        $params = $request->params;
+        try{
+            $result = Test::select(
+                "tests.*","testparts.code","testparts.id as testparts_id"
+            )->where("params",$params)
+            ->leftJoin("testparts","testparts.test_id","=","tests.id")
+            ->get();
+        }catch(Exception $e){
+            return response([], 400);
+        }
+        return response($result, 200);
+    }
 
     function getExamList(){
         echo "exam";

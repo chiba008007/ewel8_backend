@@ -36,6 +36,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get("exam/test", [ExamController::class, 'test']);
     Route::post("exam/getExamData", [ExamController::class, 'getExamData']);
     Route::post("exam/editExamData", [ExamController::class, 'editExamData']);
+    Route::post("exam/getTestExamMenu", [ExamController::class, 'getTestExamMenu']);
+
 
     Route::post('user/admin', [UserController::class, 'getAdmin']);
     Route::post('user/adminEdit', [UserController::class, 'editAdmin']);

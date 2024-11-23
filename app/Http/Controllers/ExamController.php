@@ -58,6 +58,47 @@ class ExamController extends Controller
             return response([],400);
         }
     }
+
+    function getExamData(){
+        try{
+            $loginUser = auth()->user()->currentAccessToken();
+            $passwd = config('const.consts.PASSWORD');
+            $name = explode("　",$loginUser->tokenable->name);
+            $kana = explode("　",$loginUser->tokenable->kana);
+            $pwd = openssl_decrypt($loginUser->tokenable->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
+            $loginUser->password = $pwd;
+            $loginUser->name1 = $name[0];
+            $loginUser->name2 = $name[1];
+            $loginUser->kana1 = $kana[0];
+            $loginUser->kana2 = $kana[1];
+            if(!$loginUser){
+                return response([],400);
+            }
+        }catch(Exception $e){
+            return response([],400);
+        }
+        return response($loginUser, 200);
+    }
+
+    function editExamData(Request $request){
+        $loginUser = auth()->user()->currentAccessToken();
+        $id = $loginUser->tokenable->id;
+        $params = [];
+        $params['name'] = $request->name;
+        $params['kana'] = $request->kana;
+        $params['gender'] = $request->gender;
+        try{
+            Exam::find($id)->update($params);
+            return response(true, 200);
+        }catch(Exception $e){
+            return response(false, 400);
+        }
+    }
+
+
+    function getExamList(){
+        echo "exam";
+    }
     function test()
     {
         $loginUser = auth()->user()->currentAccessToken();

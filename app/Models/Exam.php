@@ -19,6 +19,7 @@ class Exam extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'kana',
         'test_id',
         'type',
         'email',

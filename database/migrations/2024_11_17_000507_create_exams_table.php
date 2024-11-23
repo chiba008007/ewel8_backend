@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('test_id');
             $table->string('param')->comment('テストのパラメータ');
             $table->string('name')->nullable();
+            $table->string('kana')->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password')->nullable()->comment('デフォルトパスワード:password');

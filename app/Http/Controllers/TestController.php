@@ -45,6 +45,33 @@ class TestController extends UserController
         }
         return response($result, 200);
     }
+    public function getQRLists(Request $request){
+        $user_id = $request->user_id;
+        $test_id = $request->test_id;
+
+        try{
+            if(!$this->checkuser($user_id)){
+                throw new Exception();
+            }
+            $passwd = config('const.consts.PASSWORD');
+            $result = Exam::Select("test_id","email","password","name")->where("test_id",$test_id)->where("deleted_at",null)->groupBy("test_id","email")->get();
+            $list = [];
+            $i = 0;
+            foreach($result as $value){
+                $pwd = openssl_decrypt($value[ 'password' ],'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
+                // 初期パスワードは空欄で表示
+                $list[$i]['no'] = $i+1;
+                $list[$i][ 'name'     ] = $value[ 'name' ];
+                $list[$i][ 'exam_id'  ] = $value[ 'email' ];
+                $list[$i][ 'password' ] = ($pwd == "password")?"":$pwd;
+                $i++;
+            }
+        }catch(Exception $e){
+            return response([], 400);
+        }
+
+        return response($list, 200);
+    }
     public function getTestList(Request $request){
         $user_id = $request->user_id;
         try{
@@ -125,10 +152,9 @@ class TestController extends UserController
             $parts = $request->parts;
             foreach($parts as $key=>$value){
                 $params = [];
-                $pfs = "PFS";
-                if($key === $pfs){
+                if($key === "PFS"){
                     $params[ 'test_id' ] = $id;
-                    $params[ 'code' ] = $pfs;
+                    $params[ 'code' ] = "PFS";
                     $params[ 'status' ] = $value[ 'status' ] ? 1:0;
                     $params[ 'threeflag' ] = $value[ 'threeflag' ] ? 1:0;
                     $params[ 'weightFlag' ] = $value[ 'weightFlag' ]? 1:0;

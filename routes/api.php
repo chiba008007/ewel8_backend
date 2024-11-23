@@ -34,6 +34,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::apiResource('products', ApiProductController::class);
     Route::get("exam/test", [ExamController::class, 'test']);
+    Route::post("exam/getExamData", [ExamController::class, 'getExamData']);
+    Route::post("exam/editExamData", [ExamController::class, 'editExamData']);
 
     Route::post('user/admin', [UserController::class, 'getAdmin']);
     Route::post('user/adminEdit', [UserController::class, 'editAdmin']);
@@ -55,6 +57,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("test/setTest", [TestController::class, 'setTest']);
     Route::post("test/getTestList", [TestController::class, 'getTestList']);
     Route::post("test/getQRParam", [TestController::class, 'getQRParam']);
+    Route::post("test/getQRLists", [TestController::class, 'getQRLists']);
 });
 Route::post("user/upload", [UserController::class, 'upload']);
 Route::post("login", [UserController::class, 'index']);

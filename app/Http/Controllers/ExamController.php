@@ -6,6 +6,8 @@ use App\Models\Exam;
 use App\Models\exampfs;
 use App\Models\Test;
 use App\Models\testparts;
+use Illuminate\Support\Facades\DB;
+use App\Models\examfins;
 use Exception;
 use Illuminate\Http\Request;
 
@@ -40,6 +42,20 @@ class ExamController extends Controller
         }
         return response("error", 401);
     }
+    function checkStatus(Request $request){
+        $loginUser = auth()->user()->currentAccessToken();
+        $exam_id = $loginUser->tokenable->id;
+        $testparts_id = $request->testparts_id;
+
+        $last = examfins::Where("testparts_id",$testparts_id)->where("exam_id",$exam_id)->first();
+        if($last && $last->status == 1){
+            return response(true, 200);
+        }else{
+            return response(false, 200);
+        }
+
+
+    }
     function getExam(Request $request){
         $now = date("Y-m-d H:i:s");
         try{
@@ -67,12 +83,14 @@ class ExamController extends Controller
             $passwd = config('const.consts.PASSWORD');
             $name = explode("　",$loginUser->tokenable->name);
             $kana = explode("　",$loginUser->tokenable->kana);
+            $gender = $loginUser->tokenable->gender;
             $pwd = openssl_decrypt($loginUser->tokenable->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
             $loginUser->password = $pwd;
             $loginUser->name1 = $name[0];
             $loginUser->name2 = $name[1];
             $loginUser->kana1 = $kana[0];
             $loginUser->kana2 = $kana[1];
+            $loginUser->gender = $gender;
             if(!$loginUser){
                 return response([],400);
             }
@@ -98,13 +116,23 @@ class ExamController extends Controller
     }
 
     public function getTestExamMenu(Request $request){
+        $loginUser = auth()->user()->currentAccessToken();
+        $examid = $loginUser->tokenable->id;
         $params = $request->params;
         try{
             $result = Test::select(
-                "tests.*","testparts.code","testparts.id as testparts_id"
-            )->where("params",$params)
+                "tests.*","testparts.code","testparts.id as testparts_id","examfins.status as examstatus"
+            )
             ->leftJoin("testparts","testparts.test_id","=","tests.id")
+            //->leftJoin("examfins","examfins.testparts_id","=","testparts.id")
+            ->leftJoin("examfins",function($join) use($examid)  {
+                $join->on("examfins.testparts_id","=","testparts.id")
+                ->where("examfins.exam_id","=",$examid);
+            })
+            ->where("params",$params)
             ->get();
+
+
         }catch(Exception $e){
             return response([], 400);
         }
@@ -181,6 +209,13 @@ class ExamController extends Controller
         if($request->page == 5){
             // 計算
             $this->resultPFS($testparts_id);
+            $params = [];
+            $params[ 'exam_id' ] = $exam_id;
+            $params[ 'testparts_id' ] = $testparts_id;
+            $params[ 'status' ] = 1;
+            $params[ 'created_at' ] = date("Y-m-d H:i:s");
+            $params[ 'updated_at' ] = date("Y-m-d H:i:s");
+            examfins::insert($params);
         }
         return response("success", 200);
 

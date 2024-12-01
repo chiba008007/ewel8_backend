@@ -24,6 +24,9 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password')->nullable()->comment('デフォルトパスワード:password');
             $table->rememberToken();
+            $table->integer('passflag')->default(0)->nullable();
+            $table->text('memo1')->nullable();
+            $table->text('memo2')->nullable();
             $table->timestamp('deleted_at')->nullable();
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(DB::raw('CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP'));

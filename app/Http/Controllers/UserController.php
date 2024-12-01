@@ -452,6 +452,15 @@ class UserController extends Controller
                 return response("error", 200);
         }
     }
+    function getUserElement(Request $request){
+        $user_id = $request->user_id;
+        $test_id = $request->test_id;
+        $loginUser = auth()->user()->currentAccessToken();
+        $admin_id = $loginUser->tokenable->id;
+        $partner_id = User::find($user_id)->partner_id;
+        $partner = User::where("id",$partner_id)->where("admin_id",$admin_id)->first();
+        return response($partner, 200);
+    }
     function logout()
     {
         auth('sanctum')->user()->tokens()->delete();

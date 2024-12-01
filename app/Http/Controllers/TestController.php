@@ -7,6 +7,7 @@ use App\Models\testparts;
 use App\Models\testpdf;
 use App\Models\User;
 use App\Models\Exam;
+use App\Models\exampfs;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 class TestController extends UserController
 {
 
-    private function checkuser($user_id){
+    public function checkuser($user_id){
         $loginUser = auth()->user()->currentAccessToken();
         $admin_id = $loginUser->tokenable->id;
         // 管理者でログインしたとき
@@ -31,6 +32,19 @@ class TestController extends UserController
     public function getTest(Request $request){
         echo "test";
         exit();
+    }
+    public function getCsvList(Request $request){
+        $user_id = $request->user_id;
+        $test_id = $request->test_id;
+        try{
+            if(!$this->checkuser($user_id)){
+                throw new Exception();
+            }
+            $result = testparts::Where("test_id",$test_id)->get();
+        }catch(Exception $e){
+            return response([], 400);
+        }
+        return response($result, 200);
     }
     public function getQRParam(Request $request){
         $user_id = $request->user_id;
@@ -83,6 +97,51 @@ class TestController extends UserController
             return response([], 400);
         }
         return response($result, 200);
+    }
+
+    public function getTestDetail(Request $request){
+        $user_id = $request->user_id;
+        $test_id = $request->test_id;
+        if($this->checkuser($user_id)){
+            // PFSの受検者情報取得
+            $pfsArray = $this->getPFSDetail($test_id);
+
+            $rlt['detail'] = Test::Where("user_id",$user_id)->where("id",$test_id)->first();
+            $rlt['exams'] = Exam::where("exams.test_id",$test_id)
+            ->where("exams.deleted_at","=",null)
+            ->orderby("exams.id","ASC")
+            ->get();
+            $passwd = config('const.consts.PASSWORD');
+            foreach($rlt[ 'exams' ] as $key=>$value)
+            {
+                $pwd = openssl_decrypt($value->password,'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
+                $rlt[ 'exams' ][$key]->birth = ($pwd === "password" || $pwd === "Test") ? "":$pwd;
+                $rlt[ 'exams' ][$key]->endtime = (isset($pfsArray[$value->id]))?$pfsArray[$value->id]:'';
+            }
+            return response($rlt, 200);
+        }else{
+            return response([],400);
+        }
+    }
+
+    private function getPFSDetail($test_id){
+        $sql = "
+            SELECT
+                MAX(id) as id,
+                exam_id,
+                testparts_id,
+                date_format(MAX(endtime),'%Y年%m月%d日' ) as endtime
+            FROM
+                exampfses
+            WHERE
+                testparts_id=?
+            GROUP BY exam_id,testparts_id";
+        $pfsdetails = DB::select($sql, [$test_id]);
+        $pfsArray = [];
+        foreach($pfsdetails as $value){
+            $pfsArray[$value->exam_id] = $value->endtime;
+        }
+        return $pfsArray;
     }
 
     public function setTest(Request $request)

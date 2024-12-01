@@ -10,7 +10,7 @@ use App\Http\Controllers\ExamController;
 use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\TestController;
-
+use App\Http\Controllers\CsvsController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -57,6 +57,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/editPartner', [UserController::class, 'editPartner']);
     Route::post('user/getPartnerid', [UserController::class, 'getPartnerid']);
     Route::post('user/setCustomerAdd', [UserController::class, 'setCustomerAdd']);
+    Route::post('user/getUserElement', [UserController::class, 'getUserElement']);
+
     Route::post("logout", [UserController::class, 'logout']);
     Route::post("user/getCustomerList", [UserController::class, 'getCustomerList']);
     Route::post("user/getLisencesList", [UserController::class, 'getLisencesList']);
@@ -66,6 +68,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("test/getTestList", [TestController::class, 'getTestList']);
     Route::post("test/getQRParam", [TestController::class, 'getQRParam']);
     Route::post("test/getQRLists", [TestController::class, 'getQRLists']);
+    Route::post("test/getTestDetail", [TestController::class, 'getTestDetail']);
+    Route::post("test/getCsvList", [TestController::class, 'getCsvList']);
+    Route::post("csv/getPfs", [CsvsController::class, 'getPfs']);
 });
 Route::post("user/upload", [UserController::class, 'upload']);
 Route::post("login", [UserController::class, 'index']);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\exampfs;
+use App\Models\Test;
 use App\Models\testparts;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -18,6 +19,14 @@ class CsvsController extends TestController
             if(!$this->checkuser($user_id)){
                 throw new Exception();
             }
+
+            $test = Test::find($test_id)
+            ->select("tests.testname","a.name as customername","b.name as partnername")
+            ->join('users as a', 'tests.user_id', '=', 'a.id')
+            ->join('users as b', 'a.partner_id', '=', 'b.id')
+            ->first();
+
+
             $exam = DB::select("
                 SELECT * FROM exams WHERE test_id = ?
             ",[$test_id]);
@@ -80,7 +89,9 @@ class CsvsController extends TestController
                 $result[$key][ 'exam' ] = $value;
                 $result[$key]['pfs'] = isset($set[$value->id])?$set[$value->id]:"";
             }
-            return response($result, 200);
+            $return['list'] = $result;
+            $return['test'] = $test;
+            return response($return, 200);
 
         }catch(Exception $e){
             return response([], 400);

@@ -190,6 +190,7 @@ class TestController extends UserController
             $params["pdfendday"]=$request->pdfendday;
             $params["pdfcountflag"]=$request->pdfcountflag;
             $params["pdflimitcount"]=$request->pdflimitcount;
+            $params["status"]=$request->status;
             $params["created_at"]=date("Y-m-d H:i:s");
             Test::insert($params);
             $id = DB::getPdo()->lastInsertId();

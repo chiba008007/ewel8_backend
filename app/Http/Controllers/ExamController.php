@@ -92,10 +92,10 @@ class ExamController extends Controller
             $loginUser->kana2 = $kana[1];
             $loginUser->gender = $gender;
             if(!$loginUser){
-                return response([],400);
+                return response([],200);
             }
         }catch(Exception $e){
-            return response([],400);
+            return response(false,200);
         }
         return response($loginUser, 200);
     }

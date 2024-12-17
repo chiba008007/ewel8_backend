@@ -108,17 +108,25 @@ class ExamController extends Controller
         $params['name'] = $request->name;
         $params['kana'] = $request->kana;
         $params['gender'] = $request->gender;
-
+        DB::beginTransaction();
         try{
+            //
             //Exam::find($id)->update($params);
-            $exam_id = Exam::select("id")->where("param",$k)->where("id",$id)->first();
-            if($exam_id[ 'id' ]){
-                Exam::find($exam_id[ 'id' ])->update($params);
-            }else{
-                throw new Exception();
+            $exam_ids = Exam::select("id")
+            ->where("param",$k)
+            ->where("email",$loginUser->tokenable->email)
+            ->get();
+            foreach($exam_ids as $value){
+                if($value[ 'id' ]){
+                    Exam::find($value[ 'id' ])->update($params);
+                }else{
+                    throw new Exception();
+                }
             }
+            DB::commit();
             return response(true, 200);
         }catch(Exception $e){
+            DB::rollBack();
             return response(false, 400);
         }
 

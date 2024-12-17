@@ -157,11 +157,16 @@ class TestController extends UserController
             $loginUser = auth()->user()->currentAccessToken();
             $admin_id = $loginUser->tokenable->id;
             // 管理者でログインしたとき
+            /*
             if($loginUser->tokenable->type == "admin"){
                 $result = User::find($user_id)->where("admin_id",$admin_id)->count();
                 if($result < 1){
                     throw new Exception();
                 }
+            }
+                */
+            if(!$this->checkuser($user_id)){
+                throw new Exception();
             }
 
             $params = [];
@@ -254,4 +259,21 @@ class TestController extends UserController
         return response(true, 200);
     }
 
+    public function getTestTableTh(Request $request)
+    {
+        $user_id = $request->user_id;
+        if(!$this->checkuser($user_id)){
+            throw new Exception();
+        }
+        $test_id = $request->test_id;
+        $data = Test::select("testparts.code")
+            ->join("testparts","testparts.test_id","=","tests.id")
+            ->where("tests.user_id",$user_id)
+            ->where("test_id",$test_id)
+            ->where("tests.status",1)
+            ->where("testparts.status",1)
+            ->get();
+
+        return response($data , 200);
+    }
 }

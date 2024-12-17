@@ -103,16 +103,25 @@ class ExamController extends Controller
     function editExamData(Request $request){
         $loginUser = auth()->user()->currentAccessToken();
         $id = $loginUser->tokenable->id;
+        $k = $request->k;
         $params = [];
         $params['name'] = $request->name;
         $params['kana'] = $request->kana;
         $params['gender'] = $request->gender;
+
         try{
-            Exam::find($id)->update($params);
+            //Exam::find($id)->update($params);
+            $exam_id = Exam::select("id")->where("param",$k)->where("id",$id)->first();
+            if($exam_id[ 'id' ]){
+                Exam::find($exam_id[ 'id' ])->update($params);
+            }else{
+                throw new Exception();
+            }
             return response(true, 200);
         }catch(Exception $e){
             return response(false, 400);
         }
+
     }
 
     public function getTestExamMenu(Request $request){

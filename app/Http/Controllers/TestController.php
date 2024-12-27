@@ -116,7 +116,13 @@ class TestController extends UserController
             {
                 $pwd = openssl_decrypt($value->password,'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
                 $rlt[ 'exams' ][$key]->birth = ($pwd === "password" || $pwd === "Test") ? "":$pwd;
-                $rlt[ 'exams' ][$key]->endtime = (isset($pfsArray[$value->id]))?$pfsArray[$value->id]:'';
+                if(isset($pfsArray[$value->id])){
+                    $rlt[ 'exams' ][$key]->endtime = (isset($pfsArray[$value->id]['endtime']))?$pfsArray[$value->id]['endtime']:'';
+                    $rlt[ 'exams' ][$key]->level = (isset($pfsArray[$value->id]['level']))?$pfsArray[$value->id]['level']:'';
+                    $rlt[ 'exams' ][$key]->lv = (isset($pfsArray[$value->id]['lv']))?$pfsArray[$value->id]['lv']:'';
+                    $rlt[ 'exams' ][$key]->score = (isset($pfsArray[$value->id]['score']))?$pfsArray[$value->id]['score']:'';
+
+                }
             }
             return response($rlt, 200);
         }else{
@@ -127,22 +133,159 @@ class TestController extends UserController
     private function getPFSDetail($test_id){
         $sql = "
             SELECT
-                MAX(id) as id,
                 exam_id,
                 testparts_id,
-                date_format(MAX(endtime),'%Y年%m月%d日' ) as endtime
+                DATE_FORMAT(endtime,'%Y/%m/%d') as endtime,
+                id,
+                level,
+                dev1,
+                dev2,
+                dev3
             FROM
                 exampfses
             WHERE
-                testparts_id=?
-            GROUP BY exam_id,testparts_id";
-        $pfsdetails = DB::select($sql, [$test_id]);
+                id =
+            (
+                SELECT
+                    MAX(id) as id
+                FROM
+                    exampfses
+                WHERE
+                    testparts_id=?
+                GROUP BY exam_id,testparts_id
+            )
+            ";
+
+            $pfsdetails = DB::select($sql, [$test_id]);
         $pfsArray = [];
         foreach($pfsdetails as $value){
-            $pfsArray[$value->exam_id] = $value->endtime;
+            $pfsArray[$value->exam_id]['endtime'] = $value->endtime;
+            $pfsArray[$value->exam_id]['level'] = $value->level;
+            $pfsArray[$value->exam_id]['dev1'] = $value->dev1;
+            $pfsArray[$value->exam_id]['dev2'] = $value->dev2;
+            $pfsArray[$value->exam_id]['dev3'] = $value->dev3;
+            list($lv, $score) = $this->getStress($value->dev1, $value->dev2);
+            $pfsArray[$value->exam_id]['lv'] = $lv;
+            $pfsArray[$value->exam_id]['score'] = $score;
         }
         return $pfsArray;
     }
+
+
+    //ストレスデータ取得ストレスフラグ無し
+	public function getStress($dev1, $dev2) {
+	  $ave = ($dev1 + $dev2) / 2;
+	  $roundedAve = round($ave, 1);
+	  if ($ave < 30) {
+	    $st_level = 1;
+	    $st_score = $roundedAve;
+	  } else if ($ave < 35) {
+	    if ($dev1 < 40 && $dev2 < 40) {
+	      $st_level = 1;
+	      $st_score = $roundedAve;
+	    } else {
+	      $st_level = 2;
+	      $st_score = 35;
+	    }
+	  } else if ($ave < 40) {
+	    if ($dev1 < 40 && $dev2 < 40) {
+	      $st_level = 1;
+	      $st_score = 34.9;
+	    } else if ($dev1 < 30 || $dev2 < 30) {
+	      $st_level = 2;
+	      $st_score = $roundedAve;
+	    } else {
+	      $st_level = 3;
+	      $st_score = 45;
+	    }
+	  } else if ($ave < 45) {
+	    if ($dev1 < 30 || $dev2 < 30) {
+	      $st_level = 2;
+	      $st_score = $roundedAve;
+	    } else if ($dev1 < 50 && $dev2 < 50) {
+	      $st_level = 3;
+	      $st_score = 45;
+	    } else {
+	      $st_level = 4;
+	      $st_score = 55;
+	    }
+	  } else if ($ave < 50) {
+	    if ($dev1 < 30 || $dev2 < 30) {
+	      $st_level = 2;
+	      $st_score = 44.9;
+	    } else if ($dev1 < 50 && $dev2 < 50) {
+	      $st_level = 3;
+	      $st_score = $roundedAve;
+	    } else {
+	      $st_level = 4;
+	      $st_score = 55;
+	    }
+	  } else if ($ave < 55) {
+	    if ($dev1 < 30 || $dev2 < 30) {
+	      $st_level = 2;
+	      $st_score = 44.9;
+	    } else {
+	      $st_level = 4;
+	      $st_score = 55;
+	    }
+	  } else if ($ave < 60) {
+	    if ($dev1 < 50 || $dev2 < 50) {
+	      $st_level = 4;
+	      $st_score = $roundedAve;
+	    } else if ($dev1 < 60 && $dev2 < 60) {
+	      $st_level = 4;
+	      $st_score = $roundedAve;
+	    } else {
+	      $st_level = 5;
+	      $st_score = 65;
+	    }
+	  } else if ($ave < 65) {
+	    if ($dev1 < 50 || $dev2 < 50) {
+	      $st_level = 4;
+	      $st_score = $roundedAve;
+	    } else {
+	      $st_level = 5;
+	      $st_score = 65;
+	    }
+	  } else {
+	    $st_level = 5;
+	    $st_score = $roundedAve;
+	  }
+	  return array($st_level, $st_score);
+	}
+
+
+	//ストレスデータ取得ストレスフラグあり
+	public function getStress2($dev1, $dev2,$dev3) {
+
+		$dev1 = sprintf("%s",($dev1 >= 70 )?60:$dev1);
+		$dev2 = sprintf("%s",($dev2 >= 70 )?60:$dev2);
+		$dev3 = sprintf("%s",($dev3 >= 70 )?60:$dev3);
+
+		$dev1 = sprintf("%s",($dev1 <= 35.21  )?20:$dev1);
+		$dev2 = sprintf("%s",($dev2 <= 35.21  )?20:$dev2);
+		$dev3 = sprintf("%s",($dev3 <= 35.21  )?20:$dev3);
+
+		//ポジティブ思考力スコア反転
+		$dev3 = 100-$dev3;
+
+		$ave = ($dev1+$dev2+$dev3)/3;
+		$st_score = round($ave,1);
+		if($ave >= 64.79 ){
+			$st_level = 5;
+		}elseif( $ave >= 54.49){
+			$st_level = 4;
+		}elseif( $ave >= 45.3 ){
+			$st_level = 3;
+		}elseif( $ave >= 35 ){
+			$st_level = 2;
+		}else{
+			$st_level = 1;
+		}
+
+		return array($st_level, $st_score);
+	}
+
 
     public function setTest(Request $request)
     {
@@ -269,7 +412,7 @@ class TestController extends UserController
         $data = Test::select("testparts.code")
             ->join("testparts","testparts.test_id","=","tests.id")
             ->where("tests.user_id",$user_id)
-            ->where("test_id",$test_id)
+            ->where("testparts.test_id",$test_id)
             ->where("tests.status",1)
             ->where("testparts.status",1)
             ->get();

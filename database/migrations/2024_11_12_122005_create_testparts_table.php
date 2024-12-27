@@ -32,7 +32,7 @@ return new class extends Migration
             $table->string('weight12',11)->default('0')->nullable();
             $table->string('weight13',11)->default('0')->nullable();
             $table->string('weight14',11)->default('0')->nullable();
-            $table->integer('status')->length(1)->default('0')->nullable();
+            $table->integer('status')->length(1)->default(1)->nullable();
 
             $table->timestamps();
         });

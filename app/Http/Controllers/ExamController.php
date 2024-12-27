@@ -310,7 +310,6 @@ class ExamController extends Controller
     }
 
     function BA12($line,$row2,$raw_data,$dev_data,$flg=""){
-
         // 素点算出
         // 準備 [q1～q36の値を-3する]
         $q = "";
@@ -384,8 +383,6 @@ class ExamController extends Controller
             }
             $dev_count++;
         }
-
-
         // 総合得点素点算出(おもみ付け)
         $all_score =
         (round($row['dev1'],1) * $row2['w1']) +
@@ -422,10 +419,9 @@ class ExamController extends Controller
         else { ; }
 
         $max_dev = max($result_dev);
-
         $dev_number = 0;
         for( $dcount = 1; $dcount <= 12; $dcount++ ) {
-            if ( $row["dev$dcount"] == $max_dev && $dev_number == '' ) {
+            if ( $row["dev$dcount"] == $max_dev && $dev_number == 0 ) {
                 $dev_number = $dcount;
             }
         }

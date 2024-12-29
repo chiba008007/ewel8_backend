@@ -104,8 +104,8 @@ class TestController extends UserController
         $test_id = $request->test_id;
         if($this->checkuser($user_id)){
             // PFSの受検者情報取得
+            $rlt = [];
             $pfsArray = $this->getPFSDetail($test_id);
-
             $rlt['detail'] = Test::Where("user_id",$user_id)->where("id",$test_id)->first();
             $rlt['exams'] = Exam::where("exams.test_id",$test_id)
             ->where("exams.deleted_at","=",null)
@@ -116,15 +116,16 @@ class TestController extends UserController
             {
                 $pwd = openssl_decrypt($value->password,'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
                 $rlt[ 'exams' ][$key]->birth = ($pwd === "password" || $pwd === "Test") ? "":$pwd;
+                // PFSの受検者情報
                 if(isset($pfsArray[$value->id])){
                     $rlt[ 'exams' ][$key]->endtime = (isset($pfsArray[$value->id]['endtime']))?$pfsArray[$value->id]['endtime']:'';
                     $rlt[ 'exams' ][$key]->level = (isset($pfsArray[$value->id]['level']))?$pfsArray[$value->id]['level']:'';
                     $rlt[ 'exams' ][$key]->lv = (isset($pfsArray[$value->id]['lv']))?$pfsArray[$value->id]['lv']:'';
                     $rlt[ 'exams' ][$key]->score = (isset($pfsArray[$value->id]['score']))?$pfsArray[$value->id]['score']:'';
-
                 }
             }
             return response($rlt, 200);
+
         }else{
             return response([],400);
         }
@@ -144,7 +145,7 @@ class TestController extends UserController
             FROM
                 exampfses
             WHERE
-                id =
+                id IN
             (
                 SELECT
                     MAX(id) as id
@@ -418,5 +419,35 @@ class TestController extends UserController
             ->get();
 
         return response($data , 200);
+    }
+
+    public function getPFSTestDetail(Request $request){
+
+        $exam_id = $request->exam_id;
+        $testparts_id = $request->testparts_id;
+
+        $sql = "
+            SELECT
+                *
+            FROM
+                exampfses
+            WHERE
+                id =
+            (
+                SELECT
+                    MAX(id) as id
+                FROM
+                    exampfses
+                WHERE
+                    testparts_id=? AND
+                    exam_id=?
+                GROUP BY exam_id,testparts_id
+            )
+            ";
+
+        $pfsdetails = DB::select($sql, [$testparts_id,$exam_id]);
+        $ans_data = config('const.consts.PFS3');
+        $result = $ans_data[$pfsdetails[0]->soyo];
+        return response($result , 200);
     }
 }

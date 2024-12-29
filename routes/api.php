@@ -71,6 +71,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("test/getTestDetail", [TestController::class, 'getTestDetail']);
     Route::post("test/getCsvList", [TestController::class, 'getCsvList']);
     Route::post("test/getTestTableTh", [TestController::class, 'getTestTableTh']);
+    Route::post("test/getPFSTestDetail", [TestController::class, 'getPFSTestDetail']);
 
     Route::post("csv/getPfs", [CsvsController::class, 'getPfs']);
 });

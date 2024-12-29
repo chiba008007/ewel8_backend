@@ -86,18 +86,20 @@ class ExamController extends Controller
             $gender = $loginUser->tokenable->gender;
             $pwd = openssl_decrypt($loginUser->tokenable->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
             $loginUser->password = $pwd;
-            $loginUser->name1 = $name[0];
-            $loginUser->name2 = $name[1];
-            $loginUser->kana1 = $kana[0];
-            $loginUser->kana2 = $kana[1];
+
+            $loginUser->name1 = (isset($name[0]))?$name[0]:"";
+            $loginUser->name2 = (isset($name[1]))?$name[1]:"";
+            $loginUser->kana1 = (isset($kana[0]))?$kana[0]:"";
+            $loginUser->kana2 = (isset($kana[1]))?$kana[1]:"";
             $loginUser->gender = $gender;
             if(!$loginUser){
                 return response([],200);
             }
+            return response($loginUser, 200);
         }catch(Exception $e){
             return response(false,200);
         }
-        return response($loginUser, 200);
+
     }
 
     function editExamData(Request $request){
@@ -182,7 +184,11 @@ class ExamController extends Controller
         $testparts_id = $request->testparts_id;
         // 最後の1件を取得
         $last = exampfs::select("*")->latest("id")->where("testparts_id",$testparts_id)->where("exam_id",$exam_id)->first();
-
+        // 結果データがあるときは結果をまとめて取得
+        if($last->endtime){
+            $ans_data = config('const.consts.PFS3');
+            $last->result = $ans_data[$last->soyo];
+        }
         return response($last, 200);
     }
     function setPFS(Request $request){
@@ -235,7 +241,6 @@ class ExamController extends Controller
             examfins::insert($params);
         }
         return response("success", 200);
-
     }
 
     function resultPFS($testparts_id){

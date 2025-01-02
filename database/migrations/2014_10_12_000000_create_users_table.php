@@ -47,6 +47,8 @@ return new class extends Migration
             $table->string('element10',256)->nullable()->comment("要素");
             $table->string('element11',256)->nullable()->comment("要素");
             $table->string('element12',256)->nullable()->comment("要素");
+            $table->string('element13',256)->nullable()->comment("要素");
+            $table->string('element14',256)->nullable()->comment("要素");
             $table->integer('trendFlag')->nullable()->comment("受検者傾向確認ボタン表示");
             $table->integer('csvFlag')->nullable()->comment("CSVアップロードボタン表示");
             $table->integer('pdfFlag')->nullable()->comment("PDFボタン表示");

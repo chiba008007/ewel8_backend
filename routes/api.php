@@ -48,7 +48,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/admin', [UserController::class, 'getAdmin']);
     Route::post('user/adminEdit', [UserController::class, 'editAdmin']);
     Route::post('user/setUserData', [UserController::class, 'setUserData']);
-    Route::post('user/editUserData', [UserController::class, 'editUserData']);
+   // Route::post('user/editUserData', [UserController::class, 'editUserData']);
+    Route::post('user/editPartnerData', [UserController::class, 'editPartnerData']);
     Route::post('user/setUserLicense', [UserController::class, 'setUserLicense']);
     Route::get('user/checkEmail', [UserController::class, 'checkEmail']);
     Route::get('user/checkLoginID', [UserController::class, 'checkLoginID']);
@@ -58,6 +59,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/getPartnerid', [UserController::class, 'getPartnerid']);
     Route::post('user/setCustomerAdd', [UserController::class, 'setCustomerAdd']);
     Route::post('user/getUserElement', [UserController::class, 'getUserElement']);
+    Route::post('user/getUserData', [UserController::class, 'getUserData']);
 
     Route::post("logout", [UserController::class, 'logout']);
     Route::post("user/getCustomerList", [UserController::class, 'getCustomerList']);

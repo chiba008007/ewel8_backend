@@ -150,12 +150,12 @@ class UserController extends Controller
             }
             */
             // 今選択しているパートナー情報の取得
-
             $user = User::where('type', $type)
             ->where('id',$partner_id);
-            if($loginUser->tokenable->type == "admin"){
-                $user = $user->where('admin_id',$loginUser->tokenable->id);
-            }
+            // if($loginUser->tokenable->type == "admin"){
+            //     $user = $user->where('admin_id',$loginUser->tokenable->id);
+            // }
+
             $user = $user->first();
             if(!$user){
                 throw new Exception();
@@ -166,7 +166,7 @@ class UserController extends Controller
             return response($response, 201);
         }catch(\Exception $e){
 
-            return response($user, 401);
+           return response("error", 401);
         }
     }
     function editAdmin(Request $request)
@@ -228,6 +228,8 @@ class UserController extends Controller
                 'element10' => $request['element10'],
                 'element11' => $request['element11'],
                 'element12' => $request['element12'],
+                'element13' => $request['element13'],
+                'element14' => $request['element14'],
             ]);
 
             $id = DB::getPdo()->lastInsertId();
@@ -239,25 +241,55 @@ class UserController extends Controller
             throw $exception;
         }
     }
-    function editUserData(Request $request)
+    function editPartnerData(Request $request)
     {
-        $response = true;
         DB::beginTransaction();
         try{
-
-            $user = User::find(5);
+            $loginUser = auth()->user()->currentAccessToken();
+            $admin_id = $loginUser->tokenable->id;
+            $user = User::where("id",$request->id)->where("admin_id",$admin_id)->where("type",$request->type);
+            if($request->password){
+                $passwd = config('const.consts.PASSWORD');
+                $user->update([
+                        "password" => openssl_encrypt($request->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv'])
+                    ]);
+            }
+            if($request->person) $user->update(["person" => $request->person]);
+            if($request->person_address) $user->update(["person_address" => $request->person_address]);
             $user->update([
-                "name" => "佐藤太郎123",
+                "post_code" => $request->post_code,
+                "pref"=>$request->pref,
+                "address1"=>$request->address1,
+                "address2"=>$request->address2,
+                "tel"=>$request->tel,
+                "fax"=>$request->fax,
+                "requestFlag"=>$request->requestFlag,
+                "person2"=>$request->person2,
+                "person_address2"=>$request->person_address2,
+                "person_tel"=>$request->person_tel,
+                "system_name"=>$request->system_name,
+                "element1"=>$request->element1,
+                "element2"=>$request->element2,
+                "element3"=>$request->element3,
+                "element4"=>$request->element4,
+                "element5"=>$request->element5,
+                "element6"=>$request->element6,
+                "element7"=>$request->element7,
+                "element8"=>$request->element8,
+                "element9"=>$request->element9,
+                "element10"=>$request->element10,
+                "element11"=>$request->element11,
+                "element12"=>$request->element12,
+                "element13"=>$request->element13,
+                "element14"=>$request->element14,
             ]);
-
-
-
             DB::commit();
-            return response('OK', 200);
+            return response($request->id, 200);
         } catch (\Exception $exception){
             DB::rollback();
             throw $exception;
         }
+
     }
     function setCustomerAdd(Request $request){
         $req = $request[ 'type' ];
@@ -361,6 +393,15 @@ class UserController extends Controller
 
     function getCustomerList(Request $request){
         try{
+            // パートナー権限でログインしたとき、パラメータとIDが一致しないときはエラー
+            $loginUser = auth()->user()->currentAccessToken();
+            if($loginUser->tokenable->type === 'partner'
+                && $loginUser->tokenable->id != $request->partner_id
+            )
+            {
+                throw new Exception();
+            }
+
             $result = User::where("type","customer")->where("partner_id",$request->partner_id)->where("deleted_at",null)
             ->get();
             return response($result, 201);
@@ -450,6 +491,27 @@ class UserController extends Controller
             }
         }catch(Exception $e){
                 return response("error", 200);
+        }
+    }
+    function getUserData(Request $request){
+        $loginUser = auth()->user()->currentAccessToken();
+        $admin_id = $loginUser->tokenable->id;
+        try{
+            $user = User::where('admin_id', $admin_id)->where("id",$request->id)->first();
+            $license = userlisence::where("user_id",$user->id)->get();
+            $temp = [];
+            foreach($license as $value){
+                $temp[$value->code] = $value->num;
+            }
+
+            $user->licenses = $temp;
+            if($user){
+                return response($user, 200);
+            }else{
+                throw new Exception();
+            }
+        }catch(Exception $e){
+                return response("error", 400);
         }
     }
     function getUserElement(Request $request){

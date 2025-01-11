@@ -117,6 +117,7 @@ class TestController extends UserController
                 $pwd = openssl_decrypt($value->password,'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
                 $rlt[ 'exams' ][$key]->birth = ($pwd === "password" || $pwd === "Test") ? "":$pwd;
                 // PFSの受検者情報
+
                 if(isset($pfsArray[$value->id])){
                     $rlt[ 'exams' ][$key]->endtime = (isset($pfsArray[$value->id]['endtime']))?$pfsArray[$value->id]['endtime']:'';
                     $rlt[ 'exams' ][$key]->level = (isset($pfsArray[$value->id]['level']))?$pfsArray[$value->id]['level']:'';
@@ -152,7 +153,7 @@ class TestController extends UserController
                 FROM
                     exampfses
                 WHERE
-                    testparts_id=?
+                    testparts_id=(SELECT id FROM testparts WHERE test_id = ?)
                 GROUP BY exam_id,testparts_id
             )
             ";
@@ -445,7 +446,7 @@ class TestController extends UserController
                 FROM
                     exampfses
                 WHERE
-                    testparts_id=? AND
+                    testparts_id=(SELECT id FROM testparts WHERE test_id = ?) AND
                     exam_id=?
                 GROUP BY exam_id,testparts_id
             )

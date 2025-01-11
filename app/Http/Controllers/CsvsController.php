@@ -45,7 +45,7 @@ class CsvsController extends TestController
                         FROM
                             exampfses
                         WHERE
-                            testparts_id = ? AND
+                            testparts_id = (SELECT id FROM testparts WHERE test_id = ?) AND
                             endtime IS NOT NULL
                         GROUP BY exam_id
                 )

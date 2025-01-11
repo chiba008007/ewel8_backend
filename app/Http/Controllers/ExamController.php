@@ -76,7 +76,10 @@ class ExamController extends Controller
             return response([],400);
         }
     }
+    function getExamList(){
 
+        return response([],200);
+    }
     function getExamData(){
         try{
             $loginUser = auth()->user()->currentAccessToken();
@@ -174,9 +177,7 @@ class ExamController extends Controller
         }
         return response($result, 200);
     }
-    function getExamList(){
-        echo "exam";
-    }
+
     function getPFS(Request $request){
 
         $loginUser = auth()->user()->currentAccessToken();
@@ -194,6 +195,12 @@ class ExamController extends Controller
     function setPFS(Request $request){
         $loginUser = auth()->user()->currentAccessToken();
         $exam_id = $loginUser->tokenable->id;
+
+        // 既存のテストステータスを0にする
+        exampfs::where("exam_id","=",$exam_id)
+        ->where("status","=",1)
+        ->update(['status'=>0]);
+
         $params = [];
         $params[ 'testparts_id' ] = $request->testparts_id;
         $params[ 'exam_id' ] = $exam_id;

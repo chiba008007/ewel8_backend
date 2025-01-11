@@ -105,14 +105,14 @@ class UserController extends Controller
                 'person2' => $request['person2'],
                 'person_address2' => $request['person_address2'],
                 'person_tel' => $request['person_tel'],
-                'system_name' => $request['system_name'],
+//                'system_name' => $request['system_name'],
 
             ];
             if(!$request['password']){
                 unset($params['password']);
             }
             User::where('id', $request['id'])
-            ->where('admin_id', $loginUser->tokenable->id)
+           //->where('admin_id', $loginUser->tokenable->id)
             ->update($params);
 
             DB::commit();
@@ -124,46 +124,51 @@ class UserController extends Controller
 
         return response($response, 201);
     }
+    function getPartnerDetailData(Request $request)
+    {
+        // ログインしているユーザー情報取得
+        $loginUser = auth()->user()->currentAccessToken();
+        $customer = User::where("type","partner")
+            ->where('id',$request->partnerId);
+        $customer->where("admin_id",$loginUser->tokenable->id);
+        $customer = $customer->first();
+
+        return response($customer, 201);
+    }
     function getPartnerDetail(Request $request)
     {
-
+        $response = [];
         // ログインしているユーザー情報取得
         $loginUser = auth()->user()->currentAccessToken();
         // 顧客画面から利用の場合は親のIDを取得
         $partner_id = $request->partnerId;
+        $editid = $request->editId;
         try{
             $type = $request->type;
-            if($request->type == "customer"){
-                $customer = User::where('type', $request->type)
-                ->where('id',$partner_id)
-                ->select("partner_id")
-                ->first();
-                $partner_id = $customer->partner_id;
-                $type = "partner";
+            // パートナー情報取得
+            $user = [];
+            if($type === "partner"){
+                $customer = User::where("type","customer")
+                    ->where('id',$editid)
+                    ->select("partner_id");
+                if($loginUser->tokenable->type == "admin") $customer->where("admin_id",$loginUser->tokenable->id);
+                $customer = $customer->first();
+                $user = User::where('type', $type)->where("id",$customer->partner_id)->first();
             }
-            if($request->type == "guest"){
-                $type = "customer";
+            if($type === "customer"){
+                $customer = User::where("type","customer")
+                    ->where('id',$editid);
+                if($loginUser->tokenable->type == "admin") $customer->where("admin_id",$loginUser->tokenable->id);
+                $user = $customer->first();
             }
-            /*
-            else{
-                $type = "customer";
+            if($type === "customerTOP"){ // 顧客管理画面一覧
+                $customer = User::where("type","partner")
+                    ->where('id',$partner_id);
+                if($loginUser->tokenable->type == "admin") $customer->where("admin_id",$loginUser->tokenable->id);
+                $user = $customer->first();
             }
-            */
-            // 今選択しているパートナー情報の取得
-            $user = User::where('type', $type)
-            ->where('id',$partner_id);
-            // if($loginUser->tokenable->type == "admin"){
-            //     $user = $user->where('admin_id',$loginUser->tokenable->id);
-            // }
 
-            $user = $user->first();
-            if(!$user){
-                throw new Exception();
-            }
-            $response = [
-                'user' => $user,
-            ];
-            return response($response, 201);
+            return response($user, 201);
         }catch(\Exception $e){
 
            return response("error", 401);

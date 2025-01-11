@@ -315,6 +315,8 @@ class TestController extends UserController
 
             $params = [];
             $params["params"]=$query;
+            $params["partner_id"]=$request->partner_id;
+            $params["customer_id"]=$request->customer_id;
             $params["user_id"]=$request->user_id;
             $params["testname"]=$request->testname;
             $params["testcount"]=$request->testcount;
@@ -359,6 +361,7 @@ class TestController extends UserController
             }
 
             $parts = $request->parts;
+            var_dump($parts);
             foreach($parts as $key=>$value){
                 $params = [];
                 if($key === "PFS"){
@@ -382,7 +385,9 @@ class TestController extends UserController
                 // テスト一覧修正
                 $params = [];
                 for($i=0;$i<$request->testcount;$i++){
-                    $params[$i][ 'test_id'  ] = $id;
+                    $params[$i][ 'test_id'     ] = $id;
+                    $params[$i][ 'partner_id'  ] = $request->partner_id;
+                    $params[$i][ 'customer_id' ] = $request->customer_id;
                     $params[$i][ 'param'    ] = $query;
                     $params[$i][ 'email'    ] = substr(str_shuffle(str_repeat($str, 10)), 0, 3);
                     $params[$i][ 'password' ] = openssl_encrypt('password', 'aes-256-cbc', $passwd[ 'key' ], 0, $passwd[ 'iv' ]);
@@ -392,6 +397,7 @@ class TestController extends UserController
                 if(!Exam::insert($params)){
                     throw new Exception();
                 }
+
             }
 
             DB::commit();
@@ -450,4 +456,29 @@ class TestController extends UserController
         $result = $ans_data[$pfsdetails[0]->soyo];
         return response($result , 200);
     }
+
+    function getSearchExam()
+    {
+       // $loginUser = auth()->user()->currentAccessToken();
+        $data = Exam::select([
+            'exams.*',
+            'tests.testname as testname',
+            "users_customer.name as customer_name",
+            "users_partner.name as partner_name",
+            "endtime"
+        ])
+        ->leftjoin("tests","tests.id","=","exams.test_id")
+        ->leftjoin("users as users_customer","users_customer.id","=","exams.customer_id")
+        ->leftjoin("users as users_partner","users_partner.id","=","exams.partner_id")
+        ->leftjoin("exampfses",function ($join) {
+            $join
+            ->select("MAX(endtime)")
+            ->on('exams.id','=','exampfses.exam_id')
+            ->where('exampfses.status',"=",1);
+        })
+        ->where("exams.name","!=","''")
+        ->ORDERBY("exampfses.endtime","DESC");
+        return response($data->get(), 200);
+    }
+
 }

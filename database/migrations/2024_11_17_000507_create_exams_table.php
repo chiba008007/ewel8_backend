@@ -16,6 +16,8 @@ return new class extends Migration
             $table->id();
             $table->string('type');
             $table->integer('test_id');
+            $table->integer('customer_id');
+            $table->integer('partner_id');
             $table->string('param')->comment('テストのパラメータ');
             $table->string('name')->nullable();
             $table->string('kana')->nullable();

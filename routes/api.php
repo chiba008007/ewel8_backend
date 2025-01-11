@@ -43,6 +43,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("exam/editPFS", [ExamController::class, 'editPFS']);
     Route::post("exam/resultPFS", [ExamController::class, 'resultPFS']);
     Route::post("exam/checkStatus", [ExamController::class, 'checkStatus']);
+    Route::post("exam/getExamList", [ExamController::class, 'getExamList']);
+
 
 
     Route::post('user/admin', [UserController::class, 'getAdmin']);
@@ -55,6 +57,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('user/checkLoginID', [UserController::class, 'checkLoginID']);
     Route::post('user/getPartner', [UserController::class, 'getPartner']);
     Route::post('user/getPartnerDetail', [UserController::class, 'getPartnerDetail']);
+    Route::post('user/getPartnerDetailData', [UserController::class, 'getPartnerDetailData']);
     Route::post('user/editPartner', [UserController::class, 'editPartner']);
     Route::post('user/getPartnerid', [UserController::class, 'getPartnerid']);
     Route::post('user/setCustomerAdd', [UserController::class, 'setCustomerAdd']);
@@ -74,6 +77,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("test/getCsvList", [TestController::class, 'getCsvList']);
     Route::post("test/getTestTableTh", [TestController::class, 'getTestTableTh']);
     Route::post("test/getPFSTestDetail", [TestController::class, 'getPFSTestDetail']);
+    Route::post("test/getSearchExam", [TestController::class, 'getSearchExam']);
+
 
     Route::post("csv/getPfs", [CsvsController::class, 'getPfs']);
 });

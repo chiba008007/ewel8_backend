@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('tests', function (Blueprint $table) {
             $table->id();
             $table->string('params',11);
+            $table->integer('customer_id');
+            $table->integer('partner_id');
             $table->string('user_id',128);
             $table->string('testname',512);
             $table->integer('testcount')->length(11);

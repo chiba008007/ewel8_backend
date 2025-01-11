@@ -21,6 +21,8 @@ class ExamsTable extends Seeder
             [
             'type' => 'PFS',
             'test_id'=>1,
+            'customer_id'=>1,
+            'partner_id'=>1,
             'param'=>'aaaaaa',
             'name' => 'John Test',
             'email' => 'john',

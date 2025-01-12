@@ -105,12 +105,16 @@ class TestController extends UserController
         if($this->checkuser($user_id)){
             // PFSの受検者情報取得
             $rlt = [];
-            $pfsArray = $this->getPFSDetail($test_id);
-            $rlt['detail'] = Test::Where("user_id",$user_id)->where("id",$test_id)->first();
+            $rlt['detail'] = Test::select(["tests.*","testparts.threeflag"])
+            ->join("testparts","testparts.test_id","=","tests.id")
+            ->where("tests.user_id",$user_id)
+            ->where("tests.id",$test_id)
+            ->first();
             $rlt['exams'] = Exam::where("exams.test_id",$test_id)
             ->where("exams.deleted_at","=",null)
             ->orderby("exams.id","ASC")
             ->get();
+            $pfsArray = $this->getPFSDetail($test_id,$rlt['detail'][ 'threeflag' ]);
             $passwd = config('const.consts.PASSWORD');
             foreach($rlt[ 'exams' ] as $key=>$value)
             {
@@ -132,7 +136,7 @@ class TestController extends UserController
         }
     }
 
-    private function getPFSDetail($test_id){
+    private function getPFSDetail($test_id,$threeflag = 0){
         $sql = "
             SELECT
                 exam_id,
@@ -142,7 +146,8 @@ class TestController extends UserController
                 level,
                 dev1,
                 dev2,
-                dev3
+                dev3,
+                dev6
             FROM
                 exampfses
             WHERE
@@ -158,7 +163,7 @@ class TestController extends UserController
             )
             ";
 
-            $pfsdetails = DB::select($sql, [$test_id]);
+        $pfsdetails = DB::select($sql, [$test_id]);
         $pfsArray = [];
         foreach($pfsdetails as $value){
             $pfsArray[$value->exam_id]['endtime'] = $value->endtime;
@@ -166,7 +171,12 @@ class TestController extends UserController
             $pfsArray[$value->exam_id]['dev1'] = $value->dev1;
             $pfsArray[$value->exam_id]['dev2'] = $value->dev2;
             $pfsArray[$value->exam_id]['dev3'] = $value->dev3;
-            list($lv, $score) = $this->getStress($value->dev1, $value->dev2);
+            $pfsArray[$value->exam_id]['dev6'] = $value->dev6;
+            if($threeflag){
+                list($lv, $score) = $this->getStress2($value->dev1, $value->dev2, $value->dev6);
+            }else{
+                list($lv, $score) = $this->getStress($value->dev1, $value->dev2);
+            }
             $pfsArray[$value->exam_id]['lv'] = $lv;
             $pfsArray[$value->exam_id]['score'] = $score;
         }

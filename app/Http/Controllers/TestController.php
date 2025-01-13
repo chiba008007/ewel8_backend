@@ -110,7 +110,8 @@ class TestController extends UserController
             ->where("tests.user_id",$user_id)
             ->where("tests.id",$test_id)
             ->first();
-            $rlt['exams'] = Exam::where("exams.test_id",$test_id)
+            $rlt['exams'] = Exam::select(["exams.*"])
+            ->where("exams.test_id",$test_id)
             ->where("exams.deleted_at","=",null)
             ->orderby("exams.id","ASC")
             ->get();

@@ -11,6 +11,8 @@ use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\CsvsController;
+use App\Http\Controllers\PDF\PfsController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -81,6 +83,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
 
     Route::post("csv/getPfs", [CsvsController::class, 'getPfs']);
+
+
 });
 Route::post("user/upload", [UserController::class, 'upload']);
 Route::post("login", [UserController::class, 'index']);

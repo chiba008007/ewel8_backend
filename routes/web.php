@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\PDF\PfsController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -16,3 +16,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get("pdf/pfs/{id?}", [PfsController::class, 'index'])->name("PFSPDF");
+Route::post('/save-radar-image', [PfsController::class, 'saveRadarImage']);

@@ -3,99 +3,114 @@
 namespace App\Http\Controllers\PDF;
 
 use App\Http\Controllers\Controller;
+use App\Models\Exam;
+use App\Models\Test;
 use Illuminate\Http\Request;
-use ConsoleTVs\Charts\Classes\Chartjs\Chart;
-use Illuminate\Support\Facades\Storage;
-use Intervention\Image\Facades\Image;
-
+use App\Libraries\Pfs;
+use App\Libraries\Age;
+use App\Libraries\LineBreak;
 
 class PfsController extends Controller
 {
     //
-    function index(Request $request,$id)
+    function index(Request $request,$id,$code,$birth)
     {
 
+        $passwd = config('const.consts.PASSWORD');
+        $birth = preg_replace("/\-/","/",$birth);
+        $exam = Exam::where([
+            ['id', '=', $id],
+            ['email', '=', $code],
+        ])->first();
+        if(openssl_decrypt($exam->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']) != $birth){
+            echo "PDFの出力に失敗しました。";
+            exit();
+        }
+        // テストパターン
+        $this->test = new Test();
+        $pdflist = $this->test->getTestParts($exam->test_id);
 
+        $this->age = new Age();
+        $this->linebreak = new LineBreak();
+        $pdf = new \Mpdf\Mpdf(
+            [
+            'mode' => 'ja', // 日本語モードを指定
+            'format' => 'A4',
+            'fontDir' => [base_path('resources/fonts')],
+            'fontdata' => [
+                'ipag' => [
+                    'R' => 'ipag.ttf', // 日本語フォントを指定
+                    'B' => 'ipag.ttf'
+                ],
+            ],
+            'default_font' => 'ipag', // デフォルトのフォントを設定
+            ]
+        );
 
-        /*
-// データをセット（例）
-$data = array(5, 7, 6, 9, 8);
+        $row = 0;
+        foreach($pdflist as $value){
+            if(is_object($value) && $value->pdf_id == 7) // 自己理解版
+            {
+                // 受検結果取得
+                $pfsObj = new Pfs();
+                $result = $pfsObj->getPfs($exam->id);
+                // 強みを取得
+                $strong = $pfsObj->getStrong($result,$value);
+                $age = $this->age->getAge($result->starttime,$birth);
+                // PFSグラフの画像作成
+                require_once (public_path()."/PDF/pfsCreateGraph.php");
+                $html = view('/PDF/JIKORIKAI',
+                    [
+                    'row' => $row,
+                    'value' => $value,
+                    'exam' => $exam,
+                    'result' => $result,
+                    'age' => $age,
+                    'strong' => $strong,
+                    'element1' => $this->linebreak->insert_line_breaks($value->element1,10),
+                    'element2' => $this->linebreak->insert_line_breaks($value->element2,10),
+                    'element3' => $this->linebreak->insert_line_breaks($value->element3,10),
+                    'element4' => $this->linebreak->insert_line_breaks($value->element4,10),
+                    'element5' => $this->linebreak->insert_line_breaks($value->element5,10),
+                    'element6' => $this->linebreak->insert_line_breaks($value->element6,10),
+                    'element7' => $this->linebreak->insert_line_breaks($value->element7,10),
+                    'element8' => $this->linebreak->insert_line_breaks($value->element8,10),
+                    'element9' => $this->linebreak->insert_line_breaks($value->element9,10),
+                    'element10' => $this->linebreak->insert_line_breaks($value->element10,10),
+                    'element11' => $this->linebreak->insert_line_breaks($value->element11,10),
+                    'element12' => $this->linebreak->insert_line_breaks($value->element12,10),
+                    ]
+                    )->render();
+                $pdf->SetAutoPageBreak(false);
+                $pdf->SetMargins(0, 0, 0);
+                $pdf->WriteHTML($html);
+                $row++;
+            }
 
-// ラベル（軸のラベルを設定）
-$labels = array('A', 'B', 'C', 'D', 'E');
+            if(is_object($value) && $value->pdf_id == 23) // パワハラ
+            {
+                $result = [];
+                // 受検結果取得
+                $pfsObj = new Pfs();
+                $result = $pfsObj->getPfs($exam->id);
+                // パワハラ用棒グラフ画像作成
+                //require_once (public_path()."/PDF/pawaharaCreateGraph.php");
+                $html = view('/PDF/PAWAHARA', [
+                    'row' => $row,
+                    'value' => $value,
+                    'exam' => $exam,
+                    'result' => $result,
+                    'age' => $age,
+                    ])->render();
+                $pdf->SetAutoPageBreak(false);
+                $pdf->SetMargins(0, 0, 0);
+                $pdf->WriteHTML($html);
+                $row++;
+            }
+        }
 
-// 新しいグラフを作成
-$graph = new RadarGraph(400, 400); // グラフのサイズを指定
+        return $pdf->Output('document.pdf', 'I');
 
-// タイトル設定
-$graph->title->Set('Radar Chart Example');
-
-// データセットの作成
-$plot = new RadarPlot($data);
-
-// 軸ラベルを設定
-$plot->SetLabels($labels);
-
-// レーダーチャートにデータセットを追加
-$graph->Add($plot);
-
-// 画像として保存
-$graph->Stroke('radar_chart.png');
-*/
-
-//        return view('PDF/PFS');
-/*
-
-        // 画像生成のためのHTMLの準備（Chart.jsのコードやCanvas要素を使用）
-        $chartJsCode = "
-            <canvas id='radarChart' width='400' height='400'></canvas>
-            <script>
-                var ctx = document.getElementById('radarChart').getContext('2d');
-                var radarChart = new Chart(ctx, {
-                    type: 'radar',
-                    data: {
-                        labels: ['Label1', 'Label2', 'Label3', 'Label4', 'Label5'],
-                        datasets: [{
-                            label: 'Dataset 1',
-                            data: [10, 20, 30, 40, 50],
-                            borderColor: 'rgba(0, 123, 255, 1)',
-                            backgroundColor: 'rgba(0, 123, 255, 0.2)'
-                        }]
-                    }
-                });
-            </script>";
-
-        // HTMLから画像に変換するロジック
-        $img = Image::canvas(500, 500); // 必要なサイズでキャンバス作成
-
-        // 他の生成処理、保存処理
-
-        $img->save(storage_path('app/public/radar2_chart.png'));
-
-*/
-
- //       return response("success", 200);
     }
 
-
-    public function saveRadarImage(Request $request)
-    {
-        // 画像データを取得
-        $imageData = $request->input('image');
-
-        // データURLから画像部分を取り出す
-        list($type, $data) = explode(';', $imageData);
-        list(, $data) = explode(',', $data);
-
-        // 画像をデコード
-        $image = base64_decode($data);
-
-        // 保存先のパス
-        $path = 'images/radar_chart_' . time() . '.png';
-
-        // 画像をストレージに保存
-        Storage::put($path, $image);
-
-        return response()->json(['message' => 'Image saved successfully', 'path' => $path]);
-    }
 }

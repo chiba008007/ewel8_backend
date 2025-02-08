@@ -17,5 +17,5 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get("pdf/pfs/{id?}", [PfsController::class, 'index'])->name("PFSPDF");
-Route::post('/save-radar-image', [PfsController::class, 'saveRadarImage']);
+Route::get("pdf/{id?}/code/{code?}/birth/{birth?}", [PfsController::class, 'index'])->name("PFSPDF");
+//Route::post('/save-radar-image', [PfsController::class, 'saveRadarImage']);

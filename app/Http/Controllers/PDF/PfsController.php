@@ -109,7 +109,7 @@ class PfsController extends Controller
             }
         }
 
-        return $pdf->Output('document.pdf', 'I');
+        return $pdf->Output('document.pdf', 'D');
 
     }
 

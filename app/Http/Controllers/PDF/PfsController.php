@@ -110,7 +110,8 @@ class PfsController extends Controller
             }
         }
 
-        return $pdf->Output('document.pdf', 'I');
+        $filename = $code . "_" . date('Y') . date('m') . date('d') . ".pdf";
+        return $pdf->Output($filename, 'D');
 
     }
 

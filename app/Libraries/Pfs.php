@@ -3,7 +3,7 @@
 namespace App\Libraries;
 
 use App\Models\exampfs;
-use Ramsey\Uuid\Type\Decimal;
+
 
 class Pfs
 {
@@ -56,4 +56,220 @@ class Pfs
         }
         return $return;
     }
+
+    public function getRiskPoint($array)
+    {
+        // 対人共感リスク
+        $return = [];
+        $return[1]['point'] = number_format(round(100-$array[ 'dev7' ],1),1);
+        $return[2]['point'] = number_format(round(100-$array[ 'dev8' ],1),1);
+        $return[3]['point'] = number_format($array[ 'dev2' ],1);
+        $return[4]['point'] = number_format(round(100-$array[ 'dev4' ],1),1);
+        $return[5]['point'] = number_format($array[ 'dev6' ],1);
+        $return[6]['point'] = number_format($array[ 'dev3' ],1);
+        $sougo = $this->getSougoPoint($array);
+        $return[7]['point'] = $sougo;
+        $return['tate'] = preg_replace("/\./","",$sougo);
+        // パワハラリスクの全体傾向
+        $return["pawahararisk"] = $this->getPawaharaRisk($sougo);
+        // バーの長さ
+        $return[1]['width'] = $this->getBarWidth($return[1][ 'point' ]);
+        $return[2]['width'] = $this->getBarWidth($return[2][ 'point' ]);
+        $return[3]['width'] = $this->getBarWidth($return[3][ 'point' ]);
+        $return[4]['width'] = $this->getBarWidth($return[4][ 'point' ]);
+        $return[5]['width'] = $this->getBarWidth($return[5][ 'point' ]);
+        $return[6]['width'] = $this->getBarWidth($return[6][ 'point' ]);
+        $return[7]['width'] = $this->getBarWidth($return[7][ 'point' ]);
+
+        // 領域
+        $return[1]['text'] = $this->getJpPoint($return[1][ 'point' ]);
+        $return[2]['text'] = $this->getJpPoint($return[2][ 'point' ]);
+        $return[3]['text'] = $this->getJpPoint($return[3][ 'point' ]);
+        $return[4]['text'] = $this->getJpPoint($return[4][ 'point' ]);
+        $return[5]['text'] = $this->getJpPoint($return[5][ 'point' ]);
+        $return[6]['text'] = $this->getJpPoint($return[6][ 'point' ]);
+        $return[7]['text'] = $this->getJpPoint($return[7][ 'point' ]);
+
+        // 一番留意すべき項目の傾向値配列の作成
+        $return['pattern'] = $this->getMostPattern($array);
+        return $return;
+    }
+
+    public function getMostPattern($array)
+    {
+        $devArray1 = [
+            [
+                "id"=>1
+                ,"val"=>100-$array[ 'dev7' ]
+                ,"name"=>"対人共感リスク"
+            ],
+            [
+                "id"=>2
+                ,"val"=>100-$array[ 'dev8' ]
+                ,"name"=>"状況察知リスク"
+            ],
+            [
+                "id"=>3
+                ,"val"=>$array[ 'dev2' ]
+                ,"name"=>"業務分担リスク"
+            ],
+            [
+                "id"=>4
+                ,"val"=>100-$array[ 'dev4' ]
+                ,"name"=>"感情コントロールリスク"
+            ],
+            [
+                "id"=>5
+                ,"val"=>$array[ 'dev6' ]
+                ,"name"=>"ポジティブ思考リスク"
+            ],
+            [
+                "id"=>6
+                ,"val"=>$array[ 'dev3' ]
+                ,"name"=>"自己肯定リスク"
+            ],
+        ];
+        $key_id = [];
+        $key_val = [];
+        foreach($devArray1 as $key=>$value){
+            $key_id[$key] = $value['id'];
+            $key_val[$key] = $value['val'];
+        }
+        array_multisort ( $key_val , SORT_DESC , $key_id , SORT_ASC , $devArray1 );
+        $ryui  = $devArray1[0];
+        $ryui2 = $devArray1[1];
+
+        $rid = $ryui[ 'id' ];
+	    $rval = $ryui[ 'val' ];
+        $rname = $ryui[ 'name' ];
+	    $rid2 = $ryui2[ 'id' ];
+	    $rval2 = $ryui2[ 'val' ];
+        $rname2 = $ryui2[ 'name' ];
+
+        $aryRyui = config('const.consts.aryRyui');
+        $aryJyog = config('const.consts.aryJyog');
+        $aryLang = config('const.consts.aryLang');
+
+        $val4 = "";
+        $val5 = "";
+        $val6 = "";
+        $val7 = "";
+
+        if($rval >= 55){
+            $val4 = $aryRyui[ $rid ][3];
+            $val5 = $aryJyog[ $rid ][3];
+            $val6 = $aryLang[ $rid ][3];
+
+        }elseif($rval > 45 && $rval < 55){
+            $val4 = $aryRyui[ $rid ][2];
+            $val5 = $aryJyog[ $rid ][2];
+            $val6 = $aryLang[ $rid ][2];
+
+        }else{
+            $val4 = $aryRyui[ $rid ][1];
+            $val5 = $aryJyog[ $rid ][1];
+            $val6 = $aryLang[ $rid ][1];
+        }
+
+        if($rval2 >= 55){
+		    $val7 = $aryLang[ $rid2 ][3];
+        }elseif($rval2 > 45 && $rval2 < 55){
+            $val7 = $aryLang[ $rid2 ][2];
+        }else{
+            $val7 = $aryLang[ $rid2 ][1];
+        }
+        $return = [];
+        $return[4] = $val4;
+        $return[5] = $val5;
+        $return[6] = $val6;
+        $return[7] = $val7;
+        $return['remember'][1] = $rname;
+        $return['remember'][2] = $rname2;
+        return $return;
+    }
+    public function getPawaharaRisk($sougo)
+    {
+        $key = 0;
+        if($sougo >= 0.5 && $sougo < 4) $key = 1;
+        if($sougo >= 4 && $sougo < 8) $key = 2;
+        if($sougo >= 8 ) $key = 3;
+        $pawahararisk = config('const.consts.pawahararisk');
+        return $pawahararisk[$key];
+    }
+	public function getJpPoint($int){
+		if($int < 45 ){
+			$str = "-";
+		}elseif($int >= 45 && $int < 52){
+			$str = "注意";
+		}elseif($int >= 52 && $int < 60){
+			$str = "要注意";
+		}elseif($int >= 60){
+			$str = "危険";
+		}
+		return $str;
+	}
+    public function getBarWidth($point){
+        $width = 0;
+        if($point == 20){
+            $width = 0.1;
+        }
+        if($point > 20 && $point <= 35){
+            $width = ($point-20)*5;
+        }
+        if($point > 35 && $point <= 44){
+            $width = (($point-30)*5)+59;
+        }
+        if($point > 44 && $point <= 49){
+            $width = (($point-40)*5)+114;
+        }
+        if($point > 49 && $point <= 52){
+            $width = (($point-40)*5)+119;
+        }
+        if($point > 52 && $point <= 59){
+            $width = (($point-50)*5)+175;
+        }
+        if($point > 59 && $point <= 64){
+            $width = (($point-50)*5)+177;
+        }
+        if($point > 64 && $point <= 71){
+            $width = (($point-60)*5)+235;
+        }
+        if($point > 71 && $point <= 80){
+            $width = (($point-70)*5)+292;
+        }
+        return $width;
+    }
+    public function getSougoPoint($array){
+		$pt = 0.5;
+		$p1 = $array[ 'dev6' ]-$array[ 'dev7' ];
+		$p2 = $array[ 'dev3' ]-$array[ 'dev4' ];
+		$p3 = $array[ 'dev8' ];
+		$p4 = $array[ 'dev2' ];
+		$p5 = $array[ 'dev11' ]-$array[ 'dev7' ];
+
+		if($p1 >= 5 && $p1 < 10){
+			$pt += 3;
+		}elseif($p1 >= 10){
+			$pt += 4;
+		}
+		if($p2 >= 5 && $p2 < 10){
+			$pt += 2;
+		}elseif($p2 >= 10){
+			$pt += 3;
+		}
+		if($p3 < 45){
+			$pt += 1;
+		}
+		if($p4 >= 52){
+			$pt += 0.5;
+		}
+		if($p5 >= 5){
+			$pt += 1;
+		}
+        if($pt == 10 ){
+            return $pt;
+        }else{
+    		return number_format($pt,1);
+        }
+	}
 }

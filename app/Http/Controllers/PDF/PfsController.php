@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers\PDF;
-
 use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\Test;
@@ -93,6 +92,7 @@ class PfsController extends Controller
                 // 受検結果取得
                 $pfsObj = new Pfs();
                 $result = $pfsObj->getPfs($exam->id);
+                $risk = $pfsObj->getRiskPoint($result);
                 // パワハラ用棒グラフ画像作成
                 //require_once (public_path()."/PDF/pawaharaCreateGraph.php");
                 $html = view('/PDF/PAWAHARA', [
@@ -101,6 +101,7 @@ class PfsController extends Controller
                     'exam' => $exam,
                     'result' => $result,
                     'age' => $age,
+                    'risk' => $risk,
                     ])->render();
                 $pdf->SetAutoPageBreak(false);
                 $pdf->SetMargins(0, 0, 0);
@@ -109,7 +110,7 @@ class PfsController extends Controller
             }
         }
 
-        return $pdf->Output('document.pdf', 'D');
+        return $pdf->Output('document.pdf', 'I');
 
     }
 

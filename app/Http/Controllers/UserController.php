@@ -528,6 +528,54 @@ class UserController extends Controller
         $partner = User::where("id",$partner_id)->where("admin_id",$admin_id)->first();
         return response($partner, 200);
     }
+    function customerEdit(Request $request){
+        $loginUser = auth()->user()->currentAccessToken();
+        $admin_id = $loginUser->tokenable->id;
+        $partner_id = $request->partner_id;
+        $id = $request->id;
+
+        $user = User::where(['id'=>$id,'partner_id'=>$partner_id,'admin_id'=>$admin_id]);
+        $passwd = config('const.consts.PASSWORD');
+        $password = openssl_encrypt($request->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
+
+        $flg = $user->update([
+            'name'=>$request->name,
+            'post_code'=>$request->post_code,
+            'pref'=>$request->pref,
+            'address1'=>$request->address1,
+            'address2'=>$request->address2,
+            'tel'=>$request->tel,
+            'fax'=>$request->fax,
+            'trendFlag'=>$request->trendFlag,
+            'csvFlag'=>$request->csvFlag,
+            'pdfFlag'=>$request->pdfFlag,
+            'weightFlag'=>$request->weightFlag,
+            'excelFlag'=>$request->excelFlag,
+            'customFlag'=>$request->customFlag,
+            'sslFlag'=>$request->sslFlag,
+            'logoImagePath'=>$request->logoImagePath,
+            'privacy'=>$request->privacy,
+            'privacyText'=>$request->privacyText,
+            'displayFlag'=>$request->customerDisplayFlag,
+            'tanto_name'=>$request->tanto_name,
+            'tanto_address'=>$request->tanto_address,
+            'tanto_busyo'=>$request->tanto_busyo,
+            'tanto_tel1'=>$request->tanto_tel1,
+            'tanto_tel2'=>$request->tanto_tel2,
+            'tanto_name2'=>$request->tanto_name2,
+            'tanto_address2'=>$request->tanto_address2
+        ]);
+        if($request->password) {
+            $flg = $user->update(["password"=>$password]);
+        }
+        if($flg){
+            return response(true, 200);
+        }else{
+            return response(false, 400);
+        }
+    }
+
+
     function logout()
     {
         auth('sanctum')->user()->tokens()->delete();

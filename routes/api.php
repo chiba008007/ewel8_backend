@@ -65,6 +65,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/setCustomerAdd', [UserController::class, 'setCustomerAdd']);
     Route::post('user/getUserElement', [UserController::class, 'getUserElement']);
     Route::post('user/getUserData', [UserController::class, 'getUserData']);
+    Route::post('user/customerEdit', [UserController::class, 'customerEdit']);
 
     Route::post("logout", [UserController::class, 'logout']);
     Route::post("user/getCustomerList", [UserController::class, 'getCustomerList']);

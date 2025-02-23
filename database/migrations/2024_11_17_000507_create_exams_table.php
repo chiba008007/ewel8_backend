@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('name')->nullable();
             $table->string('kana')->nullable();
             $table->integer('gender')->default(0)->nullable();
-            $table->string('email')->unique();
+            $table->string('email');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password')->nullable()->comment('デフォルトパスワード:password');
             $table->rememberToken();

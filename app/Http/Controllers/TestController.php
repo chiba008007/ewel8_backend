@@ -300,12 +300,51 @@ class TestController extends UserController
 		return array($st_level, $st_score);
 	}
 
+    // 重複を取り除く関数
+    public function removeDuplicates($array) {
+        // 配列の重複を削除
+        return array_unique($array);
+    }
+
+    // 重複をチェックして必要な部分を再構築
+    public function checkAndRebuild($array,$testcount) {
+        $str = config('const.consts.alpha');
+        // 重複している値を検出
+        $duplicates = array_diff_assoc($array, array_unique($array));
+        if (!empty($duplicates)) {
+            // echo "重複があります。重複部分を作り直します。\n";
+            // 重複部分を取り除いて新しい配列を作成
+            $newArray = $this->removeDuplicates($array);
+            while(true){
+                foreach($duplicates as $key=>$value){
+                    $newArray[$key] = substr(str_shuffle(str_repeat($str, 10)), 0, 3);
+                }
+                if($testcount == count($newArray)){
+                    break;
+                }
+            }
+
+            // 重複部分が取り除かれた配列を返す
+            return $newArray;
+        } else {
+            //echo "重複はありません。\n";
+            return $array;
+        }
+    }
 
     public function setTest(Request $request)
     {
         $query = substr(bin2hex(random_bytes(8)), 0, 8);
         $passwd = config('const.consts.PASSWORD');
         $str = config('const.consts.alpha');
+        $lisence = config('const.consts.LISENCE');
+        // 顧客用IDの作成
+        $aExamid = [];
+        for($i=0; $i < $request->testcount; $i++){
+            $aExamid[] = substr(str_shuffle(str_repeat($str, 10)), 0, 3);
+        }
+        $aExamid = $this->checkAndRebuild($aExamid,$request->testcount);
+
 
         DB::beginTransaction();
         try{
@@ -314,14 +353,14 @@ class TestController extends UserController
             $loginUser = auth()->user()->currentAccessToken();
             $admin_id = $loginUser->tokenable->id;
             // 管理者でログインしたとき
-            /*
-            if($loginUser->tokenable->type == "admin"){
-                $result = User::find($user_id)->where("admin_id",$admin_id)->count();
-                if($result < 1){
-                    throw new Exception();
-                }
-            }
-                */
+
+            // if($loginUser->tokenable->type == "admin"){
+            //     $result = User::find($user_id)->where("admin_id",$admin_id)->count();
+            //     if($result < 1){
+            //         throw new Exception();
+            //     }
+            // }
+
             if(!$this->checkuser($user_id)){
                 throw new Exception();
             }
@@ -358,7 +397,6 @@ class TestController extends UserController
             $params["created_at"]=date("Y-m-d H:i:s");
             Test::insert($params);
             $id = DB::getPdo()->lastInsertId();
-
             $pdf = $request->pdf;
             foreach($pdf as $value){
                 if($value['value']){
@@ -372,54 +410,55 @@ class TestController extends UserController
                     }
                 }
             }
-
             $parts = $request->parts;
-            var_dump($parts);
+            $codePfs = $lisence[1]['list'][5]['code'];
+
             foreach($parts as $key=>$value){
                 $params = [];
-                if($key === "PFS"){
+                if(isset($value[$codePfs]) &&  $value[$codePfs]){
+                    $codePfs = $lisence[1]['list'][5]['code'];
                     $params[ 'test_id' ] = $id;
-                    $params[ 'code' ] = "PFS";
-                    $params[ 'status' ] = $value[ 'status' ] ? 1:0;
-                    $params[ 'threeflag' ] = $value[ 'threeflag' ] ? 1:0;
-                    $params[ 'weightFlag' ] = $value[ 'weightFlag' ]? 1:0;
+                    $params[ 'code' ] = $codePfs;
+                    $params[ 'status' ] = $value[ $codePfs ][ 'status' ] ? 1:0;
+                    $params[ 'threeflag' ] = $value[ $codePfs ][ 'threeflag' ] ? 1:0;
+                    $params[ 'weightFlag' ] = $value[ $codePfs ][ 'weightFlag' ]? 1:0;
                     $params[ 'created_at' ] = date("Y-m-d H:i:s");
                     for($i=1;$i<=14;$i++){
                         $w = "weight".$i;
-                        $params[$w] = (isset($value[ 'weight' ][$i]))?$value[ 'weight' ][$i]:0;
+                        $params[$w] = (isset($value[$codePfs][ 'weight' ][$i]))?$value[$codePfs][ 'weight' ][$i]:0;
+                    }
+                    if(!testparts::insert($params)){
+                        throw new Exception();
+                    }
+                    // テスト一覧修正
+                    $lists = [];
+                    $aChank = array_chunk($aExamid,100,true);
+                    foreach($aChank as $cValue){
+                        foreach($cValue as $cKey => $val){
+                            $lists[$cKey][ 'test_id'     ] = $id;
+                            $lists[$cKey][ 'partner_id'  ] = $request->partner_id;
+                            $lists[$cKey][ 'customer_id' ] = $request->customer_id;
+                            $lists[$cKey][ 'param'    ] = $query;
+                            $lists[$cKey][ 'email'    ] = $val;
+                            $lists[$cKey][ 'password' ] = openssl_encrypt('password', 'aes-256-cbc', $passwd[ 'key' ], 0, $passwd[ 'iv' ]);
+                            $lists[$cKey][ 'type' ] = $codePfs;
+                            $lists[$cKey][ 'created_at' ] = date('Y-m-d H:i:s');
+                        }
+                    }
+                    if(!Exam::Insert($lists)){
+                        throw new Exception();
                     }
 
                 }
-
-                if(!testparts::insert($params)){
-                    throw new Exception();
-                }
-
-                // テスト一覧修正
-                $params = [];
-                for($i=0;$i<$request->testcount;$i++){
-                    $params[$i][ 'test_id'     ] = $id;
-                    $params[$i][ 'partner_id'  ] = $request->partner_id;
-                    $params[$i][ 'customer_id' ] = $request->customer_id;
-                    $params[$i][ 'param'    ] = $query;
-                    $params[$i][ 'email'    ] = substr(str_shuffle(str_repeat($str, 10)), 0, 3);
-                    $params[$i][ 'password' ] = openssl_encrypt('password', 'aes-256-cbc', $passwd[ 'key' ], 0, $passwd[ 'iv' ]);
-                    $params[$i][ 'type' ] = $key;
-                    $params[$i][ 'created_at' ] = date('Y-m-d H:i:s');
-                }
-                if(!Exam::insert($params)){
-                    throw new Exception();
-                }
-
             }
-
             DB::commit();
-            return response($parts, 200);
+            return response('success', 200);
+
         }catch(Exception $e){
             DB::rollBack();
-            return response([], 400);
+            return response('error', 400);
         }
-        return response(true, 200);
+
     }
 
     public function getTestTableTh(Request $request)

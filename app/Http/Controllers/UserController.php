@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\fileuploads;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\userlisence;
@@ -10,6 +11,8 @@ use Exception;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+
 class UserController extends Controller
 {
     //
@@ -40,6 +43,26 @@ class UserController extends Controller
         $filename = uniqid().time().".jpg";
         $request->photo->storeAs('public/app/myImage', $filename);
         return response($filename, 201);
+    }
+    function fileupload(Request $request){
+        $loginUser = auth()->user()->currentAccessToken();
+        $dir = "public/files/file".$request->editid."/";
+        Storage::makeDirectory($dir);
+        $file = $request->file('file');
+        $path = $file->store('uploads', 'public');
+        $filename = $_FILES['file']['name'];
+        //http://localhost:8000/storage/uploads/rzIz9QnmpsWNyNNf7xWyUeprlvByBIxU7YHRuELD.pptx
+        $params = [];
+        $params[ 'partner_id' ] = $request->editid;
+        $params[ 'admin_id' ] = $loginUser->tokenable->id;
+        $params[ 'filename' ] = $filename;
+        $params[ 'filepath' ] = $path;
+        $params[ 'status' ] = 1;
+        $params[ 'created_at' ] = date("Y-m-d H:i:s");
+        $params[ 'updated_at' ] = date("Y-m-d H:i:s");
+
+        fileuploads::insert($params);
+        return response($loginUser, 201);
     }
     function getAdmin(Request $request)
     {

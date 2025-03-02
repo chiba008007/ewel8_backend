@@ -84,10 +84,12 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
 
     Route::post("csv/getPfs", [CsvsController::class, 'getPfs']);
+    Route::post("user/fileupload", [UserController::class, 'fileupload']);
 
 
 });
 Route::post("user/upload", [UserController::class, 'upload']);
+
 Route::post("login", [UserController::class, 'index']);
 Route::apiResource('pref', PrefContrller::class);
 Route::apiResource('element', ElementController::class);

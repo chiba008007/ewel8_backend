@@ -11,6 +11,7 @@ use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\CsvsController;
+use App\Http\Controllers\FileuploadsController;
 use App\Http\Controllers\PDF\PfsController;
 
 /*
@@ -85,6 +86,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post("csv/getPfs", [CsvsController::class, 'getPfs']);
     Route::post("user/fileupload", [UserController::class, 'fileupload']);
+    Route::post("fileupload/list", [FileuploadsController::class, 'list']);
+    Route::post("fileupload/openFlag", [FileuploadsController::class, 'openFlag']);
+    Route::post("fileupload/deleteStatus", [FileuploadsController::class, 'deleteStatus']);
 
 
 });

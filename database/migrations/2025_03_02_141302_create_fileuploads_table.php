@@ -17,6 +17,8 @@ return new class extends Migration
             $table->integer("admin_id");
             $table->string('filename',256)->nullable()->comment("ファイル名");
             $table->string('filepath',256)->nullable()->comment("表示ファイル名");
+            $table->integer("size")->default(0);
+            $table->integer("openflag")->nullable()->default(0)->comment("0:未開封 1:開封済");
             $table->integer("status")->default(1);
             $table->timestamps();
         });

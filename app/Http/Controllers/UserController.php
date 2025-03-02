@@ -51,12 +51,14 @@ class UserController extends Controller
         $file = $request->file('file');
         $path = $file->store('uploads', 'public');
         $filename = $_FILES['file']['name'];
+        $size = $_FILES['file']['size'];
         //http://localhost:8000/storage/uploads/rzIz9QnmpsWNyNNf7xWyUeprlvByBIxU7YHRuELD.pptx
         $params = [];
         $params[ 'partner_id' ] = $request->editid;
         $params[ 'admin_id' ] = $loginUser->tokenable->id;
         $params[ 'filename' ] = $filename;
         $params[ 'filepath' ] = $path;
+        $params[ 'size' ] = $size;
         $params[ 'status' ] = 1;
         $params[ 'created_at' ] = date("Y-m-d H:i:s");
         $params[ 'updated_at' ] = date("Y-m-d H:i:s");

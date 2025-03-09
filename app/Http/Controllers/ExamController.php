@@ -249,7 +249,23 @@ class ExamController extends Controller
         }
         return response("success", 200);
     }
+    function downloadExam(){
+        $loginUser = auth()->user()->currentAccessToken();
+        $id = $loginUser->tokenable->id;
+        $code = $loginUser->tokenable->email;
+        $password = $loginUser->tokenable->password;
+        $passwd = config('const.consts.PASSWORD');
+        $decript = openssl_decrypt($password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
+        $decript = preg_replace("/\//","-",$decript);
+        //header("Location:/pdf/".$id."/code/".$code."/birth/".$decript);
+        $params = [];
+        $params[ 'id' ] = $id;
+        $params[ 'code' ] = $code;
+        $params[ 'decript' ] = $decript;
+        return response($params, 200);
+        exit();
 
+    }
     function resultPFS($testparts_id){
         $loginUser = auth()->user()->currentAccessToken();
         $exam_id = $loginUser->tokenable->id;

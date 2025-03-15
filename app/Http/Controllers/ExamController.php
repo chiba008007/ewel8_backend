@@ -42,6 +42,18 @@ class ExamController extends Controller
         }
         return response("error", 401);
     }
+
+    function setStarttime(){
+        $loginUser = auth()->user()->currentAccessToken();
+
+        $flight = Exam::find($loginUser->tokenable->id);
+        if($flight->started_at == null){
+            $flight->started_at =  date('Y-m-d H:i:s');
+            $flight->save();
+        }
+        return response(true, 200);
+    }
+
     function checkStatus(Request $request){
         $loginUser = auth()->user()->currentAccessToken();
         $exam_id = $loginUser->tokenable->id;

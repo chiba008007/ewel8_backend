@@ -16,7 +16,7 @@ class ExamsTable extends Seeder
         $key = 'ewel_secret_key';
         $iv = "1234567890123456";
         //
-        DB::table('exams')->delete();
+        DB::table('exams')->truncate();
         DB::table('exams')->insert([
             [
             'type' => 'PFS',

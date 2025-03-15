@@ -5,12 +5,13 @@ namespace Database\Seeders;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 use App\Http\Controllers\ExamController;
+
 use Illuminate\Database\Seeder;
 use Database\Seeders\UsersTableSeeder;
 use Database\Seeders\ProductTableSeeder;
 use Database\Seeders\PrefecturesTableSeeder;
 use Database\Seeders\ElementsTable;
-
+use Database\Seeders\ExampfsTable;
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -30,5 +31,6 @@ class DatabaseSeeder extends Seeder
         $this->call(PrefecturesTableSeeder::class);
         $this->call(ElementsTable::class);
         $this->call(ExamsTable::class);
+        $this->call(ExampfsTable::class);
     }
 }

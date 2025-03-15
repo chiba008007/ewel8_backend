@@ -78,16 +78,41 @@ class UserController extends Controller
     function getPartner(Request $request)
     {
         try{
-            $user = User::where('type', $request->type)
-            ->select('users.*')
-            ->orderBy('users.updated_at','DESC')
-            ->selectRaw('SUM(userlisences.num) as total')
-            ->leftjoin('userlisences', 'users.id', '=', 'userlisences.user_id')
-            ->groupBy('users.id')
-            ->get();
-            $response = [
-                'user' => $user,
-            ];
+
+
+            $sql = "
+                    SELECT
+                        *,
+                        (jyuken-syori) as zan,  -- 残数
+                        (total-syori-jyuken) as buy  -- 販売可能
+                    FROM (
+                    SELECT
+                        users.id,
+                        users.name,
+                        (SELECT SUM(userlisences.num)
+                        FROM userlisences
+                        WHERE userlisences.user_id = users.id) as total,
+                        COUNT(exams.id) AS jyuken, -- 受検者数
+                        (
+                        SELECT count(exams.id) -- 購入ライセンス数
+                        FROM exams
+                        WHERE
+                            exams.partner_id = users.id AND
+                            started_at IS NOT NULL AND
+                            ended_at IS NOT NULL
+                        ) AS syori -- 処理数
+                    FROM
+                        users
+                        LEFT JOIN exams ON exams.partner_id = users.id AND exams.deleted_at IS NULL
+                    WHERE
+                        users.type = ?
+                        GROUP BY users.id
+                    ) as a
+
+                    ";
+            $param = [];
+            $param[] = $request->type;
+            $response = DB::select($sql,$param);
             return response($response, 201);
         }catch(\Exception $e){
             return response([], 400);
@@ -431,8 +456,21 @@ class UserController extends Controller
             {
                 throw new Exception();
             }
-
-            $result = User::where("type","customer")->where("partner_id",$request->partner_id)->where("deleted_at",null)
+            $id = $loginUser->tokenable->id;
+            $subQuery = User::
+            select('users.*')
+            ->selectRaw('count(exams.id) AS count')
+            ->selectRaw('(SELECT count(exams.id) FROM exams WHERE started_at IS NOT NULL AND ended_at IS NOT NULL AND deleted_at IS NULL AND exams.customer_id = users.id) AS syori')
+            ->leftjoin('exams', 'users.id', '=', 'exams.customer_id')
+            ->where([
+                "users.type"=>"customer",
+                "users.partner_id"=>$request->partner_id
+                ,"users.admin_id"=>$id
+                ,"users.deleted_at"=>null
+                ])
+            ->groupBy('users.id');
+            $result = User::fromSub($subQuery, 'A')
+            ->selectRaw('A.* , (A.count - A.syori) as zan')
             ->get();
             return response($result, 201);
         }catch(\Exception $e){

@@ -14,7 +14,7 @@ class ElementsTable extends Seeder
     public function run(): void
     {
         //
-        DB::table('elements')->delete();
+        DB::table('elements')->truncate();
         DB::table('elements')->insert([
             [
                 'code' => '1',

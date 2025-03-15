@@ -29,6 +29,8 @@ return new class extends Migration
             $table->integer('passflag')->default(0)->nullable();
             $table->text('memo1')->nullable();
             $table->text('memo2')->nullable();
+            $table->timestamp('started_at')->nullable()->comment('全部試験開始日時');
+            $table->timestamp('ended_at')->nullable()->comment('全部試験終了日時');
             $table->timestamp('deleted_at')->nullable();
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(DB::raw('CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP'));

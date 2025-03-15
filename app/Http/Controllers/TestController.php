@@ -62,13 +62,17 @@ class TestController extends UserController
     public function getQRLists(Request $request){
         $user_id = $request->user_id;
         $test_id = $request->test_id;
-
         try{
             if(!$this->checkuser($user_id)){
                 throw new Exception();
             }
             $passwd = config('const.consts.PASSWORD');
-            $result = Exam::Select("test_id","email","password","name")->where("test_id",$test_id)->where("deleted_at",null)->groupBy("test_id","email")->get();
+            $result = Exam::Select("test_id","email","password","name")
+            ->where([
+                'test_id'=>$test_id
+                ,'customer_id'=>$user_id
+            ])->get();
+
             $list = [];
             $i = 0;
             foreach($result as $value){
@@ -80,6 +84,7 @@ class TestController extends UserController
                 $list[$i][ 'password' ] = ($pwd == "password")?"":$pwd;
                 $i++;
             }
+
         }catch(Exception $e){
             return response([], 400);
         }
@@ -92,7 +97,33 @@ class TestController extends UserController
             if(!$this->checkuser($user_id)){
                 throw new Exception();
             }
-            $result = Test::Where("user_id",$user_id)->get();
+            $result = Test::
+            LeftJoin('exams', function ($join) {
+                $join
+                ->on('exams.customer_id', '=', 'tests.customer_id')
+                ->on('exams.partner_id', '=', 'tests.partner_id')
+                ->on('exams.test_id', '=', 'tests.id')
+                ;
+            })
+            ->Where(
+                [
+                    "tests.user_id"=>$user_id
+                    ,"tests.status"=>1
+                ]
+                )
+            ->select('tests.id'
+            ,'tests.testname'
+            ,'tests.testcount'
+            ,'tests.startdaytime'
+            ,'tests.enddaytime'
+            ,
+            DB::raw('
+                COUNT(CASE WHEN exams.started_at IS NOT NULL AND exams.ended_at IS NOT NULL THEN 1 END) as syori,
+                tests.testcount - COUNT(CASE WHEN exams.started_at IS NOT NULL THEN 1 END) as zan
+                ')
+            )
+            ->groupBy('tests.id')
+            ->get();
         }catch(Exception $e){
             return response([], 400);
         }

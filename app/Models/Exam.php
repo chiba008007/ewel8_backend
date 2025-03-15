@@ -82,17 +82,24 @@ class Exam extends Authenticatable
         }
         $sql = preg_replace("/,$/","",$sql);
 
-try {
-        // $sql = "INSERT INTO exams (test_id,customer_id,partner_id,param,type,email)VALUES(?,?,?,?,?,?) ";
-        // $aline = [1,1,1,'aaa','bbb','ccc'];
-        // $flg = DB::insert($sql, $aline);
-        return DB::insert($sql, $aline);
-}catch(\Exception $e){
-    echo "error\n";
-    var_dump($e);
-}
+        try {
+                return DB::insert($sql, $aline);
+        }catch(\Exception $e){
+            echo "error\n";
+            var_dump($e);
+        }
 
-return true;
-//        return DB::insert($sql, $aline);
+        return true;
+    }
+    public static function setEndTime(){
+        $loginUser = auth()->user()->currentAccessToken();
+        $todo = Exam::find($loginUser->tokenable->id);
+        // 受検を行うテストの総数と受検済みの数が同じときにテスト時間の更新
+        $testcount = testparts::where("test_id",$todo->test_id)->count();
+        $examfin = examfins::where("exam_id",$loginUser->tokenable->id)->count();
+        if(!$todo->ended_at && $testcount === $examfin){
+            $todo->ended_at = date("Y-m-d H:i:s");
+            $todo->save();
+        }
     }
 }

@@ -249,6 +249,7 @@ class ExamController extends Controller
 
         // 最後のページ
         if($request->page == 5){
+
             // 計算
             $this->resultPFS($testparts_id);
             $params = [];
@@ -258,6 +259,9 @@ class ExamController extends Controller
             $params[ 'created_at' ] = date("Y-m-d H:i:s");
             $params[ 'updated_at' ] = date("Y-m-d H:i:s");
             examfins::insert($params);
+
+            // 最終登録データ確認
+            exam::setEndTime();
         }
         return response("success", 200);
     }

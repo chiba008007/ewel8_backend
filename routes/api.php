@@ -13,6 +13,7 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\CsvsController;
 use App\Http\Controllers\FileuploadsController;
 use App\Http\Controllers\PDF\PfsController;
+use App\Http\Controllers\WeightController;
 
 /*
 |--------------------------------------------------------------------------
@@ -84,6 +85,12 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("test/getTestTableTh", [TestController::class, 'getTestTableTh']);
     Route::post("test/getPFSTestDetail", [TestController::class, 'getPFSTestDetail']);
     Route::post("test/getSearchExam", [TestController::class, 'getSearchExam']);
+
+    Route::post("weight/editStatusWeightMaster", [WeightController::class, 'editStatusWeightMaster']);
+    Route::post("weight/editWeightMaster", [WeightController::class, 'editWeightMaster']);
+    Route::post("weight/setWeightMaster", [WeightController::class, 'setWeightMaster']);
+    Route::post("weight/getWeightMaster", [WeightController::class, 'getWeightMaster']);
+    Route::post("weight/getWeightMasterDetail", [WeightController::class, 'getWeightMasterDetail']);
 
 
     Route::post("csv/getPfs", [CsvsController::class, 'getPfs']);

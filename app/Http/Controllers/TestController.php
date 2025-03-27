@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 
 class TestController extends UserController
 {
-
+/*
     public function checkuser($user_id){
         $loginUser = auth()->user()->currentAccessToken();
         $admin_id = $loginUser->tokenable->id;
@@ -26,9 +26,24 @@ class TestController extends UserController
             }
             return true;
         }
+        // パートナーでログイン
+        if($loginUser->tokenable->type == "partner"){
+            $subquery = User::select("admin_id")->where([
+                "id"=>$admin_id
+                ,"deleted_at"=>null
+            ]);
+            $result = DB::table('users')
+            ->whereIn("admin_id",$subquery)
+            ->where("id",$user_id)
+            ->count();
+            if($result < 1){
+                return false;
+            }
+            return true;
+        }
         return false;
     }
-
+*/
     public function getTest(Request $request){
         echo "test";
         exit();

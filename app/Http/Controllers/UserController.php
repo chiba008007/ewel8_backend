@@ -15,6 +15,14 @@ use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
+    const G_ADMIN = "admin";
+    const G_PARTNER = "partner";
+    function checkAdmin(){
+        $loginUser = auth()->user()->currentAccessToken();
+        if($loginUser->tokenable->type != self::G_ADMIN){
+            throw new Exception();
+        }
+    }
     //
     function index(Request $request)
     {
@@ -78,8 +86,7 @@ class UserController extends Controller
     function getPartner(Request $request)
     {
         try{
-
-
+            $this->checkAdmin();
             $sql = "
                     SELECT
                         *,
@@ -450,13 +457,13 @@ class UserController extends Controller
         try{
             // パートナー権限でログインしたとき、パラメータとIDが一致しないときはエラー
             $loginUser = auth()->user()->currentAccessToken();
-            if($loginUser->tokenable->type === 'partner'
-                && $loginUser->tokenable->id != $request->partner_id
-            )
-            {
-                throw new Exception();
-            }
             $id = $loginUser->tokenable->id;
+            if($loginUser->tokenable->type === 'partner')
+            {
+                $id = $loginUser->tokenable->admin_id;
+                //throw new Exception();
+            }
+
             $subQuery = User::
             select('users.*')
             ->selectRaw('count(exams.id) AS count')
@@ -480,11 +487,14 @@ class UserController extends Controller
 
     function getPartnerid(Request $request){
         try{
-            $result = User::select('partner_id')->where("type",$request->type)->where("id",$request->id)->where("deleted_at",null)
+            $result = User::select('partner_id')
+            //->where("type",$request->type)
+            ->where("id",$request->id)
+            ->where("deleted_at",null)
             ->first();
-            return response($result->partner_id, 201);
+            return response($result->partner_id, 200);
         }catch(\Exception $e){
-            return response(0,401);
+            return response(0,400);
         }
     }
     function getLisencesList(Request $request){
@@ -500,11 +510,20 @@ class UserController extends Controller
     function getUserLisence(Request $request){
         $license = $this->getLicenseListsJP();
         $user_id = $request->user_id;
-        $loginUser = auth()->user()->currentAccessToken();
+       // $loginUser = auth()->user()->currentAccessToken();
+        if(!$this->checkuser($user_id)){
+            throw new Exception();
+        }
 
-        $admin = $loginUser->tokenable;
+        // $admin = $loginUser->tokenable;
+        // var_dump($admin->id);
         $customer = User::find($user_id);
-        $partner = User::where("admin_id",$admin->id)->where("id",$customer->partner_id)->where("deleted_at",null)->first();
+        $partner = User::where(
+            [
+                "admin_id"=>$this->admin_id,
+                "id"=>$customer->partner_id,
+                "deleted_at"=>null
+            ])->first();
         $result = userlisence::where("user_id",$partner->id)->orderby("code")->get();
         foreach($result as $k=>$value){
             $result[ $k ][ 'jp' ] = $license[$value[ 'code' ]];
@@ -515,10 +534,18 @@ class UserController extends Controller
         $license = $this->getLicenseListsJP();
         $user_id = $request->user_id;
         $loginUser = auth()->user()->currentAccessToken();
+        if(!$this->checkuser($user_id)){
+            throw new Exception();
+        }
 
-        $admin = $loginUser->tokenable;
         $customer = User::find($user_id);
-        $partner = User::where("admin_id",$admin->id)->where("id",$customer->partner_id)->where("deleted_at",null)->first();
+        $partner = User::where(
+            [
+                "admin_id"=>$this->admin_id,
+                "id"=>$customer->partner_id,
+                "deleted_at"=>null
+            ])->first();
+
         $result = userlisence::where("user_id",$partner->id)->orderby("code")->get();
         foreach($result as $k=>$value){
             $result[ $k ][ 'jp' ] = $license[$value[ 'code' ]];
@@ -592,12 +619,16 @@ class UserController extends Controller
         return response($partner, 200);
     }
     function customerEdit(Request $request){
-        $loginUser = auth()->user()->currentAccessToken();
-        $admin_id = $loginUser->tokenable->id;
+//        $loginUser = auth()->user()->currentAccessToken();
+//        $admin_id = $loginUser->tokenable->id;
         $partner_id = $request->partner_id;
         $id = $request->id;
 
-        $user = User::where(['id'=>$id,'partner_id'=>$partner_id,'admin_id'=>$admin_id]);
+        if(!$this->checkuser($partner_id)){
+            throw new Exception();
+        }
+
+        $user = User::where(['id'=>$id,'partner_id'=>$partner_id,'admin_id'=>$this->admin_id]);
         $passwd = config('const.consts.PASSWORD');
         $password = openssl_encrypt($request->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
 

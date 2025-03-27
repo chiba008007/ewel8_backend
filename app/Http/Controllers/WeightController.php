@@ -31,11 +31,12 @@ class WeightController extends Controller
         }
     }
     public function getPartnerId($customer_id){
+        $this->checkuser($customer_id);
         $loginUser = auth()->user()->currentAccessToken();
         $customer = User::where("type","customer")
             ->where('id',$customer_id)
             ->where('deleted_at',null);
-        $customer->where("admin_id",$loginUser->tokenable->id);
+        $customer->where("admin_id",$this->admin_id);
         $customer = $customer->first();
         return $customer;
     }

@@ -13,6 +13,7 @@ class CsvsController extends TestController
 {
     //
     public function getPfs(Request $request){
+        $code = "PFS";
         $user_id = $request->user_id;
         $test_id = $request->test_id;
         try{
@@ -25,7 +26,6 @@ class CsvsController extends TestController
             ->join('users as a', 'tests.user_id', '=', 'a.id')
             ->join('users as b', 'a.partner_id', '=', 'b.id')
             ->first();
-
 
             $exam = DB::select("
                 SELECT * FROM exams WHERE test_id = ?
@@ -45,13 +45,14 @@ class CsvsController extends TestController
                         FROM
                             exampfses
                         WHERE
-                            testparts_id = (SELECT id FROM testparts WHERE test_id = ?) AND
+                            testparts_id = (SELECT id FROM testparts WHERE test_id = ? AND code=?) AND
                             endtime IS NOT NULL
                         GROUP BY exam_id
                 )
                 "
-                , [$test_id]
+                , [$test_id,$code]
             );
+
             $passwd = config('const.consts.PASSWORD');
             $set = [];
             foreach($pfs as $value){

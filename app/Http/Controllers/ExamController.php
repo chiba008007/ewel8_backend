@@ -157,8 +157,11 @@ class ExamController extends Controller
             $result = Test::select(
                 "tests.*","testparts.code","testparts.id as testparts_id","examfins.status as examstatus"
             )
-            ->leftJoin("testparts","testparts.test_id","=","tests.id")
-            //->leftJoin("examfins","examfins.testparts_id","=","testparts.id")
+            // ->leftJoin("testparts","testparts.test_id","=","tests.id")
+            ->leftJoin("testparts",function($join) {
+                $join->on("testparts.test_id","=","tests.id")
+                ->where("testparts.status","=",1);
+            })
             ->leftJoin("examfins",function($join) use($examid)  {
                 $join->on("examfins.testparts_id","=","testparts.id")
                 ->where("examfins.exam_id","=",$examid);

@@ -498,13 +498,38 @@ class UserController extends Controller
         }
     }
     function getLisencesList(Request $request){
-        // $loginUser = auth()->user()->currentAccessToken();
-        // var_dump($loginUser->tokenable->id);
         try{
-            $result = userlisence::where("user_id",$request->user_id)->orderby("code")->get();
-            return response($result, 201);
+
+            /*
+            $result = DB::table('userlisences as ul')
+                ->leftJoin(
+                    DB::raw('(SELECT
+                    partner_id,
+                    COUNT(id) as exam_count,
+                    COUNT(CASE WHEN started_at IS NOT NULL THEN 1 END) as started_exam_count,
+                    COUNT(CASE WHEN ended_at IS NULL THEN 1 END) as ended_exam_count
+                        FROM
+                    exams
+                        GROUP BY partner_id) as e'
+                    ),
+                    function($join) {
+                        $join->on('ul.user_id', '=', 'e.partner_id');
+                    })
+                ->where('ul.user_id', $request->user_id)
+                ->select(
+                    'ul.user_id',
+                    'ul.num',
+                    'ul.code',
+                    DB::raw('COALESCE(e.exam_count, 0) as exam_count'),
+                    DB::raw('COALESCE(e.started_exam_count, 0) as syori'),
+                    DB::raw('COALESCE(e.ended_exam_count, 0) as zan')
+                )
+                ->get();
+            */
+            $result = [];
+            return response($result, 200);
         }catch(\Exception $e){
-            return response([],401);
+            return response([],400);
         }
     }
     function getUserLisence(Request $request){

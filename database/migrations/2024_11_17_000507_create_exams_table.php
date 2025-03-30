@@ -14,7 +14,6 @@ return new class extends Migration
     {
         Schema::create('exams', function (Blueprint $table) {
             $table->id();
-            $table->string('type');
             $table->integer('test_id');
             $table->integer('customer_id');
             $table->integer('partner_id');

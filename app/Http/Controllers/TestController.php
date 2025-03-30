@@ -148,35 +148,35 @@ class TestController extends UserController
     public function getTestDetail(Request $request){
         $user_id = $request->user_id;
         $test_id = $request->test_id;
+        $rlt = [];
         if($this->checkuser($user_id)){
-            // PFSの受検者情報取得
-            $rlt = [];
-            $rlt['detail'] = Test::select(["tests.*","testparts.threeflag"])
-            ->join("testparts","testparts.test_id","=","tests.id")
-            ->where("tests.user_id",$user_id)
-            ->where("tests.id",$test_id)
-            ->first();
+            $passwd = config('const.consts.PASSWORD');
             $rlt['exams'] = Exam::select(["exams.*"])
             ->where("exams.test_id",$test_id)
             ->where("exams.customer_id",$user_id)
             ->where("exams.deleted_at","=",null)
             ->orderby("exams.id","ASC")
             ->get();
-            $pfsArray = $this->getPFSDetail($test_id,$rlt['detail'][ 'threeflag' ]);
-            $passwd = config('const.consts.PASSWORD');
-            foreach($rlt[ 'exams' ] as $key=>$value)
-            {
+//var_dump($rlt['exams']);
+
+            foreach($rlt[ 'exams' ] as $key=>$value){
                 $pwd = openssl_decrypt($value->password,'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
                 $rlt[ 'exams' ][$key]->birth = ($pwd === "password" || $pwd === "Test") ? "":$pwd;
-                // PFSの受検者情報
-
-                if(isset($pfsArray[$value->id])){
-                    $rlt[ 'exams' ][$key]->endtime = (isset($pfsArray[$value->id]['endtime']))?$pfsArray[$value->id]['endtime']:'';
-                    $rlt[ 'exams' ][$key]->level = (isset($pfsArray[$value->id]['level']))?$pfsArray[$value->id]['level']:'';
-                    $rlt[ 'exams' ][$key]->lv = (isset($pfsArray[$value->id]['lv']))?$pfsArray[$value->id]['lv']:'';
-                    $rlt[ 'exams' ][$key]->score = (isset($pfsArray[$value->id]['score']))?$pfsArray[$value->id]['score']:'';
+            }
+            $testparts = testparts::
+                where("testparts.test_id",$test_id)
+                ->get();
+            $pfsArray = [];
+            foreach($testparts as $key=>$value){
+                if($value['code'] === 'PFS'){
+                    $pfsArray = $this->getPFSDetail($test_id,$value[ 'threeflag' ]);
                 }
             }
+            foreach($rlt[ 'exams' ] as $key=>$value){
+                // PFSデータの表示
+                $rlt['exams'][$key]['pfs'] = (isset($pfsArray[$value->id]))?$pfsArray[$value->id]:[];
+            }
+
             return response($rlt, 200);
 
         }else{
@@ -185,33 +185,29 @@ class TestController extends UserController
     }
 
     private function getPFSDetail($test_id,$threeflag = 0){
+        $code = "PFS";
         $sql = "
             SELECT
-                exam_id,
-                testparts_id,
-                DATE_FORMAT(endtime,'%Y/%m/%d') as endtime,
-                id,
-                level,
-                dev1,
-                dev2,
-                dev3,
-                dev6
+                e.exam_id,
+                e.testparts_id,
+                DATE_FORMAT(e.endtime, '%Y/%m/%d') AS endtime,
+                e.id,
+                e.level,
+                e.dev1,
+                e.dev2,
+                e.dev3,
+                e.dev6
             FROM
-                exampfses
-            WHERE
-                id IN
-            (
-                SELECT
-                    MAX(id) as id
-                FROM
-                    exampfses
-                WHERE
-                    testparts_id=(SELECT id FROM testparts WHERE test_id = ?)
-                GROUP BY exam_id,testparts_id
-            )
-            ";
+                exampfses e
+            JOIN
+                (SELECT MAX(id) AS id
+                FROM exampfses
+                WHERE testparts_id = (SELECT id FROM testparts WHERE test_id = ? AND code = ?)
+                GROUP BY exam_id, testparts_id) AS max_ids
+            ON e.id = max_ids.id;
+        ";
 
-        $pfsdetails = DB::select($sql, [$test_id]);
+        $pfsdetails = DB::select($sql, [$test_id, $code]);
         $pfsArray = [];
         foreach($pfsdetails as $value){
             $pfsArray[$value->exam_id]['endtime'] = $value->endtime;
@@ -398,19 +394,10 @@ class TestController extends UserController
             //所定のユーザーIDが利用可能かチェック
             $loginUser = auth()->user()->currentAccessToken();
             $admin_id = $loginUser->tokenable->id;
-            // 管理者でログインしたとき
-
-            // if($loginUser->tokenable->type == "admin"){
-            //     $result = User::find($user_id)->where("admin_id",$admin_id)->count();
-            //     if($result < 1){
-            //         throw new Exception();
-            //     }
-            // }
 
             if(!$this->checkuser($user_id)){
                 throw new Exception();
             }
-
             $params = [];
             $params["params"]=$query;
             $params["partner_id"]=$request->partner_id;
@@ -458,10 +445,13 @@ class TestController extends UserController
             }
             $parts = $request->parts;
             $codePfs = $lisence[1]['list'][5]['code'];
+            $codeBAJ3 = preg_replace("/\-/","",$lisence[1]['list'][3]['code']);
 
             foreach($parts as $key=>$value){
                 $params = [];
-                if(isset($value[$codePfs]) &&  $value[$codePfs]){
+                if(
+                    ( isset($value[$codePfs]) &&  $value[$codePfs] ) //PFSの登録
+                ){
                     $codePfs = $lisence[1]['list'][5]['code'];
                     $params[ 'test_id' ] = $id;
                     $params[ 'code' ] = $codePfs;
@@ -473,30 +463,51 @@ class TestController extends UserController
                         $w = "weight".$i;
                         $params[$w] = (isset($value[$codePfs][ 'weight' ][$i]))?$value[$codePfs][ 'weight' ][$i]:0;
                     }
+
                     if(!testparts::insert($params)){
                         throw new Exception();
                     }
-                    // テスト一覧修正
-                    $lists = [];
-                    $aChank = array_chunk($aExamid,100,true);
-                    foreach($aChank as $cValue){
-                        foreach($cValue as $cKey => $val){
-                            $lists[$cKey][ 'test_id'     ] = $id;
-                            $lists[$cKey][ 'partner_id'  ] = $request->partner_id;
-                            $lists[$cKey][ 'customer_id' ] = $request->customer_id;
-                            $lists[$cKey][ 'param'    ] = $query;
-                            $lists[$cKey][ 'email'    ] = $val;
-                            $lists[$cKey][ 'password' ] = openssl_encrypt('password', 'aes-256-cbc', $passwd[ 'key' ], 0, $passwd[ 'iv' ]);
-                            $lists[$cKey][ 'type' ] = $codePfs;
-                            $lists[$cKey][ 'created_at' ] = date('Y-m-d H:i:s');
-                        }
-                    }
-                    if(!Exam::Insert($lists)){
-                        throw new Exception();
+                }
+
+                if(
+                    ( isset($value[$codeBAJ3]) &&  $value[$codeBAJ3] ) //BAJ3の登録
+                ){
+                    $params[ 'test_id' ] = $id;
+                    $params[ 'code' ] = $codeBAJ3;
+                    $params[ 'status' ] = $value[ $codeBAJ3 ][ 'status' ] ? 1:0;
+                    $params[ 'threeflag' ] = $value[ $codeBAJ3 ][ 'threeflag' ] ? 1:0;
+                    $params[ 'weightFlag' ] = $value[ $codeBAJ3 ][ 'weightFlag' ]? 1:0;
+                    $params[ 'created_at' ] = date("Y-m-d H:i:s");
+                    for($i=1;$i<=14;$i++){
+                        $w = "weight".$i;
+                        $params[$w] = (isset($value[$codeBAJ3][ 'weight' ][$i]))?$value[$codeBAJ3][ 'weight' ][$i]:0;
                     }
 
+                    if(!testparts::insert($params)){
+                        throw new Exception();
+                    }
+                }
+
+            }
+
+            // テスト一覧修正
+            $lists = [];
+            $aChank = array_chunk($aExamid,100,true);
+            foreach($aChank as $cValue){
+                foreach($cValue as $cKey => $val){
+                    $lists[$cKey][ 'test_id'     ] = $id;
+                    $lists[$cKey][ 'partner_id'  ] = $request->partner_id;
+                    $lists[$cKey][ 'customer_id' ] = $request->customer_id;
+                    $lists[$cKey][ 'param'    ] = $query;
+                    $lists[$cKey][ 'email'    ] = $val;
+                    $lists[$cKey][ 'password' ] = openssl_encrypt('password', 'aes-256-cbc', $passwd[ 'key' ], 0, $passwd[ 'iv' ]);
+                    $lists[$cKey][ 'created_at' ] = date('Y-m-d H:i:s');
                 }
             }
+            if(!Exam::Insert($lists)){
+                throw new Exception();
+            }
+
             DB::commit();
             return response('success', 200);
 
@@ -529,7 +540,7 @@ class TestController extends UserController
 
         $exam_id = $request->exam_id;
         $testparts_id = $request->testparts_id;
-
+/*
         $sql = "
             SELECT
                 *
@@ -548,8 +559,25 @@ class TestController extends UserController
                 GROUP BY exam_id,testparts_id
             )
             ";
-
-        $pfsdetails = DB::select($sql, [$testparts_id,$exam_id]);
+*/
+        $sql = "
+            SELECT
+                *
+            FROM
+                exampfses
+            WHERE
+                id =
+            (
+                SELECT
+                    MAX(id) as id
+                FROM
+                    exampfses
+                WHERE
+                    exam_id=?
+                GROUP BY exam_id,testparts_id
+            )
+            ";
+        $pfsdetails = DB::select($sql, [$exam_id]);
         $ans_data = config('const.consts.PFS3');
         $result = $ans_data[$pfsdetails[0]->soyo];
         return response($result , 200);

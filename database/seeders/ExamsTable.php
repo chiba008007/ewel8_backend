@@ -19,7 +19,6 @@ class ExamsTable extends Seeder
         DB::table('exams')->truncate();
         DB::table('exams')->insert([
             [
-            'type' => 'PFS',
             'test_id'=>1,
             'customer_id'=>1,
             'partner_id'=>1,

@@ -55,7 +55,12 @@ class TestController extends UserController
             if(!$this->checkuser($user_id)){
                 throw new Exception();
             }
-            $result = testparts::Where("test_id",$test_id)->get();
+            $result = testparts::Where(
+                [
+                    "test_id"=>$test_id
+                    ,"status"=>1
+                ]
+                )->get();
         }catch(Exception $e){
             return response([], 400);
         }

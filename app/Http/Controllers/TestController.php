@@ -138,8 +138,8 @@ class TestController extends UserController
             ,'tests.enddaytime'
             ,
             DB::raw('
-                COUNT(CASE WHEN exams.started_at IS NOT NULL AND exams.ended_at IS NOT NULL THEN 1 END) as syori,
-                tests.testcount - COUNT(CASE WHEN exams.started_at IS NOT NULL THEN 1 END) as zan
+                COUNT(CASE WHEN exams.started_at IS NOT NULL  THEN 1 END) as syori,
+                tests.testcount - COUNT(CASE WHEN exams.ended_at IS NOT NULL THEN 1 END) as zan
                 ')
             )
             ->groupBy('tests.id')

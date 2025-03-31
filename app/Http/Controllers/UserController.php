@@ -105,8 +105,7 @@ class UserController extends Controller
                         FROM exams
                         WHERE
                             exams.partner_id = users.id AND
-                            started_at IS NOT NULL AND
-                            ended_at IS NOT NULL
+                            started_at IS NOT NULL
                         ) AS syori -- 処理数
                     FROM
                         users
@@ -467,7 +466,7 @@ class UserController extends Controller
             $subQuery = User::
             select('users.*')
             ->selectRaw('count(exams.id) AS count')
-            ->selectRaw('(SELECT count(exams.id) FROM exams WHERE started_at IS NOT NULL AND ended_at IS NOT NULL AND deleted_at IS NULL AND exams.customer_id = users.id) AS syori')
+            ->selectRaw('(SELECT count(exams.id) FROM exams WHERE started_at IS NOT NULL AND  deleted_at IS NULL AND exams.customer_id = users.id) AS syori')
             ->leftjoin('exams', 'users.id', '=', 'exams.customer_id')
             ->where([
                 "users.type"=>"customer",
@@ -500,6 +499,27 @@ class UserController extends Controller
     function getLisencesList(Request $request){
         try{
 
+            $result = DB::table('exams as e')
+                ->leftJoin('testparts as t', 'e.test_id', '=', 't.test_id')
+                ->leftJoin('examfins as ef', function ($join) {
+                    $join->on('ef.exam_id', '=', 'e.id')
+                        ->on('ef.testparts_id', '=', 't.id');
+                })
+                ->leftJoin('userlisences as u', function ($join) use ($request) {
+                    $join->on(DB::raw('REPLACE(u.code, "-", "")'), '=', 't.code')
+                        ->where('u.user_id', $request->user_id);
+                })
+                ->where('e.partner_id', $request->user_id)
+                ->select(
+                    't.code',
+                    'u.num',
+                    DB::raw('COUNT(CASE WHEN t.status = 1 THEN 1 END) as exam_count'),
+                    DB::raw('COUNT(CASE WHEN e.started_at IS NOT NULL AND t.status = 1 THEN 1 END) as started_exam_count'),
+                    DB::raw('COUNT(CASE WHEN ef.status = 1 THEN 1 END) as ended_exam_count')
+                )
+                ->groupBy('t.code', 'u.num')
+                ->get();
+
             /*
             $result = DB::table('userlisences as ul')
                 ->leftJoin(
@@ -526,7 +546,6 @@ class UserController extends Controller
                 )
                 ->get();
             */
-            $result = [];
             return response($result, 200);
         }catch(\Exception $e){
             return response([],400);

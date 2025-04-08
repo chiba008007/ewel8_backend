@@ -162,8 +162,6 @@ class TestController extends UserController
             ->where("exams.deleted_at","=",null)
             ->orderby("exams.id","ASC")
             ->get();
-//var_dump($rlt['exams']);
-
             foreach($rlt[ 'exams' ] as $key=>$value){
                 $pwd = openssl_decrypt($value->password,'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
                 $rlt[ 'exams' ][$key]->birth = ($pwd === "password" || $pwd === "Test") ? "":$pwd;
@@ -188,7 +186,42 @@ class TestController extends UserController
             return response([],400);
         }
     }
+    public function getTestEditData(Request $request){
+        $id = $request->id;
+        $user_id = $request->user_id;
+        if($this->checkuser($user_id)){
+            $rlt = [];
+            $rlt['test'] =
+            Test::select(["tests.*"])
+            ->where([
+                'id'=>$id,
+                'user_id'=>$user_id,
+                'status'=>1
+            ])
+            ->first();
+            $testparts = testparts::
+            where([
+                'test_id'=>$id,
+                'status'=>1
+            ])
+            ->get();
+            $list = [];
+            foreach($testparts as $value) {
+                $list[$value->code] = $value;
+            }
+            $rlt['testparts'] = $list;
 
+
+            $rlt['testpdf'] = testpdf::
+            where([
+                'test_id'=>$id,
+                'status'=>1
+            ])
+            ->get();
+            return response($rlt, 200);
+        }
+        return response([], 400);
+    }
     private function getPFSDetail($test_id,$threeflag = 0){
         $code = "PFS";
         $sql = "
@@ -382,15 +415,10 @@ class TestController extends UserController
     public function setTest(Request $request)
     {
         $query = substr(bin2hex(random_bytes(8)), 0, 8);
-        $passwd = config('const.consts.PASSWORD');
-        $str = config('const.consts.alpha');
+
+
         $lisence = config('const.consts.LISENCE');
-        // 顧客用IDの作成
-        $aExamid = [];
-        for($i=0; $i < $request->testcount; $i++){
-            $aExamid[] = substr(str_shuffle(str_repeat($str, 10)), 0, 3);
-        }
-        $aExamid = $this->checkAndRebuild($aExamid,$request->testcount);
+
 
 
         DB::beginTransaction();
@@ -436,8 +464,9 @@ class TestController extends UserController
             Test::insert($params);
             $id = DB::getPdo()->lastInsertId();
             $pdf = $request->pdf;
-            foreach($pdf as $value){
-                if($value['value']){
+
+            foreach($pdf as $key => $value){
+                if($key > 0 && $value['value']){
                     $params = [];
                     $params['test_id'] = $id;
                     $params['pdf_id'] = $value['key'];
@@ -448,7 +477,11 @@ class TestController extends UserController
                     }
                 }
             }
+
             $parts = $request->parts;
+
+            $lisence = config('const.consts.LISENCE');
+
             $codePfs = $lisence[1]['list'][5]['code'];
             $codeBAJ3 = preg_replace("/\-/","",$lisence[1]['list'][3]['code']);
 
@@ -495,23 +528,8 @@ class TestController extends UserController
 
             }
 
-            // テスト一覧修正
-            $lists = [];
-            $aChank = array_chunk($aExamid,100,true);
-            foreach($aChank as $cValue){
-                foreach($cValue as $cKey => $val){
-                    $lists[$cKey][ 'test_id'     ] = $id;
-                    $lists[$cKey][ 'partner_id'  ] = $request->partner_id;
-                    $lists[$cKey][ 'customer_id' ] = $request->customer_id;
-                    $lists[$cKey][ 'param'    ] = $query;
-                    $lists[$cKey][ 'email'    ] = $val;
-                    $lists[$cKey][ 'password' ] = openssl_encrypt('password', 'aes-256-cbc', $passwd[ 'key' ], 0, $passwd[ 'iv' ]);
-                    $lists[$cKey][ 'created_at' ] = date('Y-m-d H:i:s');
-                }
-            }
-            if(!Exam::Insert($lists)){
-                throw new Exception();
-            }
+
+            $this->testExamsInsert($query, $request, $id, $request->testcount);
 
             DB::commit();
             return response('success', 200);
@@ -521,6 +539,183 @@ class TestController extends UserController
             return response('error', 400);
         }
 
+    }
+
+    public function editTest(Request $request)
+    {
+        DB::beginTransaction();
+        try{
+            $user_id = $request->user_id;
+            $customer_id = $request->customer_id;
+            $edit_id = $request->edit_id;
+            //所定のユーザーIDが利用可能かチェック
+            $loginUser = auth()->user()->currentAccessToken();
+            $admin_id = $loginUser->tokenable->id;
+
+            if(!$this->checkuser($user_id)){
+                throw new Exception();
+            }
+
+            $test = Test::find($edit_id);
+            $basetestcount = $test->first()->testcount;
+            $params = $test->first()->params;
+
+            // 受検者数の確認
+            // 登録元の人数より少ない人数を指定するとき
+            $deleteCount = 0;
+            $addCount = 0;
+            if($basetestcount > $request->testcount){
+                $usedTestCount = Exam::where([
+                    "test_id"=>$edit_id,
+                    "customer_id"=>$customer_id,
+                    "deleted_at"=>null,
+                    "name"=>null
+                    ])->count();
+                if($basetestcount - $usedTestCount > $request->testcount ){
+                    // 想定以上の数の削除を行っているためエラー
+                    echo "count Over";
+                    throw new Exception();
+                }
+                $deleteCount = $basetestcount-$request->testcount;
+            }
+            if($basetestcount < $request->testcount){
+                $addCount = $request->testcount-$basetestcount;
+            }
+            // テストを減らしたさいのテスト削除
+            $ids = Exam::
+                Where([
+                    "test_id"=>$edit_id,
+                    "customer_id"=>$customer_id,
+                    "deleted_at"=>null,
+                    "name"=>null
+                ])
+                ->orderBy('id', 'desc')
+                ->take($deleteCount)
+                ->pluck('id');
+            Exam::whereIn('id', $ids)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+            $this->testExamsInsert($params, $request, $edit_id, $addCount);
+
+            $test->testname = $request->testname;
+            $test->testcount = $request->testcount;
+            $test->nameuseflag = $request->nameuseflag;
+            $test->genderuseflag = $request->genderuseflag;
+            $test->mailremaincount = $request->mailremaincount;
+            $test->startdaytime = $request->startdaytime;
+            $test->enddaytime = $request->enddaytime;
+            $test->resultflag = $request->resultflag;
+            $test->envcheckflag = $request->envcheckflag;
+            $test->enqflag = $request->enqflag;
+            $test->lisencedownloadflag = $request->lisencedownloadflag;
+            $test->examlistdownloadflag = $request->examlistdownloadflag;
+            $test->totaldownloadflag = $request->totaldownloadflag;
+            $test->recomendflag = $request->recomendflag;
+            $test->loginflag = $request->loginflag;
+            $test->logintext = $request->logintext;
+            $test->movietype = $request->movietype;
+            $test->moviedisplayurl = $request->moviedisplayurl;
+            $test->pdfuseflag = $request->pdfuseflag;
+            $test->pdfstartday = $request->pdfstartday;
+            $test->pdfendday = $request->pdfendday;
+            $test->pdfcountflag = $request->pdfcountflag;
+            $test->pdflimitcount = $request->pdflimitcount;
+            $test->save();
+
+            testpdf::where('test_id', $edit_id)
+            ->update(['status' => 0]);
+
+            $pdf = $request->pdf;
+
+            foreach($pdf as $key => $value){
+                if(isset($value[ 'value' ]) && $value[ 'value' ] &&  $key > 0 ){
+                    $params = [];
+                    $params['test_id'] = $edit_id;
+                    $params['pdf_id'] = $value['key'];
+                    $params[ 'status' ] = 1;
+                    $params[ 'created_at'] = date("Y-m-d H:i:s");
+                    if(!testpdf::insert($params)){
+                        throw new Exception();
+                    }
+                 }
+            }
+
+            $parts = $request->parts;
+            $lisence = config('const.consts.LISENCE');
+            $codePfs = $lisence[1]['list'][5]['code'];
+            $codeBAJ3 = preg_replace("/\-/","",$lisence[1]['list'][3]['code']);
+
+            foreach($parts as $key=>$value){
+                $params = [];
+                if(
+                    ( isset($value[$codePfs]) &&
+                    $value[$codePfs] &&
+                    $value[$codePfs][ 'status' ]) //PFSの登録
+                ){
+                    $pfs = testparts::where([
+                        'test_id'=>$edit_id,
+                        'code'=>$codePfs,
+                        'status'=>1
+                    ])->first();
+
+                    $pfs->threeflag = $value[$codePfs]['threeflag']? 1 : 0;
+                    $pfs->weightFlag = $value[$codePfs]['weightFlag']? 1: 0;
+                    $pfs->save();
+
+                }
+
+                if(
+                    (
+                        isset($value[$codeBAJ3]) &&
+                        $value[$codeBAJ3] &&
+                        $value[$codeBAJ3][ 'status' ]) //BAJ3の登録
+                ){
+                    $baj3 = testparts::where([
+                        'test_id'=>$edit_id,
+                        'code'=>$codeBAJ3,
+                        'status'=>1
+                    ])->first();
+                    $baj3->threeflag = $value[$codeBAJ3]['threeflag']?1:0;
+                    $baj3->weightFlag = $value[$codeBAJ3]['weightFlag']?1:0;
+                    $baj3->save();
+                }
+
+            }
+
+            DB::commit();
+            return response('success', 200);
+
+        }catch(Exception $e){
+            DB::rollBack();
+            return response($e, 400);
+        }
+    }
+
+    public function testExamsInsert($query,$request,$id,$testcount)
+    {
+        $passwd = config('const.consts.PASSWORD');
+        // テスト一覧修正
+        // 顧客用IDの作成
+        $str = config('const.consts.alpha');
+        $aExamid = [];
+        for($i=0; $i < $testcount; $i++){
+            $aExamid[] = substr(str_shuffle(str_repeat($str, 10)), 0, 3);
+        }
+        $aExamid = $this->checkAndRebuild($aExamid,$testcount);
+        $lists = [];
+        $aChank = array_chunk($aExamid,100,true);
+        foreach($aChank as $cValue){
+            foreach($cValue as $cKey => $val){
+                $lists[$cKey][ 'test_id'     ] = $id;
+                $lists[$cKey][ 'partner_id'  ] = $request->partner_id;
+                $lists[$cKey][ 'customer_id' ] = $request->customer_id;
+                $lists[$cKey][ 'param'    ] = $query;
+                $lists[$cKey][ 'email'    ] = $val;
+                $lists[$cKey][ 'password' ] = openssl_encrypt('password', 'aes-256-cbc', $passwd[ 'key' ], 0, $passwd[ 'iv' ]);
+                $lists[$cKey][ 'created_at' ] = date('Y-m-d H:i:s');
+            }
+        }
+        if(!Exam::Insert($lists)){
+            throw new Exception();
+        }
     }
 
     public function getTestTableTh(Request $request)

@@ -77,10 +77,12 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("user/getUserLisence", [UserController::class, 'getUserLisence']);
     Route::post("user/getUserLisenceCalc", [UserController::class, 'getUserLisenceCalc']);
     Route::post("test/setTest", [TestController::class, 'setTest']);
+    Route::post("test/editTest", [TestController::class, 'editTest']);
     Route::post("test/getTestList", [TestController::class, 'getTestList']);
     Route::post("test/getQRParam", [TestController::class, 'getQRParam']);
     Route::post("test/getQRLists", [TestController::class, 'getQRLists']);
     Route::post("test/getTestDetail", [TestController::class, 'getTestDetail']);
+    Route::post("test/getTestEditData", [TestController::class, 'getTestEditData']);
     Route::post("test/getCsvList", [TestController::class, 'getCsvList']);
     Route::post("test/getTestTableTh", [TestController::class, 'getTestTableTh']);
     Route::post("test/getPFSTestDetail", [TestController::class, 'getPFSTestDetail']);

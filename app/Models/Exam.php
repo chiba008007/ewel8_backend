@@ -95,7 +95,10 @@ class Exam extends Authenticatable
         $loginUser = auth()->user()->currentAccessToken();
         $todo = Exam::find($loginUser->tokenable->id);
         // 受検を行うテストの総数と受検済みの数が同じときにテスト時間の更新
-        $testcount = testparts::where("test_id",$todo->test_id)->count();
+        $testcount = testparts::where([
+            "test_id"=>$todo->test_id,
+            "status"=>1,
+        ])->count();
         $examfin = examfins::where("exam_id",$loginUser->tokenable->id)->count();
         if(!$todo->ended_at && $testcount === $examfin){
             $todo->ended_at = date("Y-m-d H:i:s");

@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SetUserDataMail;
 
 class UserController extends Controller
 {
@@ -245,6 +247,10 @@ class UserController extends Controller
     }
     function setUserData(Request $request)
     {
+
+        //Mail::to('aaa@ee.jp')->send(new SetUserDataMail('佐藤さん', 'Laravelメールだよ！'));
+
+
         $response = true;
         $loginUser = auth()->user()->currentAccessToken();
         DB::beginTransaction();

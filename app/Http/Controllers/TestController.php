@@ -123,6 +123,7 @@ class TestController extends UserController
                 ->on('exams.customer_id', '=', 'tests.customer_id')
                 ->on('exams.partner_id', '=', 'tests.partner_id')
                 ->on('exams.test_id', '=', 'tests.id')
+                ->whereNull('exams.deleted_at')
                 ;
             })
             ->Where(
@@ -139,7 +140,7 @@ class TestController extends UserController
             ,
             DB::raw('
                 COUNT(CASE WHEN exams.started_at IS NOT NULL  THEN 1 END) as syori,
-                tests.testcount - COUNT(CASE WHEN exams.ended_at IS NOT NULL THEN 1 END) as zan
+                COUNT(CASE WHEN exams.ended_at IS NULL  THEN 1 END) as zan
                 ')
             )
             ->groupBy('tests.id')

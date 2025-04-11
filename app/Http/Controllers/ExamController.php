@@ -20,7 +20,11 @@ class ExamController extends Controller
     {
 
         $passwd = config('const.consts.PASSWORD');
-        $userdata = Exam::where('email', $request->email)->where("test_id",$request->test_id)->first();
+        $userdata = Exam::
+        where('email', $request->email)
+        ->where("test_id",$request->test_id)
+        ->whereNull('deleted_at')
+        ->first();
         $user = Exam::find($userdata[ 'id' ]);
         // パスワードがデフォルト状態(password)の時、パスワードの再設定を行う
         if(openssl_decrypt($user['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']) == "password"){

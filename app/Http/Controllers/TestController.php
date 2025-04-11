@@ -91,7 +91,9 @@ class TestController extends UserController
             ->where([
                 'test_id'=>$test_id
                 ,'customer_id'=>$user_id
-            ])->get();
+            ])
+            ->whereNull('deleted_at')
+            ->get();
 
             $list = [];
             $i = 0;
@@ -219,6 +221,17 @@ class TestController extends UserController
                 'status'=>1
             ])
             ->get();
+
+            // 削除できるテスト残り数
+            $examcount = Exam::where([
+                "test_id"=>$id,
+                'customer_id'=>$user_id,
+            ])
+            ->whereNotNull("started_at")
+            ->whereNull("deleted_at")
+            ->count();
+
+            $rlt['done'] = $examcount;
             return response($rlt, 200);
         }
         return response([], 400);

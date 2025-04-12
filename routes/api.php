@@ -41,6 +41,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("exam/getExamData", [ExamController::class, 'getExamData']);
     Route::post("exam/editExamData", [ExamController::class, 'editExamData']);
     Route::post("exam/getTestExamMenu", [ExamController::class, 'getTestExamMenu']);
+    Route::post("exam/getTestDataExam", [ExamController::class, 'getTestDataExam']);
     Route::post("exam/getExamTestParts", [ExamController::class, 'getExamTestParts']);
     Route::post("exam/getPFS", [ExamController::class, 'getPFS']);
     Route::post("exam/setPFS", [ExamController::class, 'setPFS']);

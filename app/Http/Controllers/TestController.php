@@ -569,15 +569,17 @@ class TestController extends UserController
             if(!$this->checkuser($user_id)){
                 throw new Exception();
             }
-
             $test = Test::find($edit_id);
-            $basetestcount = $test->first()->testcount;
-            $params = $test->first()->params;
-
+            $basetestcount = $test->testcount;
+            $params = $test->params;
             // 受検者数の確認
             // 登録元の人数より少ない人数を指定するとき
             $deleteCount = 0;
             $addCount = 0;
+            if($request->testcount === 0 ){
+                return response('zero success', 200);
+            }
+
             if($basetestcount > $request->testcount){
                 $usedTestCount = Exam::where([
                     "test_id"=>$edit_id,
@@ -597,7 +599,8 @@ class TestController extends UserController
             }
             // テストを減らしたさいのテスト削除
             $ids = Exam::
-                Where([
+                select("exams.id")
+                ->where([
                     "test_id"=>$edit_id,
                     "customer_id"=>$customer_id,
                     "deleted_at"=>null,

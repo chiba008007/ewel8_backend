@@ -256,9 +256,11 @@ class TestController extends UserController
                 FROM exampfses
                 WHERE testparts_id = (SELECT id FROM testparts WHERE test_id = ? AND code = ?)
                 GROUP BY exam_id, testparts_id) AS max_ids
-            ON e.id = max_ids.id;
+            ON e.id = max_ids.id
+            WHERE
+                e.endtime IS NOT NULL;
+            ;
         ";
-
         $pfsdetails = DB::select($sql, [$test_id, $code]);
         $pfsArray = [];
         foreach($pfsdetails as $value){

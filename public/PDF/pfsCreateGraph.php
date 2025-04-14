@@ -66,8 +66,8 @@ $plot = new RadarPlot($data);
 $plot->SetColor('blue@0.2');
 $plot->SetLineWeight(3);
 //$plot->SetFillColor('red@0.7');
-//$plot->mark->SetType(MARK_IMG_SBALL,"red");
-$plot->mark->SetSize(20);
+$plot->mark->SetType(MARK_IMG, 'img/custom_blue_ball.png');
+$plot->mark->SetSize(40);
 
 $graph->Add($plot);
 $filePath = "./images/PDF/radar_chart.png";

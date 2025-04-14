@@ -34,6 +34,9 @@
     .txtcenter{
         text-align:center;
     }
+    .texttop{
+        vertical-align: top;
+    }
     .box{
         border:1px solid #000;
         padding:5px;
@@ -180,7 +183,10 @@
             <td class="td green">受検ID</td>
             <td class="td">{{ $exam->email }}</td>
             <td class="td green">氏名</td>
-            <td class="td" style="width:200px;">{{ $exam->name }}({{ $exam->kana }})</td>
+            <td class="td" style="width:200px;">
+                {{ Str::limit($exam->name, 12, '…') }}
+                ({{ Str::limit($exam->kana, 12, '…') }})
+            </td>
             <td class="td green">年齢</td>
             <td class="td" >{{ $age }}</td>
         </tr>
@@ -264,12 +270,12 @@
             <td class="td green txtcenter" >重視している要素が発揮された場合の特徴</td>
         </tr>
         <tr>
-            <td class="td txtleft wmin">{{ $strong[0]['title'] }}</td>
-            <td class="td txtleft">{{ $strong[0]['note'] }}</td>
+            <td class="td txtleft wmin ">{{ $strong[0]['title'] }}</td>
+            <td class="td txtleft texttop">{{ $strong[0]['note'] }}</td>
         </tr>
         <tr>
             <td class="td txtleft wmin">{{ $strong[1]['title'] }}</td>
-            <td class="td txtleft">{{ $strong[1]['note'] }}</td>
+            <td class="td txtleft texttop">{{ $strong[1]['note'] }}</td>
         </tr>
     </table>
     <div class="footer">powered by Innovation Gate ,Inc.</div>

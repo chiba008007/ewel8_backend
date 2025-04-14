@@ -51,10 +51,13 @@
         width: 100%;
     }
     .min{
-        font-size:12px;
+        font-size:10px;
     }
     .min2{
         font-size:8px;
+    }
+    .middle{
+        font-size:12px;
     }
     .absolute{
         position: absolute;
@@ -89,27 +92,27 @@
         width:24px;
         left:663;
     }
-    .tate00{ top:469; height:1px;}
-    .tate05{ top:455; height:15px;}
-    .tate10{ top:440; height:30px;}
-    .tate15{ top:425; height:45px;}
-    .tate20{ top:413; height:56px;}
-    .tate25{ top:399; height:70px;}
-    .tate30{ top:384; height:86px;}
-    .tate35{ top:370; height:100px;}
-    .tate40{ top:356; height:113px;}
-    .tate45{ top:342; height:127px;}
-    .tate50{ top:327; height:142px;}
-    .tate55{ top:312; height:157px;}
-    .tate60{ top:299; height:171px;}
-    .tate65{ top:287; height:183px;}
-    .tate70{ top:272; height:198px;}
-    .tate75{ top:257; height:213px;}
-    .tate80{ top:242; height:228px;}
-    .tate85{ top:228; height:242px;}
-    .tate90{ top:214; height:256px;}
-    .tate95{ top:199; height:271px;}
-    .tate100{ top:184; height:286px;}
+    .tate00{ top:465; height:1px;}
+    .tate05{ top:451; height:15px;}
+    .tate10{ top:436; height:30px;}
+    .tate15{ top:421; height:45px;}
+    .tate20{ top:409; height:56px;}
+    .tate25{ top:395; height:70px;}
+    .tate30{ top:380; height:86px;}
+    .tate35{ top:366; height:100px;}
+    .tate40{ top:352; height:113px;}
+    .tate45{ top:338; height:127px;}
+    .tate50{ top:323; height:142px;}
+    .tate55{ top:308; height:157px;}
+    .tate60{ top:295; height:171px;}
+    .tate65{ top:283; height:183px;}
+    .tate70{ top:268; height:198px;}
+    .tate75{ top:253; height:213px;}
+    .tate80{ top:238; height:228px;}
+    .tate85{ top:224; height:242px;}
+    .tate90{ top:210; height:256px;}
+    .tate95{ top:195; height:271px;}
+    .tate100{ top:180; height:286px;}
     .center{ text-align: center; }
 </style>
 </head>
@@ -133,7 +136,10 @@
             <td class="td green">受検ID</td>
             <td class="td">{{ $exam->email }}</td>
             <td class="td green">氏名</td>
-            <td class="td" style="width:200px;">{{ $exam->name }}({{ $exam->kana }})</td>
+            <td class="td" style="width:200px;">
+                {{ Str::limit($exam->name, 12, '…') }}
+                ({{ Str::limit($exam->kana, 12, '…') }})
+            </td>
             <td class="td green">年齢</td>
             <td class="td" >{{ $age }}</td>
         </tr>
@@ -143,29 +149,29 @@
         <img src="{{ public_path('images/PDF/pawahara.png') }}" width="100%" />
     </div>
     <div class="absolute bar" style="top:194;left:186;width:{{ $risk[1]['width'] }}px;">&nbsp;</div>
-    <div class="absolute min" style="top:198;left:551;">{{ $risk[1]['point'] }}</div>
-    <div class="absolute min center" style="top:198;left:594;width:50px;">{{ $risk[1]['text'] }}</div>
+    <div class="absolute min" style="top:194;left:551;">{{ $risk[1]['point'] }}</div>
+    <div class="absolute min center" style="top:194;left:594;width:50px;">{{ $risk[1]['text'] }}</div>
     <div class="absolute bar" style="top:240;left:186;width:{{ $risk[2]['width'] }}px;">&nbsp;</div>
-    <div class="absolute min" style="top:244;left:551;">{{ $risk[2]['point'] }}</div>
-    <div class="absolute min center" style="top:244;left:594;width:50px;">{{ $risk[2]['text'] }}</div>
+    <div class="absolute min" style="top:240;left:551;">{{ $risk[2]['point'] }}</div>
+    <div class="absolute min center" style="top:240;left:594;width:50px;">{{ $risk[2]['text'] }}</div>
     <div class="absolute bar" style="top:286;left:186;width:{{ $risk[3]['width'] }}px;">&nbsp;</div>
-    <div class="absolute min" style="top:290;left:551;">{{ $risk[3]['point'] }}</div>
-    <div class="absolute min center" style="top:290;left:594;width:50px;">{{ $risk[3]['text'] }}</div>
+    <div class="absolute min" style="top:286;left:551;">{{ $risk[3]['point'] }}</div>
+    <div class="absolute min center" style="top:286;left:594;width:50px;">{{ $risk[3]['text'] }}</div>
     <div class="absolute bar" style="top:346;left:186;width:{{ $risk[4]['width'] }}px;">&nbsp;</div>
-    <div class="absolute min" style="top:350;left:551;">{{ $risk[4]['point'] }}</div>
-    <div class="absolute min center" style="top:350;left:594;width:50px;">{{ $risk[4]['text'] }}</div>
+    <div class="absolute min" style="top:346;left:551;">{{ $risk[4]['point'] }}</div>
+    <div class="absolute min center" style="top:346;left:594;width:50px;">{{ $risk[4]['text'] }}</div>
     <div class="absolute bar" style="top:393;left:186;width:{{ $risk[5]['width'] }}px;">&nbsp;</div>
     <div class="absolute min" style="top:394;left:551;">{{ $risk[5]['point'] }}</div>
     <div class="absolute min center" style="top:394;left:594;width:50px;">{{ $risk[5]['text'] }}</div>
     <div class="absolute bar" style="top:439;left:186;width:{{ $risk[6]['width'] }}px;">&nbsp;</div>
-    <div class="absolute min" style="top:441;left:551;">{{ $risk[6]['point'] }}</div>
-    <div class="absolute min center" style="top:441;left:594;width:50px;">{{ $risk[6]['text'] }}</div>
+    <div class="absolute min" style="top:439;left:551;">{{ $risk[6]['point'] }}</div>
+    <div class="absolute min center" style="top:439;left:594;width:50px;">{{ $risk[6]['text'] }}</div>
     <div class="absolute tate tate{{ $risk['tate'] }}">&nbsp;</div>
-    <div class="absolute min2" style="top:170;left:680;">({{ $risk[7]['point'] }}/10)</div>
+    <div class="absolute min2" style="top:165;left:680;">({{ $risk[7]['point'] }}/10)</div>
 
-    <div class="mt-3 min">2.パワハラリスクの全体傾向</div>
-    <div class="mt-3 pa-5 box min ht">{{ $risk['pawahararisk'] }}</div>
-    <table class="mt-3 min w-100">
+    <div class="mt-3 middle">2.パワハラリスクの全体傾向</div>
+    <div class="mt-3 pa-5 box middle ht">{{ $risk['pawahararisk'] }}</div>
+    <table class="mt-3 middle w-100">
         <tr>
             <td style="width:50%;">
                 <div >3.一番留意すべき項目の傾向</div>
@@ -175,7 +181,7 @@
             </td>
         </tr>
     </table>
-    <table class="mt-3 min w-100 table2 ">
+    <table class="mt-3 middle w-100 table2 ">
         <tr>
             <td style="width:49%;vertical-align:top;" class="border pa-5 ht2">
                 <div class="ht2">{{ $risk['pattern'][4] }}</div>
@@ -186,7 +192,7 @@
             </td>
         </tr>
     </table>
-    <table class="mt-3 min w-100">
+    <table class="mt-3 middle w-100">
         <tr>
             <td>
                 <div >5.こんな言動に身に覚えがありませんか？</div>
@@ -194,7 +200,7 @@
         </tr>
     </table>
 
-    <table class="mt-3 min w-100 table2" >
+    <table class="mt-3 middle w-100 table2" >
         <tr>
             <td style="width:49%; text-align:center;" class="border pa-3" >
                 ①{{ $risk[ 'pattern' ][ 'remember' ][1] }}
@@ -205,7 +211,7 @@
             </td>
         </tr>
     </table>
-    <table class="min w-100 table2 " style="margin-top:4px;">
+    <table class="middle w-100 table2 " style="margin-top:4px;">
         <tr>
             <td style="width:49%;vertical-align:top;" class="border pa-5 ht2">
                 <div class="ht2">{!! nl2br($risk['pattern'][6]) !!}</div>

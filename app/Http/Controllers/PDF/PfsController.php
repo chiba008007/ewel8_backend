@@ -11,6 +11,7 @@ use App\Libraries\LineBreak;
 
 class PfsController extends Controller
 {
+    public $linebreak;
     //
     function index(Request $request,$id,$code,$birth)
     {
@@ -93,6 +94,7 @@ class PfsController extends Controller
                 $pfsObj = new Pfs();
                 $result = $pfsObj->getPfs($exam->id);
                 $risk = $pfsObj->getRiskPoint($result);
+
                 // パワハラ用棒グラフ画像作成
                 //require_once (public_path()."/PDF/pawaharaCreateGraph.php");
                 $html = view('/PDF/PAWAHARA', [

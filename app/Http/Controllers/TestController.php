@@ -758,27 +758,7 @@ class TestController extends UserController
     public function getPFSTestDetail(Request $request){
 
         $exam_id = $request->exam_id;
-        $testparts_id = $request->testparts_id;
-/*
-        $sql = "
-            SELECT
-                *
-            FROM
-                exampfses
-            WHERE
-                id =
-            (
-                SELECT
-                    MAX(id) as id
-                FROM
-                    exampfses
-                WHERE
-                    testparts_id=(SELECT id FROM testparts WHERE test_id = ?) AND
-                    exam_id=?
-                GROUP BY exam_id,testparts_id
-            )
-            ";
-*/
+
         $sql = "
             SELECT
                 *
@@ -797,7 +777,7 @@ class TestController extends UserController
             )
             ";
         $pfsdetails = DB::select($sql, [$exam_id]);
-        $ans_data = config('const.consts.PFS3');
+        $ans_data = config('const.PFS3.PFS3');
         $result = $ans_data[$pfsdetails[0]->soyo];
         return response($result , 200);
     }

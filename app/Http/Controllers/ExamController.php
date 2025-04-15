@@ -229,7 +229,7 @@ class ExamController extends Controller
         $last = exampfs::select("*")->latest("id")->where("testparts_id",$testparts_id)->where("exam_id",$exam_id)->first();
         // 結果データがあるときは結果をまとめて取得
         if($last->endtime){
-            $ans_data = config('const.consts.PFS3');
+            $ans_data = config('const.PFS3.PFS3');
             $last->result = $ans_data[$last->soyo];
         }
         return response($last, 200);

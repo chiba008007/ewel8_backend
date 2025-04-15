@@ -41,7 +41,7 @@ class Pfs
         arsort($list);
         // 上位2つの値を取得
         $top_two = array_slice($list, 0, 2, true);
-        $PFS3 = config('const.consts.PFS3');
+        $PFS3 = config('const.PFS3.PFS3');
         $title = [];
         $value = get_object_vars($value);
         for($i=1;$i<=12;$i++){
@@ -146,9 +146,9 @@ class Pfs
 	    $rval2 = $ryui2[ 'val' ];
         $rname2 = $ryui2[ 'name' ];
 
-        $aryRyui = config('const.consts.aryRyui');
-        $aryJyog = config('const.consts.aryJyog');
-        $aryLang = config('const.consts.aryLang');
+        $aryRyui = config('const.PFS3.aryRyui');
+        $aryJyog = config('const.PFS3.aryJyog');
+        $aryLang = config('const.PFS3.aryLang');
 
         $val4 = "";
         $val5 = "";
@@ -193,7 +193,7 @@ class Pfs
         if($sougo >= 0.5 && $sougo < 4) $key = 1;
         if($sougo >= 4 && $sougo < 8) $key = 2;
         if($sougo >= 8 ) $key = 3;
-        $pawahararisk = config('const.consts.pawahararisk');
+        $pawahararisk = config('const.PFS3.pawahararisk');
         return $pawahararisk[$key];
     }
 	public function getJpPoint($int){

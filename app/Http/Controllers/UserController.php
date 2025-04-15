@@ -248,8 +248,10 @@ class UserController extends Controller
     function setUserData(Request $request)
     {
 
-        //Mail::to('aaa@ee.jp')->send(new SetUserDataMail('佐藤さん', 'Laravelメールだよ！'));
-
+        if($request->person){
+            Mail::to('aaa@ee.jp')->send(new SetUserDataMail('佐藤さん', 'Laravelメールだよ！'));
+        }
+exit();
 
         $response = true;
         $loginUser = auth()->user()->currentAccessToken();

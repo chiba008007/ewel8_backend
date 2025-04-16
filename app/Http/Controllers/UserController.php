@@ -126,7 +126,7 @@ class UserController extends Controller
             $response = DB::select($sql,$param);
             return response($response, 201);
         }catch(\Exception $e){
-            return response([], 400);
+            return response([], 201);
         }
     }
 
@@ -194,7 +194,7 @@ class UserController extends Controller
         $customer->where("admin_id",$loginUser->tokenable->id);
         $customer = $customer->first();
 
-        return response($customer, 201);
+        return response($customer, 200);
     }
     function getPartnerDetail(Request $request)
     {
@@ -550,7 +550,11 @@ class UserController extends Controller
             select('users.*')
             ->selectRaw('count(exams.id) AS count')
             ->selectRaw('(SELECT count(exams.id) FROM exams WHERE started_at IS NOT NULL AND  deleted_at IS NULL AND exams.customer_id = users.id) AS syori')
-            ->leftjoin('exams', 'users.id', '=', 'exams.customer_id')
+            ->selectRaw('(SELECT count(exams.id) FROM exams WHERE ended_at IS NOT NULL AND  deleted_at IS NULL AND exams.customer_id = users.id ) AS ended')
+            ->leftJoin('exams', function ($join) {
+                    $join->on('exams.customer_id', '=', 'users.id')
+                        ->whereNull('exams.deleted_at');
+                })
             ->where([
                 "users.type"=>"customer",
                 "users.partner_id"=>$request->partner_id
@@ -559,7 +563,8 @@ class UserController extends Controller
                 ])
             ->groupBy('users.id');
             $result = User::fromSub($subQuery, 'A')
-            ->selectRaw('A.* , (A.count - A.syori) as zan')
+            ->selectRaw('A.* , (A.count - A.ended) as zan')
+            ->selectRaw('A.*')
             ->get();
             return response($result, 201);
         }catch(\Exception $e){
@@ -576,7 +581,7 @@ class UserController extends Controller
             ->first();
             return response($result->partner_id, 200);
         }catch(\Exception $e){
-            return response(0,400);
+            return response(0,201);
         }
     }
     function getLisencesList(Request $request){
@@ -584,6 +589,7 @@ class UserController extends Controller
 
             $result = DB::table('exams as e')
                 ->leftJoin('testparts as t', 'e.test_id', '=', 't.test_id')
+                ->leftJoin('tests as ts', 't.test_id', '=', 'ts.id')
                 ->leftJoin('examfins as ef', function ($join) {
                     $join->on('ef.exam_id', '=', 'e.id')
                         ->on('ef.testparts_id', '=', 't.id');
@@ -596,42 +602,16 @@ class UserController extends Controller
                 ->select(
                     't.code',
                     'u.num',
-                    DB::raw('COUNT(CASE WHEN t.status = 1 THEN 1 END) as exam_count'),
                     DB::raw('COUNT(CASE WHEN e.started_at IS NOT NULL AND t.status = 1 THEN 1 END) as started_exam_count'),
-                    DB::raw('COUNT(CASE WHEN ef.status = 1 THEN 1 END) as ended_exam_count')
+                    DB::raw('COUNT(CASE WHEN ef.status = 1 THEN 1 END) as ended_exam_count'),
+                    DB::raw('SUM(DISTINCT CASE WHEN t.status = 1 THEN ts.testcount ELSE 0 END) as exam_count')
                 )
                 ->groupBy('t.code', 'u.num')
                 ->get();
 
-            /*
-            $result = DB::table('userlisences as ul')
-                ->leftJoin(
-                    DB::raw('(SELECT
-                    partner_id,
-                    COUNT(id) as exam_count,
-                    COUNT(CASE WHEN started_at IS NOT NULL THEN 1 END) as started_exam_count,
-                    COUNT(CASE WHEN ended_at IS NULL THEN 1 END) as ended_exam_count
-                        FROM
-                    exams
-                        GROUP BY partner_id) as e'
-                    ),
-                    function($join) {
-                        $join->on('ul.user_id', '=', 'e.partner_id');
-                    })
-                ->where('ul.user_id', $request->user_id)
-                ->select(
-                    'ul.user_id',
-                    'ul.num',
-                    'ul.code',
-                    DB::raw('COALESCE(e.exam_count, 0) as exam_count'),
-                    DB::raw('COALESCE(e.started_exam_count, 0) as syori'),
-                    DB::raw('COALESCE(e.ended_exam_count, 0) as zan')
-                )
-                ->get();
-            */
             return response($result, 200);
         }catch(\Exception $e){
-            return response([],400);
+            return response([],201);
         }
     }
     function getUserLisence(Request $request){
@@ -639,7 +619,8 @@ class UserController extends Controller
         $user_id = $request->user_id;
        // $loginUser = auth()->user()->currentAccessToken();
         if(!$this->checkuser($user_id)){
-            throw new Exception();
+            //throw new Exception();
+            return response("",201);
         }
 
         // $admin = $loginUser->tokenable;
@@ -696,7 +677,7 @@ class UserController extends Controller
             // すでにメールが登録されている
             return response(true, 200);
         }else{
-            return response(true, 400);
+            return response(true, 201);
         }
     }
     function checkLoginID(Request $request){
@@ -733,7 +714,7 @@ class UserController extends Controller
                 throw new Exception();
             }
         }catch(Exception $e){
-                return response("error", 400);
+                return response("error", 201);
         }
     }
     function getUserElement(Request $request){
@@ -792,7 +773,7 @@ class UserController extends Controller
         if($flg){
             return response(true, 200);
         }else{
-            return response(false, 400);
+            return response(false, 201);
         }
     }
 

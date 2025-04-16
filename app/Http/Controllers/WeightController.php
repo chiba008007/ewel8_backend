@@ -27,7 +27,7 @@ class WeightController extends Controller
             Weight::insert($set);
             return response(true, 200);
         }catch(\Exception $e){
-            return response(false, 400);
+            return response(false, 201);
         }
     }
     public function getPartnerId($customer_id){
@@ -73,7 +73,7 @@ class WeightController extends Controller
 
             return response(true, 200);
         }catch(\Exception $e){
-            return response(false, 400);
+            return response(false, 201);
         }
     }
     function editStatusWeightMaster(Request $request){
@@ -95,7 +95,7 @@ class WeightController extends Controller
 
             return response(true, 200);
         }catch(\Exception $e){
-            return response(false, 400);
+            return response(false, 201);
         }
     }
     function getWeightMasterDetail(Request $request){

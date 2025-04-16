@@ -62,7 +62,7 @@ class TestController extends UserController
                 ]
                 )->get();
         }catch(Exception $e){
-            return response([], 400);
+            return response([], 201);
         }
         return response($result, 200);
     }
@@ -75,7 +75,7 @@ class TestController extends UserController
             }
             $result = Test::Where("id",$test_id)->where("user_id",$user_id)->first();
         }catch(Exception $e){
-            return response([], 400);
+            return response([], 201);
         }
         return response($result, 200);
     }
@@ -108,7 +108,7 @@ class TestController extends UserController
             }
 
         }catch(Exception $e){
-            return response([], 400);
+            return response([], 201);
         }
 
         return response($list, 200);
@@ -148,7 +148,7 @@ class TestController extends UserController
             ->groupBy('tests.id')
             ->get();
         }catch(Exception $e){
-            return response([], 400);
+            return response([], 201);
         }
         return response($result, 200);
     }
@@ -186,7 +186,7 @@ class TestController extends UserController
             return response($rlt, 200);
 
         }else{
-            return response([],400);
+            return response([],201);
         }
     }
     public function getTestEditData(Request $request){
@@ -234,7 +234,7 @@ class TestController extends UserController
             $rlt['done'] = $examcount;
             return response($rlt, 200);
         }
-        return response([], 400);
+        return response([], 201);
     }
     private function getPFSDetail($test_id,$threeflag = 0){
         $code = "PFS";
@@ -552,7 +552,7 @@ class TestController extends UserController
 
         }catch(Exception $e){
             DB::rollBack();
-            return response('error', 400);
+            return response('error', 201);
         }
 
     }
@@ -704,7 +704,7 @@ class TestController extends UserController
 
         }catch(Exception $e){
             DB::rollBack();
-            return response($e, 400);
+            return response($e, 201);
         }
     }
 

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\examfins;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ExamController extends Controller
 {
@@ -86,10 +87,10 @@ class ExamController extends Controller
             if($rlt){
                 return response($rlt, 200);
             }else{
-                return response([],400);
+                return response([],201);
             }
         }catch(Exception $e){
-            return response([],400);
+            return response([],201);
         }
     }
     function getExamList(){
@@ -148,7 +149,7 @@ class ExamController extends Controller
             return response(true, 200);
         }catch(Exception $e){
             DB::rollBack();
-            return response(false, 400);
+            return response(false, 201);
         }
 
     }
@@ -175,7 +176,7 @@ class ExamController extends Controller
 
 
         }catch(Exception $e){
-            return response([], 400);
+            return response([], 201);
         }
         return response($result, 200);
     }
@@ -197,7 +198,7 @@ class ExamController extends Controller
             ])
             ->first();
         }catch(Exception $e){
-            return response([], 400);
+            return response([], 201);
         }
 
         return response($result, 200);
@@ -215,7 +216,7 @@ class ExamController extends Controller
             ->where("testparts.id",$testparts_id)
             ->first();
         }catch(Exception $e){
-            return response([], 400);
+            return response([], 201);
         }
         return response($result, 200);
     }
@@ -256,13 +257,18 @@ class ExamController extends Controller
                 throw new Exception();
             }
         }catch(Exception $e){
-            return response("error", 400);
+            return response("error", 201);
         }
     }
     function editPFS(Request $request){
+
         $loginUser = auth()->user()->currentAccessToken();
         $exam_id = $loginUser->tokenable->id;
         $testparts_id = $request->testparts_id;
+        Log::info('PFS検査回答登録');
+        Log::info('ページ数:'.$request->page);
+        Log::info('受検者id:'.$exam_id);
+        Log::info('testparts_id:'.$testparts_id);
         // 最後の1件を取得
         $last = exampfs::select("id")->latest("id")->where("testparts_id",$testparts_id)->where("exam_id",$exam_id)->first();
         $exam = exampfs::find($last[ 'id' ]);
@@ -292,6 +298,9 @@ class ExamController extends Controller
 
             // 最終登録データ確認
             exam::setEndTime();
+            // メール配信受検者残数
+            exam::sendRemainMail($request);
+
         }
         return response("success", 200);
     }

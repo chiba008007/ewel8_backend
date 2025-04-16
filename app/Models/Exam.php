@@ -8,6 +8,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\RemainCountMail;
+use Illuminate\Support\Facades\Log;
 
 class Exam extends Authenticatable
 {
@@ -103,6 +106,50 @@ class Exam extends Authenticatable
         if(!$todo->ended_at && $testcount === $examfin){
             $todo->ended_at = date("Y-m-d H:i:s");
             $todo->save();
+        }
+    }
+    public static function sendRemainMail($request)
+    {
+        $params = $request->params;
+        $tests = DB::table('tests')
+            ->leftJoin('exams', function ($join) {
+                    $join->on('exams.test_id', '=', 'tests.id')
+                        ->whereNull('exams.deleted_at')
+                        ->whereNull('exams.ended_at');
+                })
+            ->select([
+                'tests.mailremaincount',
+                'tests.partner_id',
+                'tests.testname',
+                DB::raw('COUNT(exams.id) as count_examId'),
+                DB::raw("DATE_FORMAT(startdaytime, '%Y/%m/%d') as startdate"),
+                DB::raw("DATE_FORMAT(enddaytime, '%Y/%m/%d') as enddate")
+            ])
+            ->where([
+                "params"=>$params,
+                "status"=>1,
+            ])
+            ->groupBy('tests.id', 'tests.mailremaincount')
+            ->first();
+        $mailremaincount = $tests->mailremaincount;
+        $count_examId = $tests->count_examId;
+        if($mailremaincount === $count_examId && $mailremaincount > 0)
+        {
+            // 受検残数チェックの時にメール
+            $users = DB::table('users')->find($tests->partner_id);
+
+            Log::info('検査数のお知らせ:'.$users->person);
+            Log::info('メールアドレス:'.$users->person_address);
+
+            $mailbody = [];
+            $mailbody[ 'title' ] = "検査数のお知らせ";
+            $mailbody[ 'name' ] = $users->name;
+            $mailbody[ 'person' ] = $users->person;
+            $mailbody[ 'rest' ] = $mailremaincount;
+            $mailbody[ 'testname' ] = $tests->testname;
+            $mailbody[ 'startdate' ] = $tests->startdate;
+            $mailbody[ 'enddate' ] = $tests->enddate;
+            Mail::to($users->person_address)->send(new RemainCountMail($mailbody));
         }
     }
 }

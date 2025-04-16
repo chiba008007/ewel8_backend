@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SetUserDataMail;
+use App\Mail\EditUserDataMail;
+use App\Mail\SetUserDataMailPassword;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -247,11 +250,8 @@ class UserController extends Controller
     }
     function setUserData(Request $request)
     {
-
-        if($request->person){
-            Mail::to('aaa@ee.jp')->send(new SetUserDataMail('佐藤さん', 'Laravelメールだよ！'));
-        }
-exit();
+        Log::info('新規パートナー登録の実施:'.$request);
+        $passwd = config('const.consts.PASSWORD');
 
         $response = true;
         $loginUser = auth()->user()->currentAccessToken();
@@ -262,7 +262,7 @@ exit();
         //         'email' => 'required|unique:users',
         //         //'fax' => 'required',
         //     ]);
-            $passwd = config('const.consts.PASSWORD');
+
             User::insert([
                 "admin_id"=>$loginUser->tokenable->id,
                 'type' => $request['type'],
@@ -301,17 +301,67 @@ exit();
                 'element14' => $request['element14'],
             ]);
 
-            $id = DB::getPdo()->lastInsertId();
+            $user_id = DB::getPdo()->lastInsertId();
 
+            $this->setLicensed($request,$user_id);
+
+
+            Log::info('新規パートナー登録の実施成功:'.$request);
+            // 情報登録メール
+            $mailbody = [];
+            $mailbody[ 'title' ] = "【Welcome-k】 企業情報登録のお知らせ";
+            $mailbody[ 'name' ] = $request->name;
+            $mailbody[ 'systemname' ] = $request->systemname;
+            $mailbody[ 'login_id' ] = $request->login_id;
+            $mailbody[ 'licensesBody' ] = array_sum($request->licensesBody);
+            if($request->person_address){
+                $mailbody[ 'person' ] = $request->person;
+                $mailbody[ 'password' ] = $request['password'];
+                Mail::to($request->person_address)->send(new SetUserDataMail($mailbody));
+                Mail::to($request->person_address)->send(new SetUserDataMailPassword($mailbody));
+            }
+            if($request->person_address2){
+                $mailbody[ 'person' ] = $request->person2;
+                $mailbody[ 'password' ] = $request['password'];
+                Mail::to($request->person_address2)->send(new SetUserDataMail($mailbody));
+                Mail::to($request->person_address2)->send(new SetUserDataMailPassword($mailbody));
+            }
             DB::commit();
-            return response($id, 200);
+            return response("success", 200);
         } catch (\Exception $exception){
+            Log::error('新規パートナー登録の実施失敗:'.$request);
             DB::rollback();
             throw $exception;
         }
     }
+    function setLicensed($data,$user_id){
+        Log::info('ライセンス登録関数の実施:user_id:'.$user_id.":".$data);
+        $licensesKey = $data['licensesKey'];
+        $licensesBody = $data['licensesBody'];
+        foreach($licensesKey as $key=>$value){
+            $license = userlisence::where('code', $value)->where('user_id',$user_id)->first();
+            if($license){
+                $data = userlisence::find($license->id);
+                $data->update([
+                    'num' => $licensesBody[$key],
+                    'updated_at'=>date('Y-m-d H:i:s'),
+                ]);
+            }else{
+                if($licensesBody[$key] > 0 ){
+                    userlisence::insert([
+                        'user_id' => $user_id,
+                        'code' => $value,
+                        'num' => $licensesBody[$key],
+                        'created_at'=>date('Y-m-d H:i:s'),
+                        'updated_at'=>date('Y-m-d H:i:s'),
+                    ]);
+                }
+            }
+        }
+    }
     function editPartnerData(Request $request)
     {
+        Log::info('editPartnerData実施:'.$request);
         DB::beginTransaction();
         try{
             $loginUser = auth()->user()->currentAccessToken();
@@ -333,6 +383,8 @@ exit();
                 "tel"=>$request->tel,
                 "fax"=>$request->fax,
                 "requestFlag"=>$request->requestFlag,
+                "person"=>$request->person,
+                "person_address"=>$request->person_address,
                 "person2"=>$request->person2,
                 "person_address2"=>$request->person_address2,
                 "person_tel"=>$request->person_tel,
@@ -352,14 +404,37 @@ exit();
                 "element13"=>$request->element13,
                 "element14"=>$request->element14,
             ]);
+
+            $this->setLicensed($request,$request->id);
+
+            Log::info('更新パートナーの実施成功:'.$request);
+            // 情報登録メール
+            $mailbody = [];
+            $mailbody[ 'title' ] = "【Welcome-k】 企業情報更新のお知らせ";
+            $mailbody[ 'name' ] = $request->name;
+            $mailbody[ 'systemname' ] = $request->systemname;
+            $mailbody[ 'licensesBody' ] = array_sum($request->licensesBody);
+            if($request->person_address){
+                Log::info('更新パートナーへメール:'.$request->person_address);
+                $mailbody[ 'person' ] = $request->person;
+                Mail::to($request->person_address)->send(new EditUserDataMail($mailbody));
+            }
+            if($request->person_address2){
+                Log::info('更新パートナーへメール:'.$request->person_address2);
+                $mailbody[ 'person' ] = $request->person2;
+                Mail::to($request->person_address2)->send(new EditUserDataMail($mailbody));
+            }
+
             DB::commit();
-            return response($request->id, 200);
+            return response("success", 200);
         } catch (\Exception $exception){
             DB::rollback();
             throw $exception;
         }
-
     }
+
+
+
     function setCustomerAdd(Request $request){
         $req = $request[ 'type' ];
         try{

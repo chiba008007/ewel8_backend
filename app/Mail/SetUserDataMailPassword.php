@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class SetUserDataMail extends Mailable
+class SetUserDataMailPassword extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -27,8 +27,8 @@ class SetUserDataMail extends Mailable
         $this->systemname = $body['systemname'];
         $this->login_id = $body['login_id'];
         $this->licensesBody = $body['licensesBody'];
+        $this->password = $body['password'];
     }
-
 
     /**
      * Get the attachments for the message.
@@ -43,9 +43,10 @@ class SetUserDataMail extends Mailable
     public function build()
     {
 
+
         return $this->from($this->adminMail)
                     ->subject($this->title)
-                    ->view('emails.setUser')
+                    ->view('emails.setUserPassword')
                      ->with([
                     'name' => $this->name,
                     'person' => $this->person,
@@ -54,6 +55,7 @@ class SetUserDataMail extends Mailable
                     'login_id' => $this->login_id,
                     'licensesBody' => $this->licensesBody,
                     'invgfoot' => $this->invgfoot,
+                    'password' => $this->password,
                     ]);
     }
 }

@@ -5,7 +5,7 @@ return[
         'key'=>"ewel_secret_key",
         'iv'=>"1234567890123456",
     ],
-
+    'adminMail'=>'admin@newtestsvr.sakura.ne.jp',
     'LISENCE' => [
         1=>[
             'code'=>"BA",

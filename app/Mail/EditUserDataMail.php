@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class SetUserDataMail extends Mailable
+class EditUserDataMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -25,7 +25,6 @@ class SetUserDataMail extends Mailable
         $this->name = $body['name'];
         $this->person = $body['person'];
         $this->systemname = $body['systemname'];
-        $this->login_id = $body['login_id'];
         $this->licensesBody = $body['licensesBody'];
     }
 
@@ -45,13 +44,12 @@ class SetUserDataMail extends Mailable
 
         return $this->from($this->adminMail)
                     ->subject($this->title)
-                    ->view('emails.setUser')
+                    ->view('emails.editUser')
                      ->with([
                     'name' => $this->name,
                     'person' => $this->person,
                     'systemname' => $this->systemname,
                     'url' => $this->app_url,
-                    'login_id' => $this->login_id,
                     'licensesBody' => $this->licensesBody,
                     'invgfoot' => $this->invgfoot,
                     ]);

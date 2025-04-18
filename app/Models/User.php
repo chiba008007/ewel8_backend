@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -74,5 +75,11 @@ class User extends Authenticatable
         // ここで、認証に使用するフィールドを変更します
         // 例えば、usernameを使用する場合
         return static::where('login_id', $identifier)->first();
+    }
+
+    public static function getDetail($id)
+    {
+        $result = DB::table("users")->find($id);
+        return $result;
     }
 }

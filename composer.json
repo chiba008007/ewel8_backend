@@ -19,6 +19,7 @@
         "laravel/tinker": "^2.8",
         "mitoteam/jpgraph": "^10.4",
         "mpdf/mpdf": "^8.2",
+        "phpoffice/phpspreadsheet": "^4.2",
         "spatie/image": "^2.2"
     },
     "require-dev": {

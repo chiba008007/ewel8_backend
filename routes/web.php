@@ -18,4 +18,13 @@ Route::get('/', function () {
 });
 
 Route::get("pdf/{id?}/code/{code?}/birth/{birth?}", [PfsController::class, 'index'])->name("PFSPDF");
+// エクセルのダウンロード
+Route::get('/excels/{filename}', function ($filename) {
+    $file = storage_path('app/excels/' . $filename);
+    if (!file_exists($file)) {
+        abort(404);
+    }
+    return response()->download($file);
+});
+
 //Route::post('/save-radar-image', [PfsController::class, 'saveRadarImage']);

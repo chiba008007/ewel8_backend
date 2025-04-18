@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\RemainCountMail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
 
 class Exam extends Authenticatable
 {
@@ -68,6 +69,19 @@ class Exam extends Authenticatable
 
         return $buldInsertKey;
     }
+    public static function getExamSpredData($temp) {
+        $exams = DB::table('exams')
+        ->where([
+            'test_id'=>$temp[ 'test_id' ],
+            'customer_id'=>$temp[ 'customer_id' ],
+        ])
+        ->whereNull('deleted_at')
+        ->orderBy('id')
+        ->get();
+        return $exams;
+    }
+
+
     public static function bulkInsert($data) {
 
         $key = implode(",",self::getbuldInsertKey());

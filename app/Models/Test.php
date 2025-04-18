@@ -10,6 +10,11 @@ class Test extends Model
 {
     use HasFactory;
 
+    public static function getTestDetail($id)
+    {
+        $result = DB::table("tests")->find($id);
+        return $result;
+    }
     public function getTestParts($testid)
     {
         $result = DB::table("tests")

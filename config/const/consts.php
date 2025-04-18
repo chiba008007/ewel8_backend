@@ -6,6 +6,16 @@ return[
         'iv'=>"1234567890123456",
     ],
     'adminMail'=>'admin@newtestsvr.sakura.ne.jp',
+    'status'=>[
+        0=>"未受検",
+        1=>"受検中",
+        2=>"受検済",
+    ],
+    'passflag'=>[
+        0=>"未指定",
+        1=>"合格",
+        2=>"不合格",
+    ],
     'LISENCE' => [
         1=>[
             'code'=>"BA",

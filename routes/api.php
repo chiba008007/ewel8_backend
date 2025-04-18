@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiProductController;
+use App\Http\Controllers\createSpredsheetController;
 use App\Http\Controllers\PrefContrller;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ElementController;
@@ -97,6 +98,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
 
     Route::post("csv/getPfs", [CsvsController::class, 'getPfs']);
+    Route::post("excel/create", [createSpredsheetController::class, 'create']);
     Route::post("user/fileupload", [UserController::class, 'fileupload']);
     Route::post("fileupload/list", [FileuploadsController::class, 'list']);
     Route::post("fileupload/openFlag", [FileuploadsController::class, 'openFlag']);

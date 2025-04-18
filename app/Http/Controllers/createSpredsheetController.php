@@ -54,7 +54,10 @@ class createSpredsheetController extends Controller
             $sheet->setCellValue('F'.$row, $pwd);
             $sheet->duplicateStyle(clone $sheet1->getStyle('F6'), 'F'.$row);
             $startAt = $value->started_at;
-            $age = ((new Age))->getAge($startAt,$pwd);
+            $age = "";
+            if($startAt){
+                $age = ((new Age))->getAge($startAt,$pwd);
+            }
             $sheet->setCellValue('G'.$row, $age);
             $sheet->duplicateStyle(clone $sheet1->getStyle('G6'), 'G'.$row);
             $datetime = new Carbon($startAt);
@@ -62,7 +65,6 @@ class createSpredsheetController extends Controller
             $sheet->duplicateStyle(clone $sheet1->getStyle('H6'), 'H'.$row);
             $sheet->setCellValue('I'.$row, $passflag[$value->passflag]);
             $sheet->duplicateStyle(clone $sheet1->getStyle('I6'), 'I'.$row);
-
             $sheet->setCellValue('J'.$row, $value->memo1);
             $sheet->duplicateStyle(clone $sheet1->getStyle('J6'), 'J'.$row);
             $sheet->setCellValue('K'.$row, $value->memo2);

@@ -75,8 +75,12 @@ class Exam extends Authenticatable
             'test_id'=>$temp[ 'test_id' ],
             'customer_id'=>$temp[ 'customer_id' ],
         ])
-        ->whereNull('deleted_at')
-        ->orderBy('id')
+        ->whereNull('deleted_at');
+        if($temp[ 'type' ] === 2)
+        {
+            $exams = $exams->wherenotNull('ended_at');
+        }
+        $exams = $exams->orderBy('id')
         ->get();
         return $exams;
     }

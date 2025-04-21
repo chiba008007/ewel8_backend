@@ -20,6 +20,7 @@ class createSpredsheetController extends Controller
         $temp = [];
         $temp['test_id'] = $request->test_id;
         $temp['customer_id'] = $request->customer_id;
+        $temp['type'] = $request->type;
         $data = Exam::getExamSpredData($temp);
         $test = Test::getTestDetail($request->test_id);
         $user = User::getDetail($request->customer_id);

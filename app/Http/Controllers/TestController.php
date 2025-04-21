@@ -162,7 +162,7 @@ class TestController extends UserController
             $rlt['exams'] = Exam::select(["exams.*"])
             ->where("exams.test_id",$test_id)
             ->where("exams.customer_id",$user_id)
-            ->where("exams.deleted_at","=",null)
+            ->whereNull("exams.deleted_at")
             ->orderby("exams.id","ASC")
             ->get();
             foreach($rlt[ 'exams' ] as $key=>$value){

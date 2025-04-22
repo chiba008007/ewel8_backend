@@ -114,8 +114,8 @@ class WeightController extends Controller
 
     }
 
-    function getWeightMaster(Request $request){
-
+    function getWeightMaster(Request $request)
+    {
         $customer_id = $request->id;
         $customer = $this->getPartnerId($customer_id);
         $user = Weight::select([

@@ -74,7 +74,7 @@ class createSpredsheetController extends Controller
         }
 
         // 保存用ファイル名を生成
-        $fileName = 'excel_' . uniqid() . '.xlsx';
+        $fileName = 'Result_' . date("Ymd") . '.xlsx';
         // storage/app/excels/ に保存（事前にこのディレクトリが必要）
         $savePath = "excels/{$fileName}";
         $fullPath = storage_path("app/{$savePath}");

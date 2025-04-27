@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\SetUserDataMail;
 use App\Mail\EditUserDataMail;
 use App\Mail\SetUserDataMailPassword;
+use App\Mail\EditPartnerEditMail;
 use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
@@ -144,13 +145,20 @@ class UserController extends Controller
     }
     function editPartner(Request $request)
     {
+        Log::info('企業情報変更:'.$request);
         $response = true;
         // ログインしているユーザー情報取得
         $loginUser = auth()->user()->currentAccessToken();
         $passwd = config('const.consts.PASSWORD');
         DB::beginTransaction();
+
+
         try{
 
+            $customer = User::where("type","partner")
+                    ->where('id',$request->id)
+                    ->select("login_id")
+                    ->first();
             $params = [
                // 'name' => $request['name'],
                // 'email' => $request['email'],
@@ -172,13 +180,36 @@ class UserController extends Controller
             if(!$request['password']){
                 unset($params['password']);
             }
-            User::where('id', $request['id'])
+            User::where('id', $request->id)
            //->where('admin_id', $loginUser->tokenable->id)
             ->update($params);
 
+            Log::info('企業情報変更メール配信');
+
+            $mailbody = [];
+            $mailbody[ 'title' ] = "【Welcome-k】 企業情報変更のお知らせ";
+            $mailbody[ 'name' ] = $request->name;
+            $mailbody[ 'systemname' ] = $request->systemname;
+            $mailbody[ 'login_id' ] = $customer->login_id;
+
+            if($request->person_address){
+                $mailbody[ 'person' ] = $request->person;
+                Mail::to($request->person_address)->send(new EditPartnerEditMail($mailbody));
+                Log::info('企業情報変更メール配信担当者1');
+
+            }
+            if($request->person_address2){
+                $mailbody[ 'person' ] = $request->person2;
+                Mail::to($request->person_address2)->send(new EditPartnerEditMail($mailbody));
+                Log::info('企業情報変更メール配信担当者2');
+            }
+
+
             DB::commit();
+            Log::info('企業情報変更成功:'.$request);
             return response("success", 200);
         } catch (\Exception $exception){
+            Log::info('企業情報変更失敗:'.$exception);
             DB::rollback();
             throw $exception;
         }
@@ -319,12 +350,14 @@ class UserController extends Controller
                 $mailbody[ 'password' ] = $request['password'];
                 Mail::to($request->person_address)->send(new SetUserDataMail($mailbody));
                 Mail::to($request->person_address)->send(new SetUserDataMailPassword($mailbody));
+                Log::info('新規パートナー登録メール配信担当者1');
             }
             if($request->person_address2){
                 $mailbody[ 'person' ] = $request->person2;
                 $mailbody[ 'password' ] = $request['password'];
                 Mail::to($request->person_address2)->send(new SetUserDataMail($mailbody));
                 Mail::to($request->person_address2)->send(new SetUserDataMailPassword($mailbody));
+                Log::info('新規パートナー登録メール配信担当者2');
             }
             DB::commit();
             return response("success", 200);

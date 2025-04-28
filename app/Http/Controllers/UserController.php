@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\CustomerAddMail;
+use App\Mail\CustomerAddMailPassword;
 use App\Models\fileuploads;
 use Illuminate\Http\Request;
 use App\Models\User;
@@ -196,7 +198,6 @@ class UserController extends Controller
                 $mailbody[ 'person' ] = $request->person;
                 Mail::to($request->person_address)->send(new EditPartnerEditMail($mailbody));
                 Log::info('企業情報変更メール配信担当者1');
-
             }
             if($request->person_address2){
                 $mailbody[ 'person' ] = $request->person2;
@@ -470,7 +471,16 @@ class UserController extends Controller
 
     function setCustomerAdd(Request $request){
         $req = $request[ 'type' ];
+        Log::info('新規顧客登録開始:'.$request);
         try{
+
+            $partner = User::where("type","partner")
+                    ->where('id',$request->partner_id)
+                    ->select("system_name")
+                    ->first();
+            if(!$partner){
+                throw new Exception();
+            }
             $passwd = config('const.consts.PASSWORD');
             User::insert([
                 'type' => $request['type'],
@@ -506,10 +516,33 @@ class UserController extends Controller
                 'tanto_name2'=>$request['tanto_name2'],
                 'tanto_address2'=>$request['tanto_address2']
             ]);
+
+            $mailbody = [];
+            $mailbody[ 'title' ] = "【Welcome-k】 企業情報登録のお知らせ";
+            $mailbody[ 'name' ] = $request['name'];
+            $mailbody[ 'systemname' ] = $partner->system_name;
+            $mailbody[ 'login_id' ] = $request['login_id'];
+            if($request['tanto_address']){
+                $mailbody[ 'person' ] = $request['tanto_name'];
+                $mailbody[ 'password' ] = $request['password'];
+                Mail::to($request['tanto_address'])->send(new CustomerAddMail($mailbody));
+                Mail::to($request['tanto_address'])->send(new CustomerAddMailPassword($mailbody));
+                Log::info('新規顧客登録メール配信担当者1');
+            }
+            if($request['tanto_address2']){
+                $mailbody[ 'person' ] = $request['tanto_name2'];
+                $mailbody[ 'password' ] = $request['password'];
+                Mail::to($request['tanto_address2'])->send(new CustomerAddMail($mailbody));
+                Mail::to($request['tanto_address2'])->send(new CustomerAddMailPassword($mailbody));
+                Log::info('新規顧客登録メール配信担当者2');
+            }
+
+            Log::info('新規顧客登録成功');
             DB::commit();
-            return response("success", 201);
+            return response("success", 200);
         }catch(\Exception $e){
-            return response("error", 401);
+            Log::info('新規顧客登録失敗'.$e);
+            return response("error", 400);
         }
     }
     function setUserLicense(Request $request)

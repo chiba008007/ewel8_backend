@@ -748,8 +748,13 @@ class UserController extends Controller
     }
     function checkLoginID(Request $request){
         $login_id = $request['loginid'];
+        $editid = $request['editid'];
         try{
-            $user = User::where('login_id', $login_id)->first();
+            $user = User::where('login_id', $login_id);
+            if($editid > 0 ){
+                $user = $user->where('id', '!=', $editid);
+            }
+            $user = $user->first();
 
             if($user){
                 // すでにメールが登録されている
@@ -792,7 +797,54 @@ class UserController extends Controller
         $partner = User::where("id",$partner_id)->where("admin_id",$admin_id)->first();
         return response($partner, 200);
     }
+    function getCustomerEdit(Request $request)
+    {
+        $partner_id = $request->partner_id;
+        $edit_id = $request->edit_id;
+        if(!$this->checkuser($partner_id)){
+            throw new Exception();
+        }
+        try{
+            $result = User::Where([
+                "id"=>$partner_id,
+                "partner_id"=>$edit_id
+            ])
+            ->select([
+                'name',
+                'login_id',
+                'post_code',
+                'pref',
+                'address1',
+                'address2',
+                'tel',
+                'fax',
+                'trendFlag',
+                'csvFlag',
+                'pdfFlag',
+                'weightFlag',
+                'excelFlag',
+                'customFlag',
+                'sslFlag',
+                'logoImagePath',
+                'privacy',
+                'displayFlag',
+                'privacyText',
+                'tanto_name',
+                'tanto_address',
+                'tanto_busyo',
+                'tanto_tel1',
+                'tanto_tel2',
+                'tanto_name2',
+                'tanto_address2'
+            ])
+            ->first();
+            return response($result, 200);
+        }catch(Exception $e){
+            return response($e, 400);
+        }
+    }
     function customerEdit(Request $request){
+        Log::info('顧客情報編集開始'.$request);
 //        $loginUser = auth()->user()->currentAccessToken();
 //        $admin_id = $loginUser->tokenable->id;
         $partner_id = $request->partner_id;
@@ -801,45 +853,55 @@ class UserController extends Controller
         if(!$this->checkuser($partner_id)){
             throw new Exception();
         }
+        try{
+            $user = User::where(['id'=>$id,'partner_id'=>$partner_id,'admin_id'=>$this->admin_id]);
+            $passwd = config('const.consts.PASSWORD');
+            $password = openssl_encrypt($request->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
 
-        $user = User::where(['id'=>$id,'partner_id'=>$partner_id,'admin_id'=>$this->admin_id]);
-        $passwd = config('const.consts.PASSWORD');
-        $password = openssl_encrypt($request->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
+            $flg = $user->update([
+                'login_id'=>$request->login_id,
+                'name'=>$request->name,
+                'post_code'=>$request->post_code,
+                'pref'=>$request->pref,
+                'address1'=>$request->address1,
+                'address2'=>$request->address2,
+                'tel'=>$request->tel,
+                'fax'=>$request->fax,
+                'trendFlag'=>$request->trendFlag,
+                'csvFlag'=>$request->csvFlag,
+                'pdfFlag'=>$request->pdfFlag,
+                'weightFlag'=>$request->weightFlag,
+                'excelFlag'=>$request->excelFlag,
+                'customFlag'=>$request->customFlag,
+                'sslFlag'=>$request->sslFlag,
+                'logoImagePath'=>$request->logoImagePath,
+                'privacy'=>$request->privacy,
+                'privacyText'=>$request->privacyText,
+                'displayFlag'=>$request->customerDisplayFlag,
+                'tanto_name'=>$request->tanto_name,
+                'tanto_address'=>$request->tanto_address,
+                'tanto_busyo'=>$request->tanto_busyo,
+                'tanto_tel1'=>$request->tanto_tel1,
+                'tanto_tel2'=>$request->tanto_tel2,
+                'tanto_name2'=>$request->tanto_name2,
+                'tanto_address2'=>$request->tanto_address2
+            ]);
+            if($request->password) {
+                Log::info('顧客情報編集パスワード'.$request);
+                $flg = $user->update(["password"=>$password]);
+            }
+            if($flg){
+                Log::info('顧客情報編集成功');
 
-        $flg = $user->update([
-            'name'=>$request->name,
-            'post_code'=>$request->post_code,
-            'pref'=>$request->pref,
-            'address1'=>$request->address1,
-            'address2'=>$request->address2,
-            'tel'=>$request->tel,
-            'fax'=>$request->fax,
-            'trendFlag'=>$request->trendFlag,
-            'csvFlag'=>$request->csvFlag,
-            'pdfFlag'=>$request->pdfFlag,
-            'weightFlag'=>$request->weightFlag,
-            'excelFlag'=>$request->excelFlag,
-            'customFlag'=>$request->customFlag,
-            'sslFlag'=>$request->sslFlag,
-            'logoImagePath'=>$request->logoImagePath,
-            'privacy'=>$request->privacy,
-            'privacyText'=>$request->privacyText,
-            'displayFlag'=>$request->customerDisplayFlag,
-            'tanto_name'=>$request->tanto_name,
-            'tanto_address'=>$request->tanto_address,
-            'tanto_busyo'=>$request->tanto_busyo,
-            'tanto_tel1'=>$request->tanto_tel1,
-            'tanto_tel2'=>$request->tanto_tel2,
-            'tanto_name2'=>$request->tanto_name2,
-            'tanto_address2'=>$request->tanto_address2
-        ]);
-        if($request->password) {
-            $flg = $user->update(["password"=>$password]);
-        }
-        if($flg){
-            return response(true, 200);
-        }else{
-            return response(false, 201);
+                return response(true, 200);
+            }else{
+                Log::info('顧客情報編集失敗');
+
+                return response(false, 401);
+            }
+        }catch(Exception $e){
+            Log::info('顧客情報編集失敗');
+            return response($e, 400);
         }
     }
 

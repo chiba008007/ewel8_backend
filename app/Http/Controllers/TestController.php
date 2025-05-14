@@ -11,6 +11,7 @@ use App\Models\exampfs;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TestController extends UserController
 {
@@ -44,10 +45,7 @@ class TestController extends UserController
         return false;
     }
 */
-    public function getTest(Request $request){
-        echo "test";
-        exit();
-    }
+
     public function getCsvList(Request $request){
         $user_id = $request->user_id;
         $test_id = $request->test_id;
@@ -805,5 +803,63 @@ class TestController extends UserController
         ->ORDERBY("exampfses.endtime","DESC");
         return response($data->get(), 200);
     }
+    function deleteTest(Request $request)
+    {
+        $user_id = $request->user_id;
+        $test_id = $request->test_id;
+        if(!$this->checkuser($user_id)){
+            throw new Exception();
+        }
+        Log::info('検査削除実施:'.$request);
+        DB::beginTransaction();
+        try{
 
+            $rlt = Test::where([
+                'id'=>$test_id,
+                'user_id'=>$user_id
+                ])
+            ->update(['status' => 0]);
+            Exam::where([
+                'test_id'=>$test_id,
+                'customer_id'=>$user_id
+                ])
+            ->update(['deleted_at' => date('Y-m-d')]);
+            Log::info('検査削除実施成功');
+            DB::commit();
+            return response("success", 200);
+        }catch(Exception $e){
+            DB::rollBack();
+            Log::info('検査削除実施失敗'.$e);
+
+            return response($e, 400);
+        }
+    }
+    function getTest(Request $request)
+    {
+        $user_id = $request->user_id;
+        $test_id = $request->test_id;
+        if(!$this->checkuser($user_id)){
+            throw new Exception();
+        }
+        DB::beginTransaction();
+        try{
+            $data = Test::
+                selectRaw(
+                    "id,
+                    user_id,
+                    testname,
+                    DATE_FORMAT(startdaytime, '%Y/%m/%d') as formatted_startdaytime,DATE_FORMAT(enddaytime, '%Y/%m/%d') as formatted_enddaytime"
+                )
+                ->where([
+                'id'=>$test_id,
+                'user_id'=>$user_id
+                ])
+                ->first();
+            DB::commit();
+            return response($data, 200);
+        }catch(Exception $e){
+            DB::rollBack();
+            return response($e, 400);
+        }
+    }
 }

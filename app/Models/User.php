@@ -82,4 +82,15 @@ class User extends Authenticatable
         $result = DB::table("users")->find($id);
         return $result;
     }
+
+    public function exams()
+    {
+        return $this->hasMany(Exam::class, 'partner_id');
+    }
+
+    public function userLicenses()
+    {
+        return $this->hasMany(UserLisence::class, 'user_id');
+    }
+
 }

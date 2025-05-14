@@ -90,6 +90,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("test/getTestTableTh", [TestController::class, 'getTestTableTh']);
     Route::post("test/getPFSTestDetail", [TestController::class, 'getPFSTestDetail']);
     Route::post("test/getSearchExam", [TestController::class, 'getSearchExam']);
+    Route::post("test/getTest", [TestController::class, 'getTest']);
+    Route::post("test/deleteTest", [TestController::class, 'deleteTest']);
 
     Route::post("weight/editStatusWeightMaster", [WeightController::class, 'editStatusWeightMaster']);
     Route::post("weight/editWeightMaster", [WeightController::class, 'editWeightMaster']);

@@ -34,6 +34,7 @@ class UserController extends Controller
     //
     function index(Request $request)
     {
+
         $passwd = config('const.consts.PASSWORD');
         $userdata = User::where('login_id', $request->login_id)->first();
         $user = User::find($userdata[ 'id' ]);
@@ -96,32 +97,37 @@ class UserController extends Controller
         try{
             $this->checkAdmin();
             $sql = "
-                    SELECT
-                        *,
-                        (jyuken-syori) as zan,  -- 残数
-                        (total-syori-jyuken) as buy  -- 販売可能
-                    FROM (
-                    SELECT
-                        users.id,
-                        users.name,
-                        (SELECT SUM(userlisences.num)
-                        FROM userlisences
-                        WHERE userlisences.user_id = users.id) as total,
-                        COUNT(exams.id) AS jyuken, -- 受検者数
-                        (
-                        SELECT count(exams.id) -- 購入ライセンス数
-                        FROM exams
-                        WHERE
-                            exams.partner_id = users.id AND
-                            started_at IS NOT NULL
-                        ) AS syori -- 処理数
-                    FROM
-                        users
-                        LEFT JOIN exams ON exams.partner_id = users.id AND exams.deleted_at IS NULL
-                    WHERE
-                        users.type = ?
-                        GROUP BY users.id
-                    ) as a
+SELECT
+    *,
+    (jyuken - syori) AS zan,
+    (total - syori - jyuken) AS buy
+FROM (
+    SELECT
+        users.id,
+        users.name,
+        (
+            SELECT SUM(userlisences.num)
+            FROM userlisences
+            WHERE userlisences.user_id = users.id
+        ) AS total,
+        COUNT(CASE WHEN exams.deleted_at IS NULL THEN exams.id ELSE NULL END) AS jyuken,
+        (
+            SELECT COUNT(exams.id)
+            FROM exams
+            WHERE
+                exams.partner_id = users.id AND
+                started_at IS NOT NULL AND
+                exams.deleted_at IS NULL
+        ) AS syori
+    FROM
+        users
+        LEFT JOIN exams ON exams.partner_id = users.id
+    WHERE
+        users.type = ?
+    GROUP BY
+        users.id
+) AS a
+
 
                     ";
             $param = [];

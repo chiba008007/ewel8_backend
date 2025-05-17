@@ -6,30 +6,44 @@ use Illuminate\Http\Request;
 use App\Models\Exam;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Models\csvuploads;
+use Exception;
 
 class csvUploadController extends Controller
 {
     public function updateCsvExam(Request $request)
     {
+        $string = "アップロード成功";
         $file = $request->file('file');
-        // アップロードファイルのバックアップ
-        // 任意でファイル名を生成（元のファイル名をそのまま使うなら）
-        $fileName = $file->getClientOriginalName();
-
-        // public/uploads に移動（保存）
-        $file->move(public_path('uploads'), $fileName);
-
-        // 保存先のパス（必要ならログなどに使える）
-        $savedPath = 'uploads/' . $fileName;
-
-        Log::info("ファイル保存成功: " . $savedPath);
-
-
         $user_id = $request->input('user_id');
         $test_id = $request->input('test_id');
+        $csvUploadType = $request->input('csvUploadType');
         $originalName = $file->getClientOriginalName();
+        $extension = $file->getClientOriginalExtension();
+        // アップロードファイルのバックアップ
+        $dummyfile = uniqid().".".$extension;
+        // public/uploads に移動（保存）
+        // コピー先のパス
+        $destination = public_path('uploads/' . $dummyfile);
+        // 一時ファイルのパス（アップロードされたファイルの一時保存場所）
+        $source = $file->getRealPath();
+        // コピー処理（移動じゃなくコピー！）
+        copy($source, $destination);
+        // 保存先のパス（必要ならログなどに使える）
+        $savedPath = 'uploads/' . $dummyfile;
+        Log::info("ファイル保存成功: " . $savedPath);
+
         $passwd = config('const.consts.PASSWORD');
         Log::info('CSVアップデート開始:'.$originalName);
+        if ($csvUploadType == 1) {
+            Log::info('CSVアップデート未受検者のみ:'.$originalName);
+        } else {
+            Log::info('CSVアップデート受検済み受検中:'.$originalName);
+        }
+        $updatedCount = 0;
+        $totalrow = 0;
+        $type = 0;
+        $code = 200;
         DB::beginTransaction();
         try {
             if (!$this->checkuser($user_id)) {
@@ -47,11 +61,51 @@ class csvUploadController extends Controller
             // 対象データを取得（順番保証）
             $dbRows = Exam::where('customer_id', $user_id)
                 ->where('test_id', $test_id)
-                ->orderBy('id') // 昇順に固定
+                ->wherenull('deleted_at');
+            if ($csvUploadType == 1) {
+                $dbRows = $dbRows->wherenull("started_at");
+            }
+            $dbRows = $dbRows->orderBy('id') // 昇順に固定
                 ->get()
                 ->values();
+            // 未受検のみの時は
+            // 全体データとの差分をとりcsvから削除する
+            if ($csvUploadType == 1) {
+                $dbRowsDefault = Exam::where('customer_id', $user_id)
+                ->where('test_id', $test_id)
+                ->wherenull('deleted_at')
+                ->orderBy('id') // 昇順に固定
+                ->get()
+                ->values()
+                ->map(function ($item, $index) {
+                    $item->row_number = $index; // ← ここで連番を追加（0から）
+                    return $item;
+                });
 
+                $dbIds = $dbRows->pluck('id')->toArray();
+
+                $missingRowNumbers = $dbRowsDefault
+                    ->filter(function ($item) use ($dbIds) {
+                        return !in_array($item->id, $dbIds);
+                    })
+                    ->pluck('row_number')
+                    ->values();
+                // $rowsから$missingRowNumbersの行数のデータを外す
+                $skipIndexes = $missingRowNumbers->toArray();
+                // フィルターして除外行を削る
+                $filteredRows = array_values(array_filter(
+                    $rows,
+                    function ($row, $index) use ($skipIndexes) {
+                        return !in_array($index, $skipIndexes);
+                    },
+                    ARRAY_FILTER_USE_BOTH
+                ));
+                $rows = $filteredRows;
+            }
+
+            $totalrow = $dbRows->count();
             if (count($rows) != $dbRows->count()) {
+                $string = "CSVと更新データの数が合わない";
                 Log::info('CSVと更新データの数が合わない:'.$originalName);
                 throw new Exception();
             }
@@ -115,6 +169,7 @@ class csvUploadController extends Controller
                     $bindingsmemo2[] = $memo2Val;
 
                     $rowIndex++;
+                    $updatedCount++;
                 }
 
                 foreach ($caseSqlParts as &$part) {
@@ -136,16 +191,35 @@ class csvUploadController extends Controller
                 Log::info("バインド数: " . count($bindings));
                 Log::info("プレースホルダ数: " . substr_count($sql, '?'));
 
-                DB::statement($sql, $bindings);
+                if (DB::statement($sql, $bindings) === false) {
+                    throw new Exception();
+                }
             }
 
+            $type = 1;
             DB::commit();
-            return response(true, 200);
         } catch (Exception $e) {
             DB::rollBack();
-            return response([], 400);
-        }
+            $type = 2;
+            $code = 400;
 
+        }
+        // csvuploadテーブルに登録
+        csvuploads::create([
+            'test_id' => $test_id,
+            'customer_id' => $user_id,
+            'filename' => $dummyfile,
+            'filepath' => $originalName,
+            'type' => $type,
+            'total' => $totalrow,
+            'notrows' => $totalrow - $updatedCount,
+            'memo' => $string
+        ]);
+        if ($code == 200) {
+            return response(true, $code);
+        } else {
+            return response([], $code);
+        }
     }
     //
     public function csvUploadFile(Request $request)
@@ -183,5 +257,23 @@ class csvUploadController extends Controller
         } catch (Exception $e) {
             return response([], 201);
         }
+    }
+
+    public function getCsvUploadList(Request $request)
+    {
+        $user_id = $request->user_id;
+        $test_id = $request->test_id;
+        if (!$this->checkuser($user_id)) {
+            throw new Exception();
+        }
+
+        $list = csvuploads::where([
+            'status' => 1,
+            'test_id' => $test_id,
+            'customer_id' => $user_id,
+        ])
+        ->selectRaw('*, DATE_FORMAT(created_at, "%Y年%m月%d日") as date')
+        ->get();
+        return response($list, 200);
     }
 }

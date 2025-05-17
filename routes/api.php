@@ -56,13 +56,14 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post("csvupload/csvUploadFile", [csvUploadController::class, 'csvUploadFile']);
     Route::post("csvupload/updateCsvExam", [csvUploadController::class, 'updateCsvExam']);
+    Route::post("csvupload/getCsvUploadList", [csvUploadController::class, 'getCsvUploadList']);
 
 
 
     Route::post('user/admin', [UserController::class, 'getAdmin']);
     Route::post('user/adminEdit', [UserController::class, 'editAdmin']);
     Route::post('user/setUserData', [UserController::class, 'setUserData']);
-   // Route::post('user/editUserData', [UserController::class, 'editUserData']);
+    // Route::post('user/editUserData', [UserController::class, 'editUserData']);
     Route::post('user/editPartnerData', [UserController::class, 'editPartnerData']);
     Route::post('user/setUserLicense', [UserController::class, 'setUserLicense']);
     Route::get('user/checkEmail', [UserController::class, 'checkEmail']);
@@ -126,4 +127,3 @@ Route::get('test', [UserController::class, 'test']);
 
 Route::post("exam/login", [ExamController::class, 'index']);
 Route::post("exam/getExam", [ExamController::class, 'getExam']);
-

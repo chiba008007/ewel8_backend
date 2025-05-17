@@ -12,6 +12,7 @@ use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\CsvsController;
+use App\Http\Controllers\csvUploadController;
 use App\Http\Controllers\FileuploadsController;
 use App\Http\Controllers\PDF\PfsController;
 use App\Http\Controllers\WeightController;
@@ -52,6 +53,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("exam/getExamList", [ExamController::class, 'getExamList']);
     Route::post("exam/downloadExam", [ExamController::class, 'downloadExam']);
     Route::post("exam/setStarttime", [ExamController::class, 'setStarttime']);
+
+    Route::post("csvupload/csvUploadFile", [csvUploadController::class, 'csvUploadFile']);
+    Route::post("csvupload/updateCsvExam", [csvUploadController::class, 'updateCsvExam']);
 
 
 

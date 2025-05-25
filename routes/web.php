@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PDF\PfsController;
+use App\Http\Controllers\PDF\indexController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -17,7 +18,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get("pdf/{id?}/code/{code?}/birth/{birth?}", [PfsController::class, 'index'])->name("PFSPDF");
+Route::get("pdf/{id?}/code/{code?}/birth/{birth?}", [indexController::class, 'index'])->name("PFSPDF");
 // エクセルのダウンロード
 Route::get('/excels/{filename}', function ($filename) {
     $file = storage_path('app/excels/' . $filename);

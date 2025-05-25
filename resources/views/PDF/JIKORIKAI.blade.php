@@ -23,7 +23,7 @@
         width:40px;
     }
     .min{
-        font-size:10px;
+        font-size:11px;
     }
     .green{
         background-color:rgb(183, 236, 219);
@@ -40,6 +40,7 @@
     .box{
         border:1px solid #000;
         padding:5px;
+        height:100px;
     }
     .mt-3{
         margin-top:3px;
@@ -51,8 +52,8 @@
     }
     .absolute-image{
         position:absolute;
-        top:343;
-        left:124;
+        top:383;
+        left:200;
     }
     .absolute{
         position:absolute;
@@ -60,63 +61,63 @@
         font-size:11px;
     }
     .text1{
-        top:340;
-        left:315;
+        top:385;
+        left:325;
         text-align: center;
     }
     .text2{
-        top:400;
+        top:430;
         left:500;
         text-align: left;
     }
     .text3{
-        top:480;
+        top:500;
         left:570;
         text-align: left;
     }
     .text4{
-        top:602;
-        left:600;
+        top:580;
+        left:580;
         text-align: left;
     }
     .text5{
-        top:720;
+        top:670;
         left:560;
         text-align: left;
     }
     .text6{
-        top:800;
+        top:720;
         left:500;
         text-align: left;
     }
     .text7{
-        top:840;
-        left:315;
+        top:750;
+        left:325;
         text-align: center;
     }
     .text8{
-        top:800;
-        left:130;
+        top:720;
+        left:150;
         text-align: right;
     }
     .text9{
-        top:720;
-        left:60;
+        top:670;
+        left:90;
         text-align: right;
     }
     .text10{
-        top:602;
-        left:35;
+        top:580;
+        left:70;
         text-align: right;
 
     }
     .text11{
-        top:480;
-        left:60;
+        top:500;
+        left:90;
         text-align: right;
     }
     .text12{
-        top:400;
+        top:430;
         left:130;
         text-align: right;
     }
@@ -125,36 +126,36 @@
         padding:3px;
     }
     .leftTop{
-        top:340;
-        left:70px;
+        top:360;
+        left:50px;
         padding:5px;
         border:1px double #000;
         text-align: center;
     }
     .rightTop{
-        top:340;
-        left:566px;
+        top:360;
+        left:596px;
         padding:5px;
         border:1px double #000;
         text-align: center;
     }
     .leftBottom{
-        top:850;
-        left:70px;
+        top:740;
+        left:50px;
         padding:5px;
         border:1px double #000;
         text-align: center;
     }
     .rightBottom{
-        top:850;
-        left:566px;
+        top:740;
+        left:596px;
         padding:5px;
         border:1px double #000;
         text-align: center;
     }
     .wmin{
         width:140px;
-        height:80px;
+        height:135px;
     }
     .footer{
         position: absolute;
@@ -167,30 +168,7 @@
     @if ($row > 0 )
         <div style="page-break-before: always"></div>
     @endif
-    <table style="width:100%;">
-        <tr>
-            <td width=300><img src="{{ public_path('images/PDF/welcome.jpg') }}" /></td>
-            <td width=300 style="text-align:right;">
-                <h2>個人結果シート(自己理解版)</h2>
-            </td>
-        </tr>
-    </table>
-    <div style="padding:0px min">企業名:{{ $value->name }}企業</div>
-    <table class="table min" >
-        <tr>
-            <td class="td green" >受検日</td>
-            <td class="td">{{ $result->startdate }}</td>
-            <td class="td green">受検ID</td>
-            <td class="td">{{ $exam->email }}</td>
-            <td class="td green">氏名</td>
-            <td class="td" style="width:200px;">
-                {{ Str::limit($exam->name, 12, '…') }}
-                ({{ Str::limit($exam->kana, 12, '…') }})
-            </td>
-            <td class="td green">年齢</td>
-            <td class="td" >{{ $age }}</td>
-        </tr>
-    </table>
+    @include('PDF.HEADER',[ 'title'=>'個人結果シート(自己理解版)' ])
     <div class="mt-3 min">1.行動価値検査で測定していること</div>
     <div class="box mt-3 min">
         行動価値検査は、日々行動する中で「あなたがどのような行動を重視しているのか」について測定しており、能力を測定する検査ではありません。<br />
@@ -241,7 +219,7 @@
         </tr>
     </table>
     <div class="absolute-image">
-        <img src="{{ public_path('images/PDF/en01.gif') }}" width=520  >
+        <img src="{{ public_path('images/PDF/en01.gif') }}" width=400  >
     </div>
     <div class="absolute leftTop"><div class="box2">対人影響力</div></div>
     <div class="absolute rightTop"><div class="box2">自己認知力</div></div>
@@ -278,6 +256,6 @@
             <td class="td txtleft texttop">{{ $strong[1]['note'] }}</td>
         </tr>
     </table>
-    <div class="footer">powered by Innovation Gate ,Inc.</div>
+    @include("PDF.FOOTER")
 </body>
 </html>

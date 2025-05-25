@@ -1,8 +1,9 @@
 <?php
-require_once ('./vendor/jpgraph/src/jpgraph.php');
-require_once ('./vendor/jpgraph/src/jpgraph_radar.php');
 
-$titles=
+require_once('./vendor/jpgraph/src/jpgraph.php');
+require_once('./vendor/jpgraph/src/jpgraph_radar.php');
+
+$titles =
 [
     "",
     "",
@@ -35,32 +36,26 @@ $data = [
     $result->dev2,
 ];
 
-$graph = new RadarGraph (700,600);
-
+$graph = new RadarGraph(800, 460);
 // 最大値と最小値を指定する
-
 $graph->SetScale('lin', 20, 80);
-
 $graph->SetMarginColor('white');
 $graph->SetFrame(false);
 //$graph->title->Set('Radar with marks');
-$graph->title->SetFont(FF_GOTHIC,FS_NORMAL,9);
+$graph->title->SetFont(FF_GOTHIC, FS_NORMAL, 9);
 
 $graph->SetTitles($titles);
-$graph->SetCenter(0.48,0.5);
+$graph->SetCenter(0.5, 0.53);
 $graph->HideTickMarks();
 // $graph->SetColor('lightgreen@0.7');
 $graph->axis->SetColor('darkgray');
 $graph->grid->SetColor('darkgray');
 $graph->grid->Show();
 
-$graph->axis->title->SetFont(FF_GOTHIC,FS_NORMAL,9);
+$graph->axis->title->SetFont(FF_GOTHIC, FS_NORMAL, 9);
 $graph->axis->title->SetMargin(5);
 $graph->SetGridDepth(DEPTH_BACK);
 $graph->SetSize(0.7);
-
-
-
 
 $plot = new RadarPlot($data);
 $plot->SetColor('blue@0.2');
@@ -72,4 +67,3 @@ $plot->mark->SetSize(40);
 $graph->Add($plot);
 $filePath = "./images/PDF/radar_chart.png";
 $graph->Stroke($filePath);
-

@@ -29,7 +29,7 @@
         width:40px;
     }
     .min{
-        font-size:10px;
+        font-size:11px;
     }
     .green{
         background-color:rgb(183, 236, 219);
@@ -90,29 +90,29 @@
     .tate {
         background-color:red;
         width:24px;
-        left:663;
+        left:693;
     }
     .tate00{ top:465; height:1px;}
-    .tate05{ top:451; height:15px;}
-    .tate10{ top:436; height:30px;}
-    .tate15{ top:421; height:45px;}
-    .tate20{ top:409; height:56px;}
-    .tate25{ top:395; height:70px;}
-    .tate30{ top:380; height:86px;}
-    .tate35{ top:366; height:100px;}
-    .tate40{ top:352; height:113px;}
-    .tate45{ top:338; height:127px;}
-    .tate50{ top:323; height:142px;}
-    .tate55{ top:308; height:157px;}
-    .tate60{ top:295; height:171px;}
-    .tate65{ top:283; height:183px;}
-    .tate70{ top:268; height:198px;}
-    .tate75{ top:253; height:213px;}
-    .tate80{ top:238; height:228px;}
-    .tate85{ top:224; height:242px;}
-    .tate90{ top:210; height:256px;}
-    .tate95{ top:195; height:271px;}
-    .tate100{ top:180; height:286px;}
+    .tate05{ top:485; height:15px;}
+    .tate10{ top:470; height:30px;}
+    .tate15{ top:452; height:48px;}
+    .tate20{ top:437; height:62px;}
+    .tate25{ top:420; height:80px;}
+    .tate30{ top:405; height:95px;}
+    .tate35{ top:389; height:110px;}
+    .tate40{ top:375; height:124px;}
+    .tate45{ top:360; height:140px;}
+    .tate50{ top:342; height:158px;}
+    .tate55{ top:326; height:173px;}
+    .tate60{ top:311; height:188px;}
+    .tate65{ top:295; height:205px;}
+    .tate70{ top:280; height:220px;}
+    .tate75{ top:262; height:237px;}
+    .tate80{ top:247; height:253px;}
+    .tate85{ top:232; height:268px;}
+    .tate90{ top:217; height:282px;}
+    .tate95{ top:198; height:301px;}
+    .tate100{ top:180; height:320px;}
     .center{ text-align: center; }
 </style>
 </head>
@@ -120,54 +120,37 @@
     @if ($row > 0)
         <div style="page-break-before: always"></div>
     @endif
-    <table style="width:100%;">
-        <tr>
-            <td width=300><img src="{{ public_path('images/PDF/welcome.jpg') }}" /></td>
-            <td width=300 style="text-align:right;">
-                <h2>パワハラ傾向振り返りシート</h2>
-            </td>
-        </tr>
-    </table>
-    <div style="padding:0px min">企業名:{{ $value->name }}企業</div>
-    <table class="table min" >
-        <tr>
-            <td class="td green" >受検日</td>
-            <td class="td">{{ $result->startdate }}</td>
-            <td class="td green">受検ID</td>
-            <td class="td">{{ $exam->email }}</td>
-            <td class="td green">氏名</td>
-            <td class="td" style="width:200px;">
-                {{ Str::limit($exam->name, 12, '…') }}
-                ({{ Str::limit($exam->kana, 12, '…') }})
-            </td>
-            <td class="td green">年齢</td>
-            <td class="td" >{{ $age }}</td>
-        </tr>
-    </table>
-    <div class="mt-3 min">1.要注意や危険が３つ以上ある場合は自身の言動をしっかり振り返りましょう</div>
+    @include('PDF.HEADER',[ 'title'=>'パワハラ傾向振り返りシート' ])
+    <div class="mt-3 middle">1.要注意や危険が３つ以上ある場合は自身の言動をしっかり振り返りましょう</div>
     <div class="mt-3">
         <img src="{{ public_path('images/PDF/pawahara.png') }}" width="100%" />
     </div>
-    <div class="absolute bar" style="top:194;left:186;width:{{ $risk[1]['width'] }}px;">&nbsp;</div>
-    <div class="absolute min" style="top:194;left:551;">{{ $risk[1]['point'] }}</div>
-    <div class="absolute min center" style="top:194;left:594;width:50px;">{{ $risk[1]['text'] }}</div>
-    <div class="absolute bar" style="top:240;left:186;width:{{ $risk[2]['width'] }}px;">&nbsp;</div>
-    <div class="absolute min" style="top:240;left:551;">{{ $risk[2]['point'] }}</div>
-    <div class="absolute min center" style="top:240;left:594;width:50px;">{{ $risk[2]['text'] }}</div>
-    <div class="absolute bar" style="top:286;left:186;width:{{ $risk[3]['width'] }}px;">&nbsp;</div>
-    <div class="absolute min" style="top:286;left:551;">{{ $risk[3]['point'] }}</div>
-    <div class="absolute min center" style="top:286;left:594;width:50px;">{{ $risk[3]['text'] }}</div>
-    <div class="absolute bar" style="top:346;left:186;width:{{ $risk[4]['width'] }}px;">&nbsp;</div>
-    <div class="absolute min" style="top:346;left:551;">{{ $risk[4]['point'] }}</div>
-    <div class="absolute min center" style="top:346;left:594;width:50px;">{{ $risk[4]['text'] }}</div>
-    <div class="absolute bar" style="top:393;left:186;width:{{ $risk[5]['width'] }}px;">&nbsp;</div>
-    <div class="absolute min" style="top:394;left:551;">{{ $risk[5]['point'] }}</div>
-    <div class="absolute min center" style="top:394;left:594;width:50px;">{{ $risk[5]['text'] }}</div>
-    <div class="absolute bar" style="top:439;left:186;width:{{ $risk[6]['width'] }}px;">&nbsp;</div>
-    <div class="absolute min" style="top:439;left:551;">{{ $risk[6]['point'] }}</div>
-    <div class="absolute min center" style="top:439;left:594;width:50px;">{{ $risk[6]['text'] }}</div>
+    <div class="absolute bar" style="top:194;left:162;width:{{ $risk[1]['width'] }}px;">&nbsp;</div>
+    <div class="absolute middle" style="top:196;left:570;">{{ $risk[1]['point'] }}</div>
+    <div class="absolute middle center" style="top:196;left:615;width:60px;">{{ $risk[1]['text'] }}</div>
+
+    <div class="absolute bar" style="top:245;left:162;width:{{ $risk[2]['width'] }}px;">&nbsp;</div>
+    <div class="absolute middle" style="top:247;left:570;">{{ $risk[2]['point'] }}</div>
+    <div class="absolute middle center" style="top:247;left:615;width:60px;">{{ $risk[2]['text'] }}</div>
+
+    <div class="absolute bar" style="top:298;left:162;width:{{ $risk[3]['width'] }}px;">&nbsp;</div>
+    <div class="absolute middle" style="top:300;left:570;">{{ $risk[3]['point'] }}</div>
+    <div class="absolute middle center" style="top:300;left:615;width:60px;">{{ $risk[3]['text'] }}</div>
+
+    <div class="absolute bar" style="top:366;left:162;width:{{ $risk[4]['width'] }}px;">&nbsp;</div>
+    <div class="absolute middle" style="top:368;left:570;">{{ $risk[4]['point'] }}</div>
+    <div class="absolute middle center" style="top:368;left:615;width:60px;">{{ $risk[4]['text'] }}</div>
+
+    <div class="absolute bar" style="top:416;left:162;width:{{ $risk[5]['width'] }}px;">&nbsp;</div>
+    <div class="absolute middle" style="top:418;left:570;">{{ $risk[5]['point'] }}</div>
+    <div class="absolute middle center" style="top:418;left:615;width:60px;">{{ $risk[5]['text'] }}</div>
+
+    <div class="absolute bar" style="top:467;left:162;width:{{ $risk[6]['width'] }}px;">&nbsp;</div>
+    <div class="absolute middle" style="top:469;left:570;">{{ $risk[6]['point'] }}</div>
+    <div class="absolute middle center" style="top:469;left:615;width:60px;">{{ $risk[6]['text'] }}</div>
+
     <div class="absolute tate tate{{ $risk['tate'] }}">&nbsp;</div>
-    <div class="absolute min2" style="top:165;left:680;">({{ $risk[7]['point'] }}/10)</div>
+    <div class="absolute min2" style="top:165;left:710;">({{ $risk[7]['point'] }}/10)</div>
 
     <div class="mt-3 middle">2.パワハラリスクの全体傾向</div>
     <div class="mt-3 pa-5 box middle ht">{{ $risk['pawahararisk'] }}</div>
@@ -222,6 +205,6 @@
             </td>
         </tr>
     </table>
-    <div class="footer">powered by Innovation Gate ,Inc.</div>
+    @include("PDF.FOOTER")
 </body>
 </html>

@@ -1,7 +1,7 @@
 <?php
 
-require_once('./vendor/jpgraph/src/jpgraph.php');
-require_once('./vendor/jpgraph/src/jpgraph_radar.php');
+require_once(__DIR__ .'../../vendor/jpgraph/src/jpgraph.php');
+require_once(__DIR__ .'../../vendor/jpgraph/src/jpgraph_radar.php');
 
 $titles =
 [
@@ -48,6 +48,7 @@ $graph->SetTitles($titles);
 $graph->SetCenter(0.5, 0.53);
 $graph->HideTickMarks();
 // $graph->SetColor('lightgreen@0.7');
+$graph->axis->HideLabels();
 $graph->axis->SetColor('darkgray');
 $graph->grid->SetColor('darkgray');
 $graph->grid->Show();
@@ -61,9 +62,26 @@ $plot = new RadarPlot($data);
 $plot->SetColor('blue@0.2');
 $plot->SetLineWeight(3);
 //$plot->SetFillColor('red@0.7');
-$plot->mark->SetType(MARK_IMG, 'img/custom_blue_ball.png');
+$plot->mark->SetType(MARK_IMG, public_path().'/img/custom_blue_ball.png');
 $plot->mark->SetSize(40);
 
 $graph->Add($plot);
-$filePath = "./images/PDF/radar_chart.png";
+$filePath = public_path()."/images/PDF/radar_chart.png";
 $graph->Stroke($filePath);
+
+
+$graph->img->SetImgFormat('png');
+
+// 白背景で描画（文字が滑らかにレンダリングされる）
+$graph->SetMarginColor('white');
+$graph->SetColor('white');
+
+// 描画後に背景色（白）を透過
+$graph->Stroke($filePath);
+
+// 透過処理（PHP GD後処理）
+$im = imagecreatefrompng($filePath);
+$white = imagecolorallocate($im, 255, 255, 255);
+imagecolortransparent($im, $white);
+imagepng($im, $filePath);
+imagedestroy($im);

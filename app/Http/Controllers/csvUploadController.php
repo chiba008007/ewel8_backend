@@ -139,8 +139,25 @@ class csvUploadController extends Controller
                     $emailVal = preg_replace('/^\xEF\xBB\xBF/', '', trim($rows[$rowIndex][1] ?? ''));
                     $nameVal  = preg_replace('/^\xEF\xBB\xBF/', '', trim($rows[$rowIndex][2] ?? ''));
                     $kanaVal  = preg_replace('/^\xEF\xBB\xBF/', '', trim($rows[$rowIndex][3] ?? ''));
-                    $pwd = openssl_encrypt($rows[$rowIndex][4], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
-                    $passwordVal  = preg_replace('/^\xEF\xBB\xBF/', '', trim($pwd ?? ''));
+                    // $pwdString  = preg_replace('/^\xEF\xBB\xBF/', '', trim($rows[$rowIndex][4] ?? ''));
+                    // if ($pwdString === '') {
+                    //     $pwdString = 'password';
+                    // }
+                    // $pwd = openssl_encrypt($pwdString, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
+                    // $passwordVal  = preg_replace('/^\xEF\xBB\xBF/', '', trim($pwd ?? ''));
+                    $rawValue = $rows[$rowIndex][4] ?? '';
+                    $cleanedValue = preg_replace('/^\xEF\xBB\xBF/', '', trim($rawValue));
+                    // 2. 全角スペース・ゼロ幅スペース等も除去
+                    $cleanedValue = preg_replace('/[\s　\x{200B}-\x{200D}\x{FEFF}]+/u', '', $cleanedValue);
+
+                    // 3. 完全に空になった場合のみデフォルト
+                    if ($cleanedValue === '') {
+                        $cleanedValue = 'password';
+                    }
+
+                    $pwd = openssl_encrypt($cleanedValue, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
+                    $passwordVal = preg_replace('/^\xEF\xBB\xBF/', '', trim($pwd ?? ''));
+
                     $memo1Val  = preg_replace('/^\xEF\xBB\xBF/', '', trim($rows[$rowIndex][5] ?? ''));
                     $memo2Val  = preg_replace('/^\xEF\xBB\xBF/', '', trim($rows[$rowIndex][6] ?? ''));
 

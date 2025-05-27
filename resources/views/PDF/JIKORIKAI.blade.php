@@ -47,7 +47,9 @@
     }
     .graphBox{
         margin-top:5px;
+        margin-left:0;
         width:100%;
+        height:440px;
         border:1px solid #000;
     }
     .absolute-image{
@@ -239,7 +241,7 @@
     <div class="absolute text12">{!! nl2br($element12) !!}</div>
 
     <div class="graphBox">
-        <img src="{{ public_path('images/PDF/radar_chart.png') }}" alt="Sample Image">
+
     </div>
     <div class="min mt-3">3.{{ $exam->name }} さんの強み</div>
     <table class="table min" >

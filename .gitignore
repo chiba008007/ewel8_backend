@@ -19,3 +19,5 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+/storage/app/public/PDF/*
+!/storage/app/public/PDF/.gitkeep

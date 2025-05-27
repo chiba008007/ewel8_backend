@@ -14,8 +14,9 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\CsvsController;
 use App\Http\Controllers\csvUploadController;
 use App\Http\Controllers\FileuploadsController;
-use App\Http\Controllers\PDF\PfsController;
+// use App\Http\Controllers\PDF\PfsController;
 use App\Http\Controllers\WeightController;
+use App\Http\Controllers\PdfDownloadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -115,6 +116,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
 });
 Route::post("user/upload", [UserController::class, 'upload']);
+Route::post("pdf/download", [PdfDownloadController::class, 'index']);
 
 Route::post("login", [UserController::class, 'index']);
 Route::apiResource('pref', PrefContrller::class);

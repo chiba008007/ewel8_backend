@@ -113,6 +113,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("fileupload/openFlag", [FileuploadsController::class, 'openFlag']);
     Route::post("fileupload/deleteStatus", [FileuploadsController::class, 'deleteStatus']);
 
+    Route::post("pdf/setPDFUpload", [PdfDownloadController::class, 'setPDFUpload']);
+    Route::post("pdf/getPDFUpload", [PdfDownloadController::class, 'getPDFUpload']);
 
 });
 Route::post("user/upload", [UserController::class, 'upload']);

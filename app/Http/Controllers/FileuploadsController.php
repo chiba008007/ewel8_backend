@@ -15,29 +15,30 @@ class FileuploadsController extends Controller
 
         $loginUser = auth()->user()->currentAccessToken();
         $admin_id = $loginUser->tokenable->id;
-        $list = fileuploads::
-            selectRaw('DATE_FORMAT(created_at, "%Y年%m月%d日") AS date')
+        $list = fileuploads::selectRaw('DATE_FORMAT(created_at, "%Y年%m月%d日") AS date')
             ->selectRaw('id,partner_id,admin_id,filename,filepath,size,openflag,status')
             ->where([
-            'admin_id'=>$admin_id,
-            'partner_id'=>$request->partner_id,
-            'status'=>1
-            ])->get();
+            'customer_id' => $request->customer_id,
+            'partner_id' => $request->partner_id,
+            'status' => 1
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return response($list, 201);
     }
     public function openFlag(Request $request)
     {
         fileuploads::where([
-            'id'=>$request->id
-        ])->update(['openflag'=>1]);
+            'id' => $request->id
+        ])->update(['openflag' => 1]);
         return response(true, 201);
     }
     public function deleteStatus(Request $request)
     {
         fileuploads::where([
-            'id'=>$request->id
-        ])->update(['status'=>0]);
+            'id' => $request->id
+        ])->update(['status' => 0]);
         return response(true, 201);
     }
 }

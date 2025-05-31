@@ -23,16 +23,17 @@ use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
-    const G_ADMIN = "admin";
-    const G_PARTNER = "partner";
-    function checkAdmin(){
+    public const G_ADMIN = "admin";
+    public const G_PARTNER = "partner";
+    public function checkAdmin()
+    {
         $loginUser = auth()->user()->currentAccessToken();
-        if($loginUser->tokenable->type != self::G_ADMIN){
+        if ($loginUser->tokenable->type != self::G_ADMIN) {
             throw new Exception();
         }
     }
     //
-    function index(Request $request)
+    public function index(Request $request)
     {
 
         $passwd = config('const.consts.PASSWORD');
@@ -53,15 +54,18 @@ class UserController extends Controller
         return response("error", 401);
 
     }
-    function test(){
+    public function test()
+    {
         return response("success", 200);
     }
-    function upload(Request $request){
+    public function upload(Request $request)
+    {
         $filename = uniqid().time().".jpg";
         $request->photo->storeAs('public/app/myImage', $filename);
         return response($filename, 201);
     }
-    function fileupload(Request $request){
+    public function fileupload(Request $request)
+    {
         $loginUser = auth()->user()->currentAccessToken();
         $dir = "public/files/file".$request->editid."/";
         Storage::makeDirectory($dir);
@@ -69,9 +73,10 @@ class UserController extends Controller
         $path = $file->store('uploads', 'public');
         $filename = $_FILES['file']['name'];
         $size = $_FILES['file']['size'];
-        //http://localhost:8000/storage/uploads/rzIz9QnmpsWNyNNf7xWyUeprlvByBIxU7YHRuELD.pptx
+
         $params = [];
-        $params[ 'partner_id' ] = $request->editid;
+        $params[ 'partner_id' ] = $request->partner_id;
+        $params[ 'customer_id'] = $request->customer_id;
         $params[ 'admin_id' ] = $loginUser->tokenable->id;
         $params[ 'filename' ] = $filename;
         $params[ 'filepath' ] = $path;
@@ -83,7 +88,7 @@ class UserController extends Controller
         fileuploads::insert($params);
         return response($loginUser, 201);
     }
-    function getAdmin(Request $request)
+    public function getAdmin(Request $request)
     {
         $user = User::where('type', $request->type)->get();
         $response = [
@@ -92,9 +97,9 @@ class UserController extends Controller
 
         return response($response, 201);
     }
-    function getPartner(Request $request)
+    public function getPartner(Request $request)
     {
-        try{
+        try {
             $this->checkAdmin();
             $sql = "
 SELECT
@@ -132,18 +137,18 @@ FROM (
                     ";
             $param = [];
             $param[] = $request->type;
-            $response = DB::select($sql,$param);
+            $response = DB::select($sql, $param);
             return response($response, 201);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response([], 201);
         }
     }
 
-    function getPartnerForCustomer($data)
+    public function getPartnerForCustomer($data)
     {
         $user = User::where('type', $data['type'])
-        ->where('id',$data['partner_id'])
-        ->where('admin_id',$data['admin_id'])
+        ->where('id', $data['partner_id'])
+        ->where('admin_id', $data['admin_id'])
         ->first();
         $response = [
             'user' => $user,
@@ -151,7 +156,7 @@ FROM (
 
         return $response;
     }
-    function editPartner(Request $request)
+    public function editPartner(Request $request)
     {
         Log::info('企業情報変更:'.$request);
         $response = true;
@@ -161,10 +166,10 @@ FROM (
         DB::beginTransaction();
 
 
-        try{
+        try {
 
-            $customer = User::where("type","partner")
-                    ->where('id',$request->id)
+            $customer = User::where("type", "partner")
+                    ->where('id', $request->id)
                     ->select("login_id")
                     ->first();
             $params = [
@@ -185,7 +190,7 @@ FROM (
 //                'system_name' => $request['system_name'],
 
             ];
-            if(!$request['password']){
+            if (!$request['password']) {
                 unset($params['password']);
             }
             User::where('id', $request->id)
@@ -200,12 +205,12 @@ FROM (
             $mailbody[ 'systemname' ] = $request->systemname;
             $mailbody[ 'login_id' ] = $customer->login_id;
 
-            if($request->person_address){
+            if ($request->person_address) {
                 $mailbody[ 'person' ] = $request->person;
                 Mail::to($request->person_address)->send(new EditPartnerEditMail($mailbody));
                 Log::info('企業情報変更メール配信担当者1');
             }
-            if($request->person_address2){
+            if ($request->person_address2) {
                 $mailbody[ 'person' ] = $request->person2;
                 Mail::to($request->person_address2)->send(new EditPartnerEditMail($mailbody));
                 Log::info('企業情報変更メール配信担当者2');
@@ -215,7 +220,7 @@ FROM (
             DB::commit();
             Log::info('企業情報変更成功:'.$request);
             return response("success", 200);
-        } catch (\Exception $exception){
+        } catch (\Exception $exception) {
             Log::info('企業情報変更失敗:'.$exception);
             DB::rollback();
             throw $exception;
@@ -223,18 +228,18 @@ FROM (
 
         return response($response, 201);
     }
-    function getPartnerDetailData(Request $request)
+    public function getPartnerDetailData(Request $request)
     {
         // ログインしているユーザー情報取得
         $loginUser = auth()->user()->currentAccessToken();
-        $customer = User::where("type","partner")
-            ->where('id',$request->partnerId);
-        $customer->where("admin_id",$loginUser->tokenable->id);
+        $customer = User::where("type", "partner")
+            ->where('id', $request->partnerId);
+        $customer->where("admin_id", $loginUser->tokenable->id);
         $customer = $customer->first();
 
         return response($customer, 200);
     }
-    function getPartnerDetail(Request $request)
+    public function getPartnerDetail(Request $request)
     {
         $response = [];
         // ログインしているユーザー情報取得
@@ -242,38 +247,44 @@ FROM (
         // 顧客画面から利用の場合は親のIDを取得
         $partner_id = $request->partnerId;
         $editid = $request->editId;
-        try{
+        try {
             $type = $request->type;
             // パートナー情報取得
             $user = [];
-            if($type === "partner"){
-                $customer = User::where("type","customer")
-                    ->where('id',$editid)
+            if ($type === "partner") {
+                $customer = User::where("type", "customer")
+                    ->where('id', $editid)
                     ->select("partner_id");
-                if($loginUser->tokenable->type == "admin") $customer->where("admin_id",$loginUser->tokenable->id);
+                if ($loginUser->tokenable->type == "admin") {
+                    $customer->where("admin_id", $loginUser->tokenable->id);
+                }
                 $customer = $customer->first();
-                $user = User::where('type', $type)->where("id",$customer->partner_id)->first();
+                $user = User::where('type', $type)->where("id", $customer->partner_id)->first();
             }
-            if($type === "customer"){
-                $customer = User::where("type","customer")
-                    ->where('id',$editid);
-                if($loginUser->tokenable->type == "admin") $customer->where("admin_id",$loginUser->tokenable->id);
+            if ($type === "customer") {
+                $customer = User::where("type", "customer")
+                    ->where('id', $editid);
+                if ($loginUser->tokenable->type == "admin") {
+                    $customer->where("admin_id", $loginUser->tokenable->id);
+                }
                 $user = $customer->first();
             }
-            if($type === "customerTOP"){ // 顧客管理画面一覧
-                $customer = User::where("type","partner")
-                    ->where('id',$partner_id);
-                if($loginUser->tokenable->type == "admin") $customer->where("admin_id",$loginUser->tokenable->id);
+            if ($type === "customerTOP") { // 顧客管理画面一覧
+                $customer = User::where("type", "partner")
+                    ->where('id', $partner_id);
+                if ($loginUser->tokenable->type == "admin") {
+                    $customer->where("admin_id", $loginUser->tokenable->id);
+                }
                 $user = $customer->first();
             }
 
             return response($user, 201);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
 
-           return response("error", 401);
+            return response("error", 401);
         }
     }
-    function editAdmin(Request $request)
+    public function editAdmin(Request $request)
     {
         for ($i = 0; $i <= 3; $i++) {
             User::where('id', $request[$i]['id'])->update(
@@ -286,7 +297,7 @@ FROM (
         }
         return response(true, 201);
     }
-    function setUserData(Request $request)
+    public function setUserData(Request $request)
     {
         Log::info('新規パートナー登録の実施:'.$request);
         $passwd = config('const.consts.PASSWORD');
@@ -294,15 +305,15 @@ FROM (
         $response = true;
         $loginUser = auth()->user()->currentAccessToken();
         DB::beginTransaction();
-        try{
+        try {
 
-        //     $request->validate([
-        //         'email' => 'required|unique:users',
-        //         //'fax' => 'required',
-        //     ]);
+            //     $request->validate([
+            //         'email' => 'required|unique:users',
+            //         //'fax' => 'required',
+            //     ]);
 
             User::insert([
-                "admin_id"=>$loginUser->tokenable->id,
+                "admin_id" => $loginUser->tokenable->id,
                 'type' => $request['type'],
                 'login_id' => $request['login_id'],
                 'name' => $request['name'],
@@ -341,7 +352,7 @@ FROM (
 
             $user_id = DB::getPdo()->lastInsertId();
 
-            $this->setLicensed($request,$user_id);
+            $this->setLicensed($request, $user_id);
 
 
             Log::info('新規パートナー登録の実施成功:'.$request);
@@ -352,14 +363,14 @@ FROM (
             $mailbody[ 'systemname' ] = $request->systemname;
             $mailbody[ 'login_id' ] = $request->login_id;
             $mailbody[ 'licensesBody' ] = array_sum($request->licensesBody);
-            if($request->person_address){
+            if ($request->person_address) {
                 $mailbody[ 'person' ] = $request->person;
                 $mailbody[ 'password' ] = $request['password'];
                 Mail::to($request->person_address)->send(new SetUserDataMail($mailbody));
                 Mail::to($request->person_address)->send(new SetUserDataMailPassword($mailbody));
                 Log::info('新規パートナー登録メール配信担当者1');
             }
-            if($request->person_address2){
+            if ($request->person_address2) {
                 $mailbody[ 'person' ] = $request->person2;
                 $mailbody[ 'password' ] = $request['password'];
                 Mail::to($request->person_address2)->send(new SetUserDataMail($mailbody));
@@ -368,84 +379,89 @@ FROM (
             }
             DB::commit();
             return response("success", 200);
-        } catch (\Exception $exception){
+        } catch (\Exception $exception) {
             Log::error('新規パートナー登録の実施失敗:'.$request);
             DB::rollback();
             throw $exception;
         }
     }
-    function setLicensed($data,$user_id){
+    public function setLicensed($data, $user_id)
+    {
         Log::info('ライセンス登録関数の実施:user_id:'.$user_id.":".$data);
         $licensesKey = $data['licensesKey'];
         $licensesBody = $data['licensesBody'];
-        foreach($licensesKey as $key=>$value){
-            $license = userlisence::where('code', $value)->where('user_id',$user_id)->first();
-            if($license){
+        foreach ($licensesKey as $key => $value) {
+            $license = userlisence::where('code', $value)->where('user_id', $user_id)->first();
+            if ($license) {
                 $data = userlisence::find($license->id);
                 $data->update([
                     'num' => $licensesBody[$key],
-                    'updated_at'=>date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
                 ]);
-            }else{
-                if($licensesBody[$key] > 0 ){
+            } else {
+                if ($licensesBody[$key] > 0) {
                     userlisence::insert([
                         'user_id' => $user_id,
                         'code' => $value,
                         'num' => $licensesBody[$key],
-                        'created_at'=>date('Y-m-d H:i:s'),
-                        'updated_at'=>date('Y-m-d H:i:s'),
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s'),
                     ]);
                 }
             }
         }
     }
-    function editPartnerData(Request $request)
+    public function editPartnerData(Request $request)
     {
         Log::info('editPartnerData実施:'.$request);
         DB::beginTransaction();
-        try{
+        try {
             $loginUser = auth()->user()->currentAccessToken();
             $admin_id = $loginUser->tokenable->id;
-            $user = User::where("id",$request->id)->where("admin_id",$admin_id)->where("type",$request->type);
-            if($request->password){
+            $user = User::where("id", $request->id)->where("admin_id", $admin_id)->where("type", $request->type);
+            if ($request->password) {
                 $passwd = config('const.consts.PASSWORD');
                 $user->update([
                         "password" => openssl_encrypt($request->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv'])
                     ]);
             }
-            if($request->person) $user->update(["person" => $request->person]);
-            if($request->person_address) $user->update(["person_address" => $request->person_address]);
+            if ($request->person) {
+                $user->update(["person" => $request->person]);
+            }
+            if ($request->person_address) {
+                $user->update(["person_address" => $request->person_address]);
+            }
             $user->update([
                 "post_code" => $request->post_code,
-                "pref"=>$request->pref,
-                "address1"=>$request->address1,
-                "address2"=>$request->address2,
-                "tel"=>$request->tel,
-                "fax"=>$request->fax,
-                "requestFlag"=>$request->requestFlag,
-                "person"=>$request->person,
-                "person_address"=>$request->person_address,
-                "person2"=>$request->person2,
-                "person_address2"=>$request->person_address2,
-                "person_tel"=>$request->person_tel,
-                "system_name"=>$request->system_name,
-                "element1"=>$request->element1,
-                "element2"=>$request->element2,
-                "element3"=>$request->element3,
-                "element4"=>$request->element4,
-                "element5"=>$request->element5,
-                "element6"=>$request->element6,
-                "element7"=>$request->element7,
-                "element8"=>$request->element8,
-                "element9"=>$request->element9,
-                "element10"=>$request->element10,
-                "element11"=>$request->element11,
-                "element12"=>$request->element12,
-                "element13"=>$request->element13,
-                "element14"=>$request->element14,
+                "pref" => $request->pref,
+                "address1" => $request->address1,
+                "address2" => $request->address2,
+                "tel" => $request->tel,
+                "fax" => $request->fax,
+                "requestFlag" => $request->requestFlag,
+                "person" => $request->person,
+                "person_address" => $request->person_address,
+                "person2" => $request->person2,
+                "person_address2" => $request->person_address2,
+                "person_tel" => $request->person_tel,
+                "system_name" => $request->system_name,
+                "element1" => $request->element1,
+                "element2" => $request->element2,
+                "element3" => $request->element3,
+                "element4" => $request->element4,
+                "element5" => $request->element5,
+                "element6" => $request->element6,
+                "element7" => $request->element7,
+                "element8" => $request->element8,
+                "element9" => $request->element9,
+                "element10" => $request->element10,
+                "element11" => $request->element11,
+                "element12" => $request->element12,
+                "element13" => $request->element13,
+                "element14" => $request->element14,
             ]);
 
-            $this->setLicensed($request,$request->id);
+            $this->setLicensed($request, $request->id);
 
             Log::info('更新パートナーの実施成功:'.$request);
             // 情報登録メール
@@ -454,12 +470,12 @@ FROM (
             $mailbody[ 'name' ] = $request->name;
             $mailbody[ 'systemname' ] = $request->systemname;
             $mailbody[ 'licensesBody' ] = array_sum($request->licensesBody);
-            if($request->person_address){
+            if ($request->person_address) {
                 Log::info('更新パートナーへメール:'.$request->person_address);
                 $mailbody[ 'person' ] = $request->person;
                 Mail::to($request->person_address)->send(new EditUserDataMail($mailbody));
             }
-            if($request->person_address2){
+            if ($request->person_address2) {
                 Log::info('更新パートナーへメール:'.$request->person_address2);
                 $mailbody[ 'person' ] = $request->person2;
                 Mail::to($request->person_address2)->send(new EditUserDataMail($mailbody));
@@ -467,7 +483,7 @@ FROM (
 
             DB::commit();
             return response("success", 200);
-        } catch (\Exception $exception){
+        } catch (\Exception $exception) {
             DB::rollback();
             throw $exception;
         }
@@ -475,16 +491,17 @@ FROM (
 
 
 
-    function setCustomerAdd(Request $request){
+    public function setCustomerAdd(Request $request)
+    {
         $req = $request[ 'type' ];
         Log::info('新規顧客登録開始:'.$request);
-        try{
+        try {
 
-            $partner = User::where("type","partner")
-                    ->where('id',$request->partner_id)
+            $partner = User::where("type", "partner")
+                    ->where('id', $request->partner_id)
                     ->select("system_name")
                     ->first();
-            if(!$partner){
+            if (!$partner) {
                 throw new Exception();
             }
             $passwd = config('const.consts.PASSWORD');
@@ -511,16 +528,16 @@ FROM (
                 'customFlag' => $request['customFlag'],
                 'sslFlag' => $request['sslFlag'],
                 'logoImagePath' => $request['logoImagePath'],
-                'privacy'=>$request['privacy'],
-                'privacyText'=>$request['privacyText'],
-                'displayFlag'=>$request['displayFlag'],
-                'tanto_name'=>$request['tanto_name'],
-                'tanto_address'=>$request['tanto_address'],
-                'tanto_busyo'=>$request['tanto_busyo'],
-                'tanto_tel1'=>$request['tanto_tel1'],
-                'tanto_tel2'=>$request['tanto_tel2'],
-                'tanto_name2'=>$request['tanto_name2'],
-                'tanto_address2'=>$request['tanto_address2']
+                'privacy' => $request['privacy'],
+                'privacyText' => $request['privacyText'],
+                'displayFlag' => $request['displayFlag'],
+                'tanto_name' => $request['tanto_name'],
+                'tanto_address' => $request['tanto_address'],
+                'tanto_busyo' => $request['tanto_busyo'],
+                'tanto_tel1' => $request['tanto_tel1'],
+                'tanto_tel2' => $request['tanto_tel2'],
+                'tanto_name2' => $request['tanto_name2'],
+                'tanto_address2' => $request['tanto_address2']
             ]);
 
             $mailbody = [];
@@ -528,14 +545,14 @@ FROM (
             $mailbody[ 'name' ] = $request['name'];
             $mailbody[ 'systemname' ] = $partner->system_name;
             $mailbody[ 'login_id' ] = $request['login_id'];
-            if($request['tanto_address']){
+            if ($request['tanto_address']) {
                 $mailbody[ 'person' ] = $request['tanto_name'];
                 $mailbody[ 'password' ] = $request['password'];
                 Mail::to($request['tanto_address'])->send(new CustomerAddMail($mailbody));
                 Mail::to($request['tanto_address'])->send(new CustomerAddMailPassword($mailbody));
                 Log::info('新規顧客登録メール配信担当者1');
             }
-            if($request['tanto_address2']){
+            if ($request['tanto_address2']) {
                 $mailbody[ 'person' ] = $request['tanto_name2'];
                 $mailbody[ 'password' ] = $request['password'];
                 Mail::to($request['tanto_address2'])->send(new CustomerAddMail($mailbody));
@@ -546,35 +563,35 @@ FROM (
             Log::info('新規顧客登録成功');
             DB::commit();
             return response("success", 200);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             Log::info('新規顧客登録失敗'.$e);
             return response("error", 400);
         }
     }
-    function setUserLicense(Request $request)
+    public function setUserLicense(Request $request)
     {
         DB::beginTransaction();
-        try{
+        try {
             $user_id = $request['res']['data'];
             $licensesKey = $request['licensesKey'];
             $licensesBody = $request['licensesBody'];
             $pdfList = $request['pdfList'];
-            foreach($licensesKey as $key=>$value){
-                $license = userlisence::where('code', $value)->where('user_id',$user_id)->first();
-                if($license){
+            foreach ($licensesKey as $key => $value) {
+                $license = userlisence::where('code', $value)->where('user_id', $user_id)->first();
+                if ($license) {
                     $data = userlisence::find($license->id);
                     $data->update([
                         'num' => $licensesBody[$key],
-                        'updated_at'=>date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s'),
                     ]);
-                }else{
-                    if($licensesBody[$key] > 0 ){
+                } else {
+                    if ($licensesBody[$key] > 0) {
                         userlisence::insert([
                             'user_id' => $user_id,
                             'code' => $value,
                             'num' => $licensesBody[$key],
-                            'created_at'=>date('Y-m-d H:i:s'),
-                            'updated_at'=>date('Y-m-d H:i:s'),
+                            'created_at' => date('Y-m-d H:i:s'),
+                            'updated_at' => date('Y-m-d H:i:s'),
                         ]);
                     }
                 }
@@ -601,63 +618,64 @@ FROM (
                 */
             DB::commit();
             return response($licensesKey, 200);
-        } catch (\Exception $exception){
+        } catch (\Exception $exception) {
             DB::rollback();
             throw $exception;
         }
     }
 
-    function getCustomerList(Request $request){
-        try{
+    public function getCustomerList(Request $request)
+    {
+        try {
             // パートナー権限でログインしたとき、パラメータとIDが一致しないときはエラー
             $loginUser = auth()->user()->currentAccessToken();
             $id = $loginUser->tokenable->id;
-            if($loginUser->tokenable->type === 'partner')
-            {
+            if ($loginUser->tokenable->type === 'partner') {
                 $id = $loginUser->tokenable->admin_id;
                 //throw new Exception();
             }
 
-            $subQuery = User::
-            select('users.*')
+            $subQuery = User::select('users.*')
             ->selectRaw('count(exams.id) AS count')
             ->selectRaw('(SELECT count(exams.id) FROM exams WHERE started_at IS NOT NULL AND  deleted_at IS NULL AND exams.customer_id = users.id) AS syori')
             ->selectRaw('(SELECT count(exams.id) FROM exams WHERE ended_at IS NOT NULL AND  deleted_at IS NULL AND exams.customer_id = users.id ) AS ended')
             ->leftJoin('exams', function ($join) {
-                    $join->on('exams.customer_id', '=', 'users.id')
-                        ->whereNull('exams.deleted_at');
-                })
+                $join->on('exams.customer_id', '=', 'users.id')
+                    ->whereNull('exams.deleted_at');
+            })
             ->where([
-                "users.type"=>"customer",
-                "users.partner_id"=>$request->partner_id
-                ,"users.admin_id"=>$id
-                ,"users.deleted_at"=>null
-                ])
+            "users.type" => "customer",
+            "users.partner_id" => $request->partner_id
+            ,"users.admin_id" => $id
+            ,"users.deleted_at" => null
+            ])
             ->groupBy('users.id');
             $result = User::fromSub($subQuery, 'A')
             ->selectRaw('A.* , (A.count - A.ended) as zan')
             ->selectRaw('A.*')
             ->get();
             return response($result, 201);
-        }catch(\Exception $e){
-            return response([],401);
+        } catch (\Exception $e) {
+            return response([], 401);
         }
     }
 
-    function getPartnerid(Request $request){
-        try{
+    public function getPartnerid(Request $request)
+    {
+        try {
             $result = User::select('partner_id')
             //->where("type",$request->type)
-            ->where("id",$request->id)
-            ->where("deleted_at",null)
+            ->where("id", $request->id)
+            ->where("deleted_at", null)
             ->first();
             return response($result->partner_id, 200);
-        }catch(\Exception $e){
-            return response(0,201);
+        } catch (\Exception $e) {
+            return response(0, 201);
         }
     }
-    function getLisencesList(Request $request){
-        try{
+    public function getLisencesList(Request $request)
+    {
+        try {
 
             $result = DB::table('exams as e')
                 ->leftJoin('testparts as t', 'e.test_id', '=', 't.test_id')
@@ -682,17 +700,18 @@ FROM (
                 ->get();
 
             return response($result, 200);
-        }catch(\Exception $e){
-            return response([],201);
+        } catch (\Exception $e) {
+            return response([], 201);
         }
     }
-    function getUserLisence(Request $request){
+    public function getUserLisence(Request $request)
+    {
         $license = $this->getLicenseListsJP();
         $user_id = $request->user_id;
-       // $loginUser = auth()->user()->currentAccessToken();
-        if(!$this->checkuser($user_id)){
+        // $loginUser = auth()->user()->currentAccessToken();
+        if (!$this->checkuser($user_id)) {
             //throw new Exception();
-            return response("",201);
+            return response("", 201);
         }
 
         // $admin = $loginUser->tokenable;
@@ -700,120 +719,128 @@ FROM (
         $customer = User::find($user_id);
         $partner = User::where(
             [
-                "admin_id"=>$this->admin_id,
-                "id"=>$customer->partner_id,
-                "deleted_at"=>null
-            ])->first();
-        $result = userlisence::where("user_id",$partner->id)->orderby("code")->get();
-        foreach($result as $k=>$value){
+                "admin_id" => $this->admin_id,
+                "id" => $customer->partner_id,
+                "deleted_at" => null
+            ]
+        )->first();
+        $result = userlisence::where("user_id", $partner->id)->orderby("code")->get();
+        foreach ($result as $k => $value) {
             $result[ $k ][ 'jp' ] = $license[$value[ 'code' ]];
         }
-        return response($result,200);
+        return response($result, 200);
     }
-    function getUserLisenceCalc(Request $request){
+    public function getUserLisenceCalc(Request $request)
+    {
         $license = $this->getLicenseListsJP();
         $user_id = $request->user_id;
         $loginUser = auth()->user()->currentAccessToken();
-        if(!$this->checkuser($user_id)){
+        if (!$this->checkuser($user_id)) {
             throw new Exception();
         }
 
         $customer = User::find($user_id);
         $partner = User::where(
             [
-                "admin_id"=>$this->admin_id,
-                "id"=>$customer->partner_id,
-                "deleted_at"=>null
-            ])->first();
+                "admin_id" => $this->admin_id,
+                "id" => $customer->partner_id,
+                "deleted_at" => null
+            ]
+        )->first();
 
-        $result = userlisence::where("user_id",$partner->id)->orderby("code")->get();
-        foreach($result as $k=>$value){
+        $result = userlisence::where("user_id", $partner->id)->orderby("code")->get();
+        foreach ($result as $k => $value) {
             $result[ $k ][ 'jp' ] = $license[$value[ 'code' ]];
         }
-        return response($result,200);
+        return response($result, 200);
     }
-    function getLicenseListsJP(){
+    public function getLicenseListsJP()
+    {
         $data = [];
         $license = config('const.consts.LISENCE');
-        foreach($license as $value){
-            foreach($value['list'] as $val){
+        foreach ($license as $value) {
+            foreach ($value['list'] as $val) {
                 $data[$val['code']] = $val[ 'text' ];
             }
         }
         return $data;
     }
-    function checkEmail(Request $request){
+    public function checkEmail(Request $request)
+    {
         $email = $request['email'];
         $user = User::where('email', $email)->first();
-        if($user){
+        if ($user) {
             // すでにメールが登録されている
             return response(true, 200);
-        }else{
+        } else {
             return response(true, 201);
         }
     }
-    function checkLoginID(Request $request){
+    public function checkLoginID(Request $request)
+    {
         $login_id = $request['loginid'];
         $editid = $request['editid'];
-        try{
+        try {
             $user = User::where('login_id', $login_id);
-            if($editid > 0 ){
+            if ($editid > 0) {
                 $user = $user->where('id', '!=', $editid);
             }
             $user = $user->first();
 
-            if($user){
+            if ($user) {
                 // すでにメールが登録されている
                 return response("success", 200);
-            }else{
+            } else {
                 return response("error", 200);
 
             }
-        }catch(Exception $e){
-                return response("error", 200);
+        } catch (Exception $e) {
+            return response("error", 200);
         }
     }
-    function getUserData(Request $request){
+    public function getUserData(Request $request)
+    {
         $loginUser = auth()->user()->currentAccessToken();
         $admin_id = $loginUser->tokenable->id;
-        try{
-            $user = User::where('admin_id', $admin_id)->where("id",$request->id)->first();
-            $license = userlisence::where("user_id",$user->id)->get();
+        try {
+            $user = User::where('admin_id', $admin_id)->where("id", $request->id)->first();
+            $license = userlisence::where("user_id", $user->id)->get();
             $temp = [];
-            foreach($license as $value){
+            foreach ($license as $value) {
                 $temp[$value->code] = $value->num;
             }
 
             $user->licenses = $temp;
-            if($user){
+            if ($user) {
                 return response($user, 200);
-            }else{
+            } else {
                 throw new Exception();
             }
-        }catch(Exception $e){
-                return response("error", 201);
+        } catch (Exception $e) {
+            return response("error", 201);
         }
     }
-    function getUserElement(Request $request){
+    public function getUserElement(Request $request)
+    {
         $user_id = $request->user_id;
         $test_id = $request->test_id;
         $loginUser = auth()->user()->currentAccessToken();
         $admin_id = $loginUser->tokenable->id;
         $partner_id = User::find($user_id)->partner_id;
-        $partner = User::where("id",$partner_id)->where("admin_id",$admin_id)->first();
+        $partner = User::where("id", $partner_id)->where("admin_id", $admin_id)->first();
         return response($partner, 200);
     }
-    function getCustomerEdit(Request $request)
+    public function getCustomerEdit(Request $request)
     {
         $partner_id = $request->partner_id;
         $edit_id = $request->edit_id;
-        if(!$this->checkuser($partner_id)){
+        if (!$this->checkuser($partner_id)) {
             throw new Exception();
         }
-        try{
+        try {
             $result = User::Where([
-                "id"=>$partner_id,
-                "partner_id"=>$edit_id
+                "id" => $partner_id,
+                "partner_id" => $edit_id
             ])
             ->select([
                 'name',
@@ -845,86 +872,88 @@ FROM (
             ])
             ->first();
             return response($result, 200);
-        }catch(Exception $e){
+        } catch (Exception $e) {
             return response($e, 400);
         }
     }
-    function customerEdit(Request $request){
+    public function customerEdit(Request $request)
+    {
         Log::info('顧客情報編集開始'.$request);
-//        $loginUser = auth()->user()->currentAccessToken();
-//        $admin_id = $loginUser->tokenable->id;
+        //        $loginUser = auth()->user()->currentAccessToken();
+        //        $admin_id = $loginUser->tokenable->id;
         $partner_id = $request->partner_id;
         $id = $request->id;
 
-        if(!$this->checkuser($partner_id)){
+        if (!$this->checkuser($partner_id)) {
             throw new Exception();
         }
-        try{
-            $user = User::where(['id'=>$id,'partner_id'=>$partner_id,'admin_id'=>$this->admin_id]);
+        try {
+            $user = User::where(['id' => $id,'partner_id' => $partner_id,'admin_id' => $this->admin_id]);
             $passwd = config('const.consts.PASSWORD');
             $password = openssl_encrypt($request->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
 
             $flg = $user->update([
-                'login_id'=>$request->login_id,
-                'name'=>$request->name,
-                'post_code'=>$request->post_code,
-                'pref'=>$request->pref,
-                'address1'=>$request->address1,
-                'address2'=>$request->address2,
-                'tel'=>$request->tel,
-                'fax'=>$request->fax,
-                'trendFlag'=>$request->trendFlag,
-                'csvFlag'=>$request->csvFlag,
-                'pdfFlag'=>$request->pdfFlag,
-                'weightFlag'=>$request->weightFlag,
-                'excelFlag'=>$request->excelFlag,
-                'customFlag'=>$request->customFlag,
-                'sslFlag'=>$request->sslFlag,
-                'logoImagePath'=>$request->logoImagePath,
-                'privacy'=>$request->privacy,
-                'privacyText'=>$request->privacyText,
-                'displayFlag'=>$request->customerDisplayFlag,
-                'tanto_name'=>$request->tanto_name,
-                'tanto_address'=>$request->tanto_address,
-                'tanto_busyo'=>$request->tanto_busyo,
-                'tanto_tel1'=>$request->tanto_tel1,
-                'tanto_tel2'=>$request->tanto_tel2,
-                'tanto_name2'=>$request->tanto_name2,
-                'tanto_address2'=>$request->tanto_address2
+                'login_id' => $request->login_id,
+                'name' => $request->name,
+                'post_code' => $request->post_code,
+                'pref' => $request->pref,
+                'address1' => $request->address1,
+                'address2' => $request->address2,
+                'tel' => $request->tel,
+                'fax' => $request->fax,
+                'trendFlag' => $request->trendFlag,
+                'csvFlag' => $request->csvFlag,
+                'pdfFlag' => $request->pdfFlag,
+                'weightFlag' => $request->weightFlag,
+                'excelFlag' => $request->excelFlag,
+                'customFlag' => $request->customFlag,
+                'sslFlag' => $request->sslFlag,
+                'logoImagePath' => $request->logoImagePath,
+                'privacy' => $request->privacy,
+                'privacyText' => $request->privacyText,
+                'displayFlag' => $request->customerDisplayFlag,
+                'tanto_name' => $request->tanto_name,
+                'tanto_address' => $request->tanto_address,
+                'tanto_busyo' => $request->tanto_busyo,
+                'tanto_tel1' => $request->tanto_tel1,
+                'tanto_tel2' => $request->tanto_tel2,
+                'tanto_name2' => $request->tanto_name2,
+                'tanto_address2' => $request->tanto_address2
             ]);
-            if($request->password) {
+            if ($request->password) {
                 Log::info('顧客情報編集パスワード'.$request);
-                $flg = $user->update(["password"=>$password]);
+                $flg = $user->update(["password" => $password]);
             }
-            if($flg){
+            if ($flg) {
                 Log::info('顧客情報編集成功');
 
                 return response(true, 200);
-            }else{
+            } else {
                 Log::info('顧客情報編集失敗');
 
                 return response(false, 401);
             }
-        }catch(Exception $e){
+        } catch (Exception $e) {
             Log::info('顧客情報編集失敗');
             return response($e, 400);
         }
     }
 
 
-    function logout()
+    public function logout()
     {
         auth('sanctum')->user()->tokens()->delete();
         return response(['message' => 'You have been successfully logged out.'], 200);
     }
     // アクセスしていいユーザIDかどうかの確認
-    function checkUserIDData($user_id){
+    public function checkUserIDData($user_id)
+    {
         $loginUser = auth()->user()->currentAccessToken();
         // 管理者でログインしたとき
-        if($loginUser->tokenable->type === "admin"){
+        if ($loginUser->tokenable->type === "admin") {
             $admin_id = $loginUser->tokenable->id;
-            $result = User::find($user_id)->where("admin_id",$admin_id)->count();
-            if($result < 1){
+            $result = User::find($user_id)->where("admin_id", $admin_id)->count();
+            if ($result < 1) {
                 return false;
             }
             return true;

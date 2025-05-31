@@ -81,3 +81,6 @@ VerifyCsrfToken.php
 ```
 
 php artisan config:cache
+
+### php一括ダウンロードコマンド
+`php artisan app:pdf-download`

@@ -65,6 +65,7 @@ class pdfs extends Model
         $row = 0;
         foreach ($pdflist as $value) {
             if (is_object($value) && $value->pdf_id == 7) { // 自己理解版
+
                 // 受検結果取得
                 $pfsObj = new Pfs();
                 $result = $pfsObj->getPfs($exam->id);
@@ -72,8 +73,14 @@ class pdfs extends Model
                 $strong = $pfsObj->getStrong($result, $value);
                 $age = $this->age->getAge($result->starttime, $birth);
                 // PFSグラフの画像作成
-                require_once(public_path()."/PDF/pfsCreateGraph.php");
-
+                // chartグラフのパス
+                $fileDir = public_path()."/images/PDF/".$id."/";
+                if (!file_exists($fileDir)) {
+                    mkdir($fileDir);
+                }
+                $filePath = $fileDir.date('Ymdhis')."_radar_chart.png";
+                //require_once(public_path()."/PDF/pfsCreateGraph.php");
+                createRadarChart($filePath, $result);
                 $html = view(
                     '/PDF/JIKORIKAI',
                     [
@@ -100,9 +107,8 @@ class pdfs extends Model
                 $pdf->SetAutoPageBreak(false);
                 $pdf->SetMargins(0, 0, 0);
                 $pdf->WriteHTML($html);
-
                 $pdf->Image(
-                    public_path('images/PDF/radar_chart.png'),
+                    $filePath,
                     50,    // X
                     88,   // Y
                     0,   // 幅

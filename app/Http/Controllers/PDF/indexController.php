@@ -12,7 +12,8 @@ class indexController extends Controller
 
     public function index(Request $request, $id, $code, $birth)
     {
-
+        // PFS用のチャートグラフを生成するよう
+        require_once(public_path()."/PDF/pfsCreateGraph.php");
         $obj = new pdfs();
         $pdf = $obj->addPageToPdf($id, $code, $birth);
 

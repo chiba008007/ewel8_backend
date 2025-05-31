@@ -21,3 +21,4 @@ yarn-error.log
 /.vscode
 /storage/app/public/PDF/*
 !/storage/app/public/PDF/.gitkeep
+public/images/PDF/*

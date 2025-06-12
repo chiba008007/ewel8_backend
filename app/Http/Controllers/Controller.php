@@ -19,6 +19,7 @@ class Controller extends BaseController
         $this->admin_id = $loginUser->tokenable->id;
         // 管理者でログインしたとき
         if ($loginUser->tokenable->type == "admin") {
+
             // $result = User::select("id")->where("id", $user_id)->where("admin_id", $this->admin_id)->count();
             // if ($result < 1) {
             //     return false;

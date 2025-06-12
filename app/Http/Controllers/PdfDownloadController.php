@@ -19,11 +19,11 @@ class PdfDownloadController extends Controller
     public function getPDFUpload(Request $request)
     {
         $loginUser = auth()->user()->currentAccessToken();
-        $user_id = $loginUser->tokenable->id;
-        if (!$this->checkuser($user_id)) {
-            throw new Exception();
-        }
-        $user = User::select(["partner_id"])->find($request->customer_id);
+        //  $user_id = $loginUser->tokenable->id;
+        // if (!$this->checkuser($user_id)) {
+        //     throw new Exception();
+        // }
+        // $user = User::select(["partner_id"])->find($request->customer_id);
         $list = pdfDownloads::selectRaw('
                 id,
                 partner_id,
@@ -36,7 +36,7 @@ class PdfDownloadController extends Controller
                 DATE_FORMAT(updated_at, "%Y年%m月%d日") as end
             ')
             ->where([
-                'partner_id'  => $user->partner_id,
+                'partner_id'  => $request->partner_id,
                 'customer_id' => $request->customer_id,
                 'test_id'     => $request->test_id,
             ])

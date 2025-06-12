@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\fileuploads;
 use Illuminate\Http\Request;
+use App\Models\User;
+use Exception;
 
 class FileuploadsController extends Controller
 {
@@ -12,14 +14,17 @@ class FileuploadsController extends Controller
      */
     public function list(Request $request)
     {
-
         $loginUser = auth()->user()->currentAccessToken();
-        $admin_id = $loginUser->tokenable->id;
+        // $admin_id = $loginUser->tokenable->id;
+
+        $partner_id = $request->partner_id;
+        $customer_id = $request->customer_id;
+
         $list = fileuploads::selectRaw('DATE_FORMAT(created_at, "%Y年%m月%d日") AS date')
             ->selectRaw('id,partner_id,admin_id,filename,filepath,size,openflag,status')
             ->where([
-            'customer_id' => $request->customer_id,
-            'partner_id' => $request->partner_id,
+            'customer_id' => $customer_id,
+            'partner_id' => $partner_id,
             'status' => 1
             ])
             ->orderBy('created_at', 'desc')

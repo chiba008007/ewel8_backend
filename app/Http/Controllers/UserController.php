@@ -252,21 +252,11 @@ FROM (
             // パートナー情報取得
             $user = [];
             if ($type === "partner") {
-                $customer = User::where("type", "customer")
-                    ->where('id', $editid)
-                    ->select("partner_id");
-                if ($loginUser->tokenable->type == "admin") {
-                    $customer->where("admin_id", $loginUser->tokenable->id);
-                }
-                $customer = $customer->first();
-                $user = User::where('type', $type)->where("id", $customer->partner_id)->first();
+                $user = User::where('type', $type)->where("id", $editid)->first();
             }
             if ($type === "customer") {
                 $customer = User::where("type", "customer")
                     ->where('id', $editid);
-                if ($loginUser->tokenable->type == "admin") {
-                    $customer->where("admin_id", $loginUser->tokenable->id);
-                }
                 $user = $customer->first();
             }
             if ($type === "customerTOP") { // 顧客管理画面一覧
@@ -733,22 +723,9 @@ FROM (
     public function getUserLisenceCalc(Request $request)
     {
         $license = $this->getLicenseListsJP();
-        $user_id = $request->user_id;
-        $loginUser = auth()->user()->currentAccessToken();
-        if (!$this->checkuser($user_id)) {
-            throw new Exception();
-        }
+        $customer_id = $request->customer_id;
 
-        $customer = User::find($user_id);
-        $partner = User::where(
-            [
-                "admin_id" => $this->admin_id,
-                "id" => $customer->partner_id,
-                "deleted_at" => null
-            ]
-        )->first();
-
-        $result = userlisence::where("user_id", $partner->id)->orderby("code")->get();
+        $result = userlisence::where("user_id", $customer_id)->orderby("code")->get();
         foreach ($result as $k => $value) {
             $result[ $k ][ 'jp' ] = $license[$value[ 'code' ]];
         }

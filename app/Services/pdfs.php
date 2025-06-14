@@ -43,7 +43,11 @@ class pdfs extends Model
 
     public function addPageToPdf($id, $code, $birth)
     {
+
         $pdf = $this->pdf;
+        $pdf->SetMargins(0, 0, 0);
+        $pdf->SetAutoPageBreak(false);
+        $pdf->AddPage(); // ← ここで明示的にページ追加
         $passwd = config('const.consts.PASSWORD');
         $birth = preg_replace("/\-/", "/", $birth);
         $exam = Exam::where([
@@ -105,7 +109,7 @@ class pdfs extends Model
                     ]
                 )->render();
                 $pdf->SetAutoPageBreak(false);
-                $pdf->SetMargins(0, 0, 0);
+                //$pdf->SetMargins(0, 0, 0);
                 $pdf->WriteHTML($html);
                 $pdf->Image(
                     $filePath,
@@ -140,7 +144,7 @@ class pdfs extends Model
                     'risk' => $risk,
                     ])->render();
                 $pdf->SetAutoPageBreak(false);
-                $pdf->SetMargins(0, 0, 0);
+                //$pdf->SetMargins(0, 0, 0);
                 $pdf->WriteHTML($html);
                 $row++;
             }

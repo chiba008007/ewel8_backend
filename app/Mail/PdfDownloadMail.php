@@ -51,7 +51,7 @@ class PdfDownloadMail extends Mailable
                     'person' => $this->person,
                     'testname' => $this->testname,
                     'uploadFileMail' => $this->uploadFileMail,
-
+                    'baseURL' => env('APP_URL'),
                     'invgfoot' => $this->invgfoot,
                     ]);
     }

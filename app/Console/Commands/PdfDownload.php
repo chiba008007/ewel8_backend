@@ -42,6 +42,8 @@ class PdfDownload extends Command
     private $partner_id;
     private $customer_id ;
     private $zipDir;
+
+    private $prefix = "batchdownload_";
     public function __construct(ZipService $zipService)
     {
         parent::__construct();
@@ -145,20 +147,20 @@ class PdfDownload extends Command
                     $code = $exam->email;
                     $birth = openssl_decrypt($exam->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
                     $pdf = $obj->addPageToPdf($id, $code, $birth);
-                    if ($examGroupCount - 1 != $no) {
-                        $pdf->AddPage();
-                    }
+                    // if ($examGroupCount - 1 != $no) {
+                    //     $pdf->AddPage();
+                    // }
                     $no++;
                 }
 
                 $start = $examGroup->first()->number;
                 //$end   = $examGroup->last()->number;
-                $filename = "PDF_".Str::random(40);
+                $filename = $this->prefix."_".$this->test_id."_".date('YmdH')."_0".$start;
                 $savefile = "{$this->zipDir}/{$filename}.pdf";
                 $this->zipFilename[$start] = $filename.".pdf";
                 $pdf->Output($savefile, 'F');
                 $this->setFileupload($start, "pdf");
-                $uploadFileMail .= "PDF_".$start.".pdf / ";
+                $uploadFileMail .= $filename.".pdf / ";
             }
         }
         // ZIP化
@@ -181,12 +183,11 @@ class PdfDownload extends Command
             }
 
             $chunks = array_chunk($pdfPaths, $this->pdfSlice);
-
             if ($this->downloadZip($chunks)) {
                 // 成功
                 foreach ($chunks as $index => $pdfGroup) {
                     $this->setFileupload($index);
-                    $uploadFileMail .= "zip_".($index + 1).".zip / ";
+                    $uploadFileMail .= $this->prefix."_".$this->test_id."_".date('Ymd')."_0".($index + 1)."_inv.zip / ";
                 }
             } else {
                 // 失敗
@@ -218,6 +219,7 @@ class PdfDownload extends Command
     }
     public function setFileupload($index, $type = "zip")
     {
+        $filename = $this->prefix."_".$this->test_id."_".date('YmdH');
         $size = filesize(storage_path('/app/public/uploads/').$this->zipFilename[$index]);
         $params = [];
         $params[ 'test_id'    ] = $this->test_id;
@@ -225,9 +227,9 @@ class PdfDownload extends Command
         $params[ 'partner_id' ] = $this->partner_id;
         $params[ 'admin_id' ] = 1;
         if ($type == "zip") {
-            $params[ 'filename' ] = "zip_".($index + 1).".zip";
+            $params[ 'filename' ] = $filename."_0".($index + 1)."_inv.zip";
         } else {
-            $params[ 'filename' ] = "pdf_".($index).".pdf";
+            $params[ 'filename' ] = $filename."_0".($index).".pdf";
         }
         $params[ 'filepath' ] = "uploads/".$this->zipFilename[$index];
         $params[ 'size' ] = $size;
@@ -238,8 +240,9 @@ class PdfDownload extends Command
     }
     public function downloadZip($chunks)
     {
+        $filename = $this->prefix."_".$this->test_id."_".date('YmdH');
         foreach ($chunks as $index => $pdfGroup) {
-            $this->zipFilename[$index] = Str::random(40).".zip";
+            $this->zipFilename[$index] = $filename."_0".($index + 1)."_inv.zip";
             $zipPath = $this->zipDir . "/".$this->zipFilename[$index];
             $zip = new ZipArchive();
             if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {

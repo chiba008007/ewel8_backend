@@ -33,7 +33,8 @@ class PdfDownloadController extends Controller
                 type,
                 code,
                 DATE_FORMAT(created_at, "%Y年%m月%d日") as start,
-                DATE_FORMAT(updated_at, "%Y年%m月%d日") as end
+                DATE_FORMAT(updated_at, "%Y年%m月%d日") as end,
+                updated_at
             ')
             ->where([
                 'partner_id'  => $request->partner_id,

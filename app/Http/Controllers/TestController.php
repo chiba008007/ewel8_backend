@@ -155,6 +155,8 @@ class TestController extends UserController
                 ')
             )
             ->groupBy('tests.id')
+            ->orderBy('tests.startdaytime', 'desc')
+            ->orderBy('tests.id', 'desc')
             ->get();
         } catch (Exception $e) {
             return response([], 201);

@@ -8,6 +8,7 @@ use App\Http\Controllers\PrefContrller;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ElementController;
 use App\Http\Controllers\ExamController;
+use App\Http\Controllers\ExamEditController;
 use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\TestController;
@@ -54,6 +55,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("exam/getExamList", [ExamController::class, 'getExamList']);
     Route::post("exam/downloadExam", [ExamController::class, 'downloadExam']);
     Route::post("exam/setStarttime", [ExamController::class, 'setStarttime']);
+
+    Route::post("examEdit/getExamEditData", [ExamEditController::class, 'getExamEditData']);
+    Route::post("examEdit/editExamEditData", [ExamEditController::class, 'editExamEditData']);
 
     Route::post("csvupload/csvUploadFile", [csvUploadController::class, 'csvUploadFile']);
     Route::post("csvupload/updateCsvExam", [csvUploadController::class, 'updateCsvExam']);

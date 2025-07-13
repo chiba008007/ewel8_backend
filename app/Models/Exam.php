@@ -15,7 +15,9 @@ use Illuminate\Http\Request;
 
 class Exam extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens;
+    use HasFactory;
+    use Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -49,12 +51,14 @@ class Exam extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-     //   'password' => 'hashed',
+        'ended_at' => 'datetime', // ← 追加
+        // 'password' => 'hashed',
     ];
 
     protected $rules = ['email' => 'required|unique'];
 
-    public static function getbuldInsertKey(){
+    public static function getbuldInsertKey()
+    {
 
         $buldInsertKey = [
             "test_id",
@@ -69,15 +73,15 @@ class Exam extends Authenticatable
 
         return $buldInsertKey;
     }
-    public static function getExamSpredData($temp) {
+    public static function getExamSpredData($temp)
+    {
         $exams = DB::table('exams')
         ->where([
-            'test_id'=>$temp[ 'test_id' ],
-            'customer_id'=>$temp[ 'customer_id' ],
+            'test_id' => $temp[ 'test_id' ],
+            'customer_id' => $temp[ 'customer_id' ],
         ])
         ->whereNull('deleted_at');
-        if($temp[ 'type' ] === 2)
-        {
+        if ($temp[ 'type' ] === 2) {
             $exams = $exams->wherenotNull('ended_at');
         }
         $exams = $exams->orderBy('id')
@@ -86,42 +90,44 @@ class Exam extends Authenticatable
     }
 
 
-    public static function bulkInsert($data) {
+    public static function bulkInsert($data)
+    {
 
-        $key = implode(",",self::getbuldInsertKey());
+        $key = implode(",", self::getbuldInsertKey());
         $sql = "INSERT INTO exams (".$key.") VALUES ";
         $aline = [];
-        foreach($data as $value){
+        foreach ($data as $value) {
             $sql .= "(";
             $aimp = [];
-            foreach($value as $val){
-                $aimp[]= "'?'";
+            foreach ($value as $val) {
+                $aimp[] = "'?'";
                 $aline[] = $val;
             }
             $implode = implode(",", $aimp);
             $sql .= $implode."),";
         }
-        $sql = preg_replace("/,$/","",$sql);
+        $sql = preg_replace("/,$/", "", $sql);
 
         try {
-                return DB::insert($sql, $aline);
-        }catch(\Exception $e){
+            return DB::insert($sql, $aline);
+        } catch (\Exception $e) {
             echo "error\n";
             var_dump($e);
         }
 
         return true;
     }
-    public static function setEndTime(){
+    public static function setEndTime()
+    {
         $loginUser = auth()->user()->currentAccessToken();
         $todo = Exam::find($loginUser->tokenable->id);
         // 受検を行うテストの総数と受検済みの数が同じときにテスト時間の更新
         $testcount = testparts::where([
-            "test_id"=>$todo->test_id,
-            "status"=>1,
+            "test_id" => $todo->test_id,
+            "status" => 1,
         ])->count();
-        $examfin = examfins::where("exam_id",$loginUser->tokenable->id)->count();
-        if(!$todo->ended_at && $testcount === $examfin){
+        $examfin = examfins::where("exam_id", $loginUser->tokenable->id)->count();
+        if (!$todo->ended_at && $testcount === $examfin) {
             $todo->ended_at = date("Y-m-d H:i:s");
             $todo->save();
         }
@@ -131,28 +137,27 @@ class Exam extends Authenticatable
         $params = $request->params;
         $tests = DB::table('tests')
             ->leftJoin('exams', function ($join) {
-                    $join->on('exams.test_id', '=', 'tests.id')
-                        ->whereNull('exams.deleted_at')
-                        ->whereNull('exams.ended_at');
-                })
+                $join->on('exams.test_id', '=', 'tests.id')
+                    ->whereNull('exams.deleted_at')
+                    ->whereNull('exams.ended_at');
+            })
             ->select([
-                'tests.mailremaincount',
-                'tests.partner_id',
-                'tests.testname',
-                DB::raw('COUNT(exams.id) as count_examId'),
-                DB::raw("DATE_FORMAT(startdaytime, '%Y/%m/%d') as startdate"),
-                DB::raw("DATE_FORMAT(enddaytime, '%Y/%m/%d') as enddate")
+            'tests.mailremaincount',
+            'tests.partner_id',
+            'tests.testname',
+            DB::raw('COUNT(exams.id) as count_examId'),
+            DB::raw("DATE_FORMAT(startdaytime, '%Y/%m/%d') as startdate"),
+            DB::raw("DATE_FORMAT(enddaytime, '%Y/%m/%d') as enddate")
             ])
             ->where([
-                "params"=>$params,
-                "status"=>1,
+            "params" => $params,
+            "status" => 1,
             ])
             ->groupBy('tests.id', 'tests.mailremaincount')
             ->first();
         $mailremaincount = $tests->mailremaincount;
         $count_examId = $tests->count_examId;
-        if($mailremaincount === $count_examId && $mailremaincount > 0)
-        {
+        if ($mailremaincount === $count_examId && $mailremaincount > 0) {
             // 受検残数チェックの時にメール
             $users = DB::table('users')->find($tests->partner_id);
 
@@ -169,5 +174,14 @@ class Exam extends Authenticatable
             $mailbody[ 'enddate' ] = $tests->enddate;
             Mail::to($users->person_address)->send(new RemainCountMail($mailbody));
         }
+    }
+
+    public function test()
+    {
+        return $this->belongsTo(Test::class, 'test_id');
+    }
+    public function customer()
+    {
+        return $this->belongsTo(User::class, 'customer_id');
     }
 }

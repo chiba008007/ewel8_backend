@@ -169,38 +169,41 @@ class TestController extends UserController
         $user_id = $request->user_id;
         $test_id = $request->test_id;
         $partner_id = $request->partner_id;
+
         $rlt = [];
-        if ($this->checkuser($user_id)) {
-            $passwd = config('const.consts.PASSWORD');
-            $rlt['exams'] = Exam::select(["exams.*"])
-            ->where("exams.test_id", $test_id)
-            ->where("exams.customer_id", $user_id)
-            ->where("exams.partner_id", $partner_id)
-            ->whereNull("exams.deleted_at")
-            ->orderby("exams.id", "ASC")
-            ->get();
+        $passwd = config('const.consts.PASSWORD');
+        $rlt['exams'] = Exam::select([
+            "exams.*",
+            'tests.lisencedownloadflag'
+            ])
+        ->join('tests', 'exams.test_id', '=', 'tests.id')
+        ->where("exams.test_id", $test_id)
+        ->where("exams.customer_id", $user_id)
+        ->where("exams.partner_id", $partner_id)
+        ->whereNull("exams.deleted_at")
+        ->orderby("exams.id", "ASC")
+        ->get();
+        if (count($rlt[ 'exams' ])) {
             foreach ($rlt[ 'exams' ] as $key => $value) {
                 $pwd = openssl_decrypt($value->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
                 $rlt[ 'exams' ][$key]->birth = ($pwd === "password" || $pwd === "Test") ? "" : $pwd;
             }
-            $testparts = testparts::where("testparts.test_id", $test_id)
-                ->get();
-            $pfsArray = [];
-            foreach ($testparts as $key => $value) {
-                if ($value['code'] === 'PFS') {
-                    $pfsArray = $this->getPFSDetail($test_id, $value[ 'threeflag' ]);
-                }
-            }
-            foreach ($rlt[ 'exams' ] as $key => $value) {
-                // PFSデータの表示
-                $rlt['exams'][$key]['pfs'] = (isset($pfsArray[$value->id])) ? $pfsArray[$value->id] : [];
-            }
-
-            return response($rlt, 200);
-
         } else {
-            return response([], 201);
+            return response([], 200);
         }
+        $testparts = testparts::where("testparts.test_id", $test_id)
+            ->get();
+        $pfsArray = [];
+        foreach ($testparts as $key => $value) {
+            if ($value['code'] === 'PFS') {
+                $pfsArray = $this->getPFSDetail($test_id, $value[ 'threeflag' ]);
+            }
+        }
+        foreach ($rlt[ 'exams' ] as $key => $value) {
+            // PFSデータの表示
+            $rlt['exams'][$key]['pfs'] = (isset($pfsArray[$value->id])) ? $pfsArray[$value->id] : [];
+        }
+        return response($rlt, 200);
     }
     public function getTestEditData(Request $request)
     {

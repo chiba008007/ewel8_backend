@@ -16,12 +16,13 @@ class pdfs extends Model
 
     public $pdf;
     //
-    public function __construct()
+    public function __construct($orientation = "P")
     {
         $pdf = new \Mpdf\Mpdf(
             [
             'mode' => 'ja', // 日本語モードを指定
             'format' => 'A4',
+            'orientation' => $orientation,
             'margin_left' => 5,     // 左余白（mm）
             'margin_right' => 5,    // 右余白
             'margin_top' => 5,      // 上余白
@@ -41,9 +42,37 @@ class pdfs extends Model
         $this->pdf = $pdf;
     }
 
+    // 証明書ダウンロード
+    public function addCeartficateToPdf($id, $code, $birth)
+    {
+        $exam = Exam::where(["id" => $id])->first();
+        $testname = $exam->test ? $exam->test->testname : null;
+        $testname = $exam->test ? $exam->test->testname : null;
+        $customerName = null;
+        if ($exam->customer && $exam->customer->type === 'customer') {
+            $customerName = $exam->customer->name;
+        }
+        $startdaytime = $exam->test->startdaytime;
+        $number = $id."-".$code."-".strtotime($startdaytime);
+
+        $pdf = $this->pdf;
+        $pdf->SetMargins(0, 0, 0);
+        $pdf->SetAutoPageBreak(false);
+
+        $html = view('/PDF/CERTIFICATE', [
+                'id' => $id,
+                'email' => $code,
+                'exam' => $exam,
+                'testname' => $testname,
+                'customerName' => $customerName,
+                'number' => $number,
+            ])->render();
+        $pdf->WriteHTML($html);
+        return $pdf;
+    }
+
     public function addPageToPdf($id, $code, $birth)
     {
-
         $pdf = $this->pdf;
         $pdf->SetMargins(0, 0, 0);
         $pdf->SetAutoPageBreak(false);

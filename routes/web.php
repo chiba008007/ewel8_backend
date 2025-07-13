@@ -18,7 +18,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get("pdf/{id?}/code/{code?}/birth/{birth?}", [indexController::class, 'index'])->name("PFSPDF");
+Route::get("pdf/{id?}/code/{code?}/birth/{birth?}/{encode?}", [indexController::class, 'index'])->name("PFSPDF");
+Route::get("certificate/{id?}/code/{code?}/birth/{birth?}/{encode?}", [indexController::class, 'certificate'])->name("certificatePDF");
+
 // エクセルのダウンロード
 Route::get('/excels/{filename}', function ($filename) {
     $file = storage_path('app/excels/' . $filename);

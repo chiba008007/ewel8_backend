@@ -92,6 +92,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("test/setTest", [TestController::class, 'setTest']);
     Route::post("test/editTest", [TestController::class, 'editTest']);
     Route::post("test/getTestList", [TestController::class, 'getTestList']);
+    Route::post("test/getTestTitle", [TestController::class, 'getTestTitle']);
     Route::post("test/getQRParam", [TestController::class, 'getQRParam']);
     Route::post("test/getQRLists", [TestController::class, 'getQRLists']);
     Route::post("test/getTestDetail", [TestController::class, 'getTestDetail']);

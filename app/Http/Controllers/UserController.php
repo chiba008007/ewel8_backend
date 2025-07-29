@@ -232,9 +232,13 @@ FROM (
     {
         // ログインしているユーザー情報取得
         $loginUser = auth()->user()->currentAccessToken();
-        $customer = User::where("type", "partner")
-            ->where('id', $request->partnerId);
-        $customer->where("admin_id", $loginUser->tokenable->id);
+        $customer = User::where("type", "partner");
+        if ($loginUser->tokenable->type === "partner") {
+            $customer->where("id", $loginUser->tokenable->id);
+        } else {
+            $customer->where('id', $request->partnerId);
+            $customer->where("admin_id", $loginUser->tokenable->id);
+        }
         $customer = $customer->first();
 
         return response($customer, 200);
@@ -620,9 +624,15 @@ FROM (
             // パートナー権限でログインしたとき、パラメータとIDが一致しないときはエラー
             $loginUser = auth()->user()->currentAccessToken();
             $id = $loginUser->tokenable->id;
+            $partner_id = $request->partner_id;
             if ($loginUser->tokenable->type === 'partner') {
                 $id = $loginUser->tokenable->admin_id;
-                //throw new Exception();
+
+                $partner_id = $loginUser->tokenable->id;
+                if ($partner_id != $request->partner_id) {
+                    // 表示させない画面
+                    throw new Exception();
+                }
             }
 
             $subQuery = User::select('users.*')
@@ -635,7 +645,7 @@ FROM (
             })
             ->where([
             "users.type" => "customer",
-            "users.partner_id" => $request->partner_id
+            "users.partner_id" => $partner_id
             ,"users.admin_id" => $id
             ,"users.deleted_at" => null
             ])
@@ -666,6 +676,7 @@ FROM (
     public function getLisencesList(Request $request)
     {
         try {
+            $loginUser = auth()->user()->currentAccessToken();
 
             $result = DB::table('exams as e')
                 ->leftJoin('testparts as t', 'e.test_id', '=', 't.test_id')

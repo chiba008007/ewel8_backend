@@ -927,6 +927,38 @@ FROM (
         }
     }
 
+    public function editUserPdfLogo(Request $request)
+    {
+        try {
+            //$loginUser = auth()->user()->currentAccessToken();
+            //$type = $loginUser->tokenable->type;
+            $partnerId = $request->partnerId;
+            $pdfImagePath = $request->pdfImagePath;
+            $user = User::find($partnerId);
+
+            $user->update([
+                'pdfImagePath' => $pdfImagePath
+            ]);
+            return response("success", 200);
+        } catch (Exception $e) {
+            Log::info('ロゴ編集失敗');
+            return response($e, 400);
+        }
+    }
+    public function getUserPdfLogo(Request $request)
+    {
+        try {
+            //$loginUser = auth()->user()->currentAccessToken();
+            //$type = $loginUser->tokenable->type;
+            $partnerId = $request->partnerId;
+            $pdfImagePath = $request->pdfImagePath;
+            $user = User::find($partnerId);
+            return response($user, 200);
+        } catch (Exception $e) {
+            Log::info('ロゴ取得失敗');
+            return response($e, 400);
+        }
+    }
 
     public function logout()
     {

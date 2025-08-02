@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens;
+    use HasFactory;
+    use Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -38,6 +40,7 @@ class User extends Authenticatable
         'person_address2',
         'person_tel',
         'system_name',
+        'pdfImagePath',
     ];
 
     /**
@@ -60,7 +63,7 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    protected $rules = ['email' => 'required|unique','login_id'=>'required|unique'];
+    protected $rules = ['email' => 'required|unique','login_id' => 'required|unique'];
 
 
 

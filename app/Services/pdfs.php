@@ -9,6 +9,7 @@ use App\Libraries\Age;
 use App\Libraries\LineBreak;
 use App\Models\Exam;
 use App\Models\Test;
+use App\Models\User;
 
 class pdfs extends Model
 {
@@ -83,6 +84,10 @@ class pdfs extends Model
             ['id', '=', $id],
             ['email', '=', $code],
         ])->first();
+        // pdfロゴパス取得
+        $user = User::find($exam->partner_id);
+        $pdfImagePath = $user->pdfImagePath;
+
         if (openssl_decrypt($exam->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']) != $birth) {
             echo "PDFの出力に失敗しました。";
             exit();
@@ -123,6 +128,7 @@ class pdfs extends Model
                     'result' => $result,
                     'age' => $age,
                     'strong' => $strong,
+                    'pdfImagePath' => ltrim(parse_url($pdfImagePath, PHP_URL_PATH), '/'),
                     'element1' => $this->linebreak->insert_line_breaks($value->element1, 10),
                     'element2' => $this->linebreak->insert_line_breaks($value->element2, 10),
                     'element3' => $this->linebreak->insert_line_breaks($value->element3, 10),
@@ -171,6 +177,7 @@ class pdfs extends Model
                     'result' => $result,
                     'age' => $age,
                     'risk' => $risk,
+                    'pdfImagePath' => ltrim(parse_url($pdfImagePath, PHP_URL_PATH), '/'),
                     ])->render();
                 $pdf->SetAutoPageBreak(false);
                 //$pdf->SetMargins(0, 0, 0);

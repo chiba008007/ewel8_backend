@@ -1,6 +1,12 @@
 <table style="width:100%;">
     <tr>
-        <td width=300><img src="{{ public_path('images/PDF/welcome.jpg') }}" /></td>
+        <td width=300>
+            @if (!isset($pdfImagePath))
+                <img src="{{ public_path('images/PDF/welcome.jpg') }}" style="height: 80px;max-width:80%;" />
+            @else
+                <img src="{{ $pdfImagePath }}" style="height: 80px;max-width:80%;" />
+            @endif
+        </td>
         <td width=300 style="text-align:right;">
             <h2>{{ $title }}</h2>
         </td>

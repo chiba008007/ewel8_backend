@@ -951,7 +951,6 @@ FROM (
             //$loginUser = auth()->user()->currentAccessToken();
             //$type = $loginUser->tokenable->type;
             $partnerId = $request->partnerId;
-            $pdfImagePath = $request->pdfImagePath;
             $user = User::find($partnerId);
             return response($user, 200);
         } catch (Exception $e) {

@@ -170,7 +170,8 @@
     @if ($row > 0 )
         <div style="page-break-before: always"></div>
     @endif
-    @include('PDF.HEADER',[ 'title'=>'個人結果シート(自己理解版)' ])
+    @include('PDF.HEADER',[
+        'title'=>'個人結果シート(自己理解版)','pdfImagePath'=>$pdfImagePath ])
     <div class="mt-3 min">1.行動価値検査で測定していること</div>
     <div class="box mt-3 min">
         行動価値検査は、日々行動する中で「あなたがどのような行動を重視しているのか」について測定しており、能力を測定する検査ではありません。<br />

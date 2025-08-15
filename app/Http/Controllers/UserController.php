@@ -472,7 +472,6 @@ FROM (
                     ->send(
                         (new EditUserDataMail($mailbody))
                         ->from(config('mail.from.address'), config('mail.from.name'))
-                        ->returnPath(config('mail.from.address'))
                     );
             }
             if ($request->person_address2) {
@@ -482,7 +481,6 @@ FROM (
                     ->send(
                         (new EditUserDataMail($mailbody))
                         ->from(config('mail.from.address'), config('mail.from.name'))
-                        ->returnPath(config('mail.from.address'))
                     );
             }
 

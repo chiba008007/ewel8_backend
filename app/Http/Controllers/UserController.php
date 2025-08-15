@@ -463,7 +463,8 @@ FROM (
             $mailbody[ 'title' ] = "【Welcome-k】 企業情報更新のお知らせ";
             $mailbody[ 'name' ] = $request->name;
             $mailbody[ 'systemname' ] = $request->systemname;
-            $mailbody[ 'licensesBody' ] = array_sum($request->licensesBody);
+            $licenses = $request->input('licensesBody', []);
+            $mailbody[ 'licensesBody' ] = is_array($licenses) ? array_sum($licenses) : 0;
             if ($request->person_address) {
                 Log::info('更新パートナーへメール:'.$request->person_address);
                 $mailbody[ 'person' ] = $request->person;

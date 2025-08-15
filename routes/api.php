@@ -18,6 +18,7 @@ use App\Http\Controllers\FileuploadsController;
 // use App\Http\Controllers\PDF\PfsController;
 use App\Http\Controllers\WeightController;
 use App\Http\Controllers\PdfDownloadController;
+use App\Http\Controllers\TestExecController;
 
 /*
 |--------------------------------------------------------------------------
@@ -85,6 +86,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/getUserData', [UserController::class, 'getUserData']);
     Route::post('user/customerEdit', [UserController::class, 'customerEdit']);
     Route::post('user/getCustomerEdit', [UserController::class, 'getCustomerEdit']);
+
+    Route::post('testExec/getCustomerExec', [TestExecController::class, 'getCustomerExec']);
+
 
     Route::post("logout", [UserController::class, 'logout']);
     Route::post("user/getCustomerList", [UserController::class, 'getCustomerList']);

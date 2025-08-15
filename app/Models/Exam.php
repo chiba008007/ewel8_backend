@@ -172,7 +172,11 @@ class Exam extends Authenticatable
             $mailbody[ 'testname' ] = $tests->testname;
             $mailbody[ 'startdate' ] = $tests->startdate;
             $mailbody[ 'enddate' ] = $tests->enddate;
-            Mail::to($users->person_address)->send(new RemainCountMail($mailbody));
+            Mail::to($users->person_address)
+                ->send(
+                    (new RemainCountMail($mailbody))
+                    ->from(config('mail.from.address'), config('mail.from.name'))
+                );
         }
     }
 

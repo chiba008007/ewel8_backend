@@ -207,12 +207,21 @@ FROM (
 
             if ($request->person_address) {
                 $mailbody[ 'person' ] = $request->person;
-                Mail::to($request->person_address)->send(new EditPartnerEditMail($mailbody));
+                Mail::to($request->person_address)
+                    ->send(
+                        (new EditPartnerEditMail($mailbody))
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                    );
                 Log::info('企業情報変更メール配信担当者1');
             }
             if ($request->person_address2) {
                 $mailbody[ 'person' ] = $request->person2;
-                Mail::to($request->person_address2)->send(new EditPartnerEditMail($mailbody));
+                Mail::to($request->person_address2)
+                    ->send(
+                        (new EditPartnerEditMail($mailbody))
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                    );
+
                 Log::info('企業情報変更メール配信担当者2');
             }
 
@@ -360,15 +369,30 @@ FROM (
             if ($request->person_address) {
                 $mailbody[ 'person' ] = $request->person;
                 $mailbody[ 'password' ] = $request['password'];
-                Mail::to($request->person_address)->send(new SetUserDataMail($mailbody));
-                Mail::to($request->person_address)->send(new SetUserDataMailPassword($mailbody));
+                Mail::to($request->person_address)
+                    ->send(
+                        (new SetUserDataMail($mailbody))
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                    );
+                Mail::to($request->person_address)->send(
+                    (new SetUserDataMailPassword($mailbody))
+                    ->from(config('mail.from.address'), config('mail.from.name'))
+                );
                 Log::info('新規パートナー登録メール配信担当者1');
             }
             if ($request->person_address2) {
                 $mailbody[ 'person' ] = $request->person2;
                 $mailbody[ 'password' ] = $request['password'];
-                Mail::to($request->person_address2)->send(new SetUserDataMail($mailbody));
-                Mail::to($request->person_address2)->send(new SetUserDataMailPassword($mailbody));
+                Mail::to($request->person_address2)
+                    ->send(
+                        (new SetUserDataMail($mailbody))
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                    );
+                Mail::to($request->person_address2)->send(
+                    (new SetUserDataMailPassword($mailbody))
+                    ->from(config('mail.from.address'), config('mail.from.name'))
+                );
+
                 Log::info('新規パートナー登録メール配信担当者2');
             }
             DB::commit();
@@ -551,15 +575,32 @@ FROM (
             if ($request['tanto_address']) {
                 $mailbody[ 'person' ] = $request['tanto_name'];
                 $mailbody[ 'password' ] = $request['password'];
-                Mail::to($request['tanto_address'])->send(new CustomerAddMail($mailbody));
-                Mail::to($request['tanto_address'])->send(new CustomerAddMailPassword($mailbody));
+                Mail::to($request['tanto_address'])->send(
+                    (new CustomerAddMail($mailbody))
+                    ->from(config('mail.from.address'), config('mail.from.name'))
+                );
+
+                Mail::to($request['tanto_address'])->send(
+                    (new CustomerAddMailPassword($mailbody))
+                    ->from(config('mail.from.address'), config('mail.from.name'))
+                );
+
                 Log::info('新規顧客登録メール配信担当者1');
             }
             if ($request['tanto_address2']) {
                 $mailbody[ 'person' ] = $request['tanto_name2'];
                 $mailbody[ 'password' ] = $request['password'];
-                Mail::to($request['tanto_address2'])->send(new CustomerAddMail($mailbody));
-                Mail::to($request['tanto_address2'])->send(new CustomerAddMailPassword($mailbody));
+                Mail::to($request['tanto_address2'])
+                    ->send(
+                        (new CustomerAddMail($mailbody))
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                    );
+
+                Mail::to($request['tanto_address2'])
+                    ->send(
+                        (new CustomerAddMailPassword($mailbody))
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                    );
                 Log::info('新規顧客登録メール配信担当者2');
             }
 

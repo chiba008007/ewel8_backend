@@ -210,7 +210,11 @@ class PdfDownload extends Command
         $mailbody[ 'person' ] = $user->tanto_name;
         $mailbody[ 'testname' ] = $test->testname;
         $mailbody[ 'uploadFileMail' ] = $uploadFileMail;
-        Mail::to($user->tanto_address)->send(new PdfDownloadMail($mailbody));
+        Mail::to($user->tanto_address)
+            ->send(
+                (new PdfDownloadMail($mailbody))
+                ->from(config('mail.from.address'), config('mail.from.name'))
+            );
 
         //標準出力&ログに出力するメッセージのフォーマット
         $message = '[' . date('Y-m-d h:i:s') . ']PDF Download end';

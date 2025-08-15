@@ -468,12 +468,22 @@ FROM (
             if ($request->person_address) {
                 Log::info('更新パートナーへメール:'.$request->person_address);
                 $mailbody[ 'person' ] = $request->person;
-                Mail::to($request->person_address)->send(new EditUserDataMail($mailbody));
+                Mail::to($request->person_address)
+                    ->send(
+                        (new EditUserDataMail($mailbody))
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                        ->returnPath(config('mail.from.address'))
+                    );
             }
             if ($request->person_address2) {
                 Log::info('更新パートナーへメール:'.$request->person_address2);
                 $mailbody[ 'person' ] = $request->person2;
-                Mail::to($request->person_address2)->send(new EditUserDataMail($mailbody));
+                Mail::to($request->person_address2)
+                    ->send(
+                        (new EditUserDataMail($mailbody))
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                        ->returnPath(config('mail.from.address'))
+                    );
             }
 
             DB::commit();

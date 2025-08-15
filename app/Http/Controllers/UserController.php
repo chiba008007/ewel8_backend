@@ -456,25 +456,25 @@ FROM (
             ]);
 
             $this->setLicensed($request, $request->id);
-
-            Log::info('更新パートナーの実施成功:'.$request);
-            // 情報登録メール
-            $mailbody = [];
-            $mailbody[ 'title' ] = "【Welcome-k】 企業情報更新のお知らせ";
-            $mailbody[ 'name' ] = $request->name;
-            $mailbody[ 'systemname' ] = $request->systemname;
-            $mailbody[ 'licensesBody' ] = array_sum($request->licensesBody);
-            if ($request->person_address) {
-                Log::info('更新パートナーへメール:'.$request->person_address);
-                $mailbody[ 'person' ] = $request->person;
-                Mail::to($request->person_address)->send(new EditUserDataMail($mailbody));
-            }
-            if ($request->person_address2) {
-                Log::info('更新パートナーへメール:'.$request->person_address2);
-                $mailbody[ 'person' ] = $request->person2;
-                Mail::to($request->person_address2)->send(new EditUserDataMail($mailbody));
-            }
-
+            /*
+                        Log::info('更新パートナーの実施成功:'.$request);
+                        // 情報登録メール
+                        $mailbody = [];
+                        $mailbody[ 'title' ] = "【Welcome-k】 企業情報更新のお知らせ";
+                        $mailbody[ 'name' ] = $request->name;
+                        $mailbody[ 'systemname' ] = $request->systemname;
+                        $mailbody[ 'licensesBody' ] = array_sum($request->licensesBody);
+                        if ($request->person_address) {
+                            Log::info('更新パートナーへメール:'.$request->person_address);
+                            $mailbody[ 'person' ] = $request->person;
+                            Mail::to($request->person_address)->send(new EditUserDataMail($mailbody));
+                        }
+                        if ($request->person_address2) {
+                            Log::info('更新パートナーへメール:'.$request->person_address2);
+                            $mailbody[ 'person' ] = $request->person2;
+                            Mail::to($request->person_address2)->send(new EditUserDataMail($mailbody));
+                        }
+            */
             DB::commit();
             return response("success", 200);
         } catch (\Exception $exception) {

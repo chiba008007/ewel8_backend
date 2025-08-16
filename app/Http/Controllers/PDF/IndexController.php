@@ -16,18 +16,15 @@ class IndexController extends Controller
     {
 
         Log::info('PDF@index called', compact('id', 'code', 'birth', 'encode'));
-
         try {
-            echo "test";
             $this->checkedCode($encode, $code);
             // PFS用のチャートグラフを生成するよう
             require_once(public_path()."/PDF/pfsCreateGraph.php");
-            echo "test";
-            exit();
-
             $obj = new pdfs();
             $pdf = $obj->addPageToPdf($id, $code, $birth);
 
+            echo "test1234";
+            exit();
             $filename = $code . "_" . date('Y') . date('m') . date('d') . ".pdf";
             return $pdf->Output($filename, 'D');
 

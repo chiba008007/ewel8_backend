@@ -21,8 +21,6 @@ class IndexController extends Controller
             // PFS用のチャートグラフを生成するよう
             require_once(public_path()."/PDF/pfsCreateGraph.php");
             $obj = new pdfs();
-            echo "tesssst";
-            exit();
             $pdf = $obj->addPageToPdf($id, $code, $birth);
 
             $filename = $code . "_" . date('Y') . date('m') . date('d') . ".pdf";

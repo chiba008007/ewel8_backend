@@ -74,7 +74,10 @@ class pdfs extends Model
 
     public function addPageToPdf($id, $code, $birth)
     {
+        echo "aaaa";
         $pdf = $this->pdf;
+        echo "bbbb";
+        exit();
         $pdf->SetMargins(0, 0, 0);
         $pdf->SetAutoPageBreak(false);
         $pdf->AddPage(); // ← ここで明示的にページ追加

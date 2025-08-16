@@ -5,6 +5,8 @@ namespace App\Http\Controllers\PDF;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\pdfs;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Contracts\Encryption\DecryptException;
 
 class IndexController extends Controller
 {
@@ -12,15 +14,29 @@ class IndexController extends Controller
 
     public function index(Request $request, $id, $code, $birth, $encode)
     {
-        $this->checkedCode($encode, $code);
 
-        // PFS用のチャートグラフを生成するよう
-        require_once(public_path()."/PDF/pfsCreateGraph.php");
-        $obj = new pdfs();
-        $pdf = $obj->addPageToPdf($id, $code, $birth);
+        Log::info('PDF@index called', compact('id', 'code', 'birth', 'encode'));
 
-        $filename = $code . "_" . date('Y') . date('m') . date('d') . ".pdf";
-        return $pdf->Output($filename, 'D');
+        try {
+            $this->checkedCode($encode, $code);
+
+            // PFS用のチャートグラフを生成するよう
+            require_once(public_path()."/PDF/pfsCreateGraph.php");
+            $obj = new pdfs();
+            $pdf = $obj->addPageToPdf($id, $code, $birth);
+
+            $filename = $code . "_" . date('Y') . date('m') . date('d') . ".pdf";
+            return $pdf->Output($filename, 'D');
+
+        } catch (DecryptException $e) {
+            Log::error('DecryptException: '.$e->getMessage());
+            abort(400, 'トークン復号エラー'); // ← 一旦 400 に
+        } catch (\Throwable $e) {
+            Log::error('PDF@index failed: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            abort(500, 'PDF生成エラー');
+        }
 
     }
     // 証明書ダウンロード

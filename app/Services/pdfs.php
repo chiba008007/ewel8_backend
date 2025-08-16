@@ -87,13 +87,12 @@ class pdfs extends Model
         // pdfロゴパス取得
         $user = User::find($exam->partner_id);
         $pdfImagePath = $user->pdfImagePath;
-        echo "test2";
+
         if (openssl_decrypt($exam->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']) != $birth) {
             echo "PDFの出力に失敗しました。";
             exit();
         }
-        echo "test";
-        exit();
+
         // テストパターン
         $this->test = new Test();
         $pdflist = $this->test->getTestParts($exam->test_id);
@@ -101,8 +100,10 @@ class pdfs extends Model
         $this->age = new Age();
         $this->linebreak = new LineBreak();
 
-
         $row = 0;
+
+        var_dump($pdflist);
+        exit();
         foreach ($pdflist as $value) {
             if (is_object($value) && $value->pdf_id == 7) { // 自己理解版
 

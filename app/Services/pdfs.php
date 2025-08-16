@@ -74,10 +74,7 @@ class pdfs extends Model
 
     public function addPageToPdf($id, $code, $birth)
     {
-        echo "aaaa";
         $pdf = $this->pdf;
-        echo "bbbb";
-        exit();
         $pdf->SetMargins(0, 0, 0);
         $pdf->SetAutoPageBreak(false);
         $pdf->AddPage(); // ← ここで明示的にページ追加
@@ -90,11 +87,13 @@ class pdfs extends Model
         // pdfロゴパス取得
         $user = User::find($exam->partner_id);
         $pdfImagePath = $user->pdfImagePath;
-
+        echo "test2";
         if (openssl_decrypt($exam->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']) != $birth) {
             echo "PDFの出力に失敗しました。";
             exit();
         }
+        echo "test";
+        exit();
         // テストパターン
         $this->test = new Test();
         $pdflist = $this->test->getTestParts($exam->test_id);

@@ -19,7 +19,7 @@ Route::get('/', function () {
 });
 
 Route::get("pdf/{id?}/code/{code?}/birth/{birth?}/{encode?}", [IndexController::class, 'index'])->name("PFSPDF");
-Route::get("certificate/{id?}/code/{code?}/birth/{birth?}/{encode?}", [indexController::class, 'certificate'])->name("certificatePDF");
+Route::get("certificate/{id?}/code/{code?}/birth/{birth?}/{encode?}", [IndexController::class, 'certificate'])->name("certificatePDF");
 
 // エクセルのダウンロード
 Route::get('/excels/{filename}', function ($filename) {

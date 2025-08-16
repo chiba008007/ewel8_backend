@@ -20,11 +20,10 @@ class IndexController extends Controller
         try {
             echo "test";
             $this->checkedCode($encode, $code);
-            echo "test";
-            exit();
             // PFS用のチャートグラフを生成するよう
             require_once(public_path()."/PDF/pfsCreateGraph.php");
-
+            echo "test";
+            exit();
 
             $obj = new pdfs();
             $pdf = $obj->addPageToPdf($id, $code, $birth);

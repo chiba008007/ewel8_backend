@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PDF\indexController;
+use App\Http\Controllers\PDF\IndexController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,7 +18,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get("pdf/{id?}/code/{code?}/birth/{birth?}/{encode?}", [indexController::class, 'index'])->name("PFSPDF");
+Route::get("pdf/{id?}/code/{code?}/birth/{birth?}/{encode?}", [IndexController::class, 'index'])->name("PFSPDF");
 Route::get("certificate/{id?}/code/{code?}/birth/{birth?}/{encode?}", [indexController::class, 'certificate'])->name("certificatePDF");
 
 // エクセルのダウンロード

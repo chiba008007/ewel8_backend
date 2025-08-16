@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\pdfs;
 
-class indexController extends Controller
+class IndexController extends Controller
 {
     public $linebreak;
 

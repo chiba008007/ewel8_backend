@@ -1,7 +1,7 @@
-<table style="width:100%;">
+<table style="width:100%; height:80px;">
     <tr>
         <td width=300>
-            @if (!isset($pdfImagePath))
+            @if (empty($pdfImagePath))
                 <img src="{{ public_path('images/PDF/welcome.jpg') }}" style="height: 80px;max-width:80%;" />
             @else
                 <img src="{{ $pdfImagePath }}" style="height: 80px;max-width:80%;" />

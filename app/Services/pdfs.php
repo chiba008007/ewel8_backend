@@ -99,11 +99,7 @@ class pdfs extends Model
 
         $this->age = new Age();
         $this->linebreak = new LineBreak();
-
         $row = 0;
-
-        var_dump($pdflist);
-        exit();
         foreach ($pdflist as $value) {
             if (is_object($value) && $value->pdf_id == 7) { // 自己理解版
 

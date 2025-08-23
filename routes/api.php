@@ -88,6 +88,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/getCustomerEdit', [UserController::class, 'getCustomerEdit']);
 
     Route::post('testExec/getCustomerExec', [TestExecController::class, 'getCustomerExec']);
+    Route::post('testExec/getExec', [TestExecController::class, 'getExec']);
 
 
     Route::post("logout", [UserController::class, 'logout']);
@@ -119,6 +120,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post("csv/getPfs", [CsvsController::class, 'getPfs']);
     Route::post("excel/create", [createSpredsheetController::class, 'create']);
+    Route::post("excel/testExec", [createSpredsheetController::class, 'testExec']);
     Route::post("user/fileupload", [UserController::class, 'fileupload']);
     Route::post("fileupload/list", [FileuploadsController::class, 'list']);
     Route::post("fileupload/openFlag", [FileuploadsController::class, 'openFlag']);

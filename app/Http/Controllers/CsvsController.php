@@ -9,27 +9,29 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Exception;
 use Illuminate\Support\Facades\DB;
+
 class CsvsController extends TestController
 {
     //
-    public function getPfs(Request $request){
+    public function getPfs(Request $request)
+    {
         $code = "PFS";
         $user_id = $request->user_id;
         $test_id = $request->test_id;
-        try{
-            if(!$this->checkuser($user_id)){
+        try {
+            if (!$this->checkuser($user_id)) {
                 throw new Exception();
             }
 
             $test = Test::find($test_id)
-            ->select("tests.testname","a.name as customername","b.name as partnername")
+            ->select("tests.testname", "a.name as customername", "b.name as partnername")
             ->join('users as a', 'tests.user_id', '=', 'a.id')
             ->join('users as b', 'a.partner_id', '=', 'b.id')
             ->first();
 
             $exam = DB::select("
                 SELECT * FROM exams WHERE test_id = ?
-            ",[$test_id]);
+            ", [$test_id]);
 
             $pfs = DB::select(
                 "
@@ -45,19 +47,18 @@ class CsvsController extends TestController
                         FROM
                             exampfses
                         WHERE
-                            testparts_id = (SELECT id FROM testparts WHERE test_id = ? AND code=?) AND
-                            endtime IS NOT NULL
+                            testparts_id = (SELECT id FROM testparts WHERE test_id = ? AND code=?)
                         GROUP BY exam_id
                 )
-                "
-                , [$test_id,$code]
+                ",
+                [$test_id,$code]
             );
 
             $passwd = config('const.consts.PASSWORD');
             $set = [];
-            foreach($pfs as $value){
+            foreach ($pfs as $value) {
                 $maxes = "";
-                if($value->endtime){
+                if ($value->endtime) {
                     $max = [];
                     $max['dev1'] = $value->dev1;
                     $max['dev2'] = $value->dev2;
@@ -74,27 +75,27 @@ class CsvsController extends TestController
                     $maxes = array_keys($max, max($max));
                 }
                 $set[$value->exam_id] = $value;
-                $set[$value->exam_id]->max = ($maxes)?$maxes[0]:"";
+                $set[$value->exam_id]->max = ($maxes) ? $maxes[0] : "";
             }
             $result = [];
-            foreach($exam as $key=>$value){
+            foreach ($exam as $key => $value) {
                 $pwd = openssl_decrypt($value->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
-                $result[$key][ 'pwd' ] = ($pwd == "password")?"":$pwd;
-                if($result[$key][ 'pwd' ]){
+                $result[$key][ 'pwd' ] = ($pwd == "password") ? "" : $pwd;
+                if ($result[$key][ 'pwd' ]) {
                     $today = $value->created_at;
                     $age = floor((strtotime($today) - strtotime($pwd)) / (60 * 60 * 24 * 365));
-                }else{
+                } else {
                     $age = '';
                 }
                 $result[$key][ 'age' ] = $age;
                 $result[$key][ 'exam' ] = $value;
-                $result[$key]['pfs'] = isset($set[$value->id])?$set[$value->id]:"";
+                $result[$key]['pfs'] = isset($set[$value->id]) ? $set[$value->id] : "";
             }
             $return['list'] = $result;
             $return['test'] = $test;
             return response($return, 200);
 
-        }catch(Exception $e){
+        } catch (Exception $e) {
             return response([], 400);
         }
 

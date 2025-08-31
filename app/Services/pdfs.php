@@ -8,6 +8,7 @@ use App\Libraries\Pfs;
 use App\Libraries\Age;
 use App\Libraries\LineBreak;
 use App\Models\Exam;
+use App\Models\pdf_history;
 use App\Models\Test;
 use App\Models\User;
 
@@ -92,6 +93,12 @@ class pdfs extends Model
             echo "PDFの出力に失敗しました。";
             exit();
         }
+
+        // pdf_historyにダウンロード実施したログを取得
+        $this->pdf_history = new pdf_history();
+        $this->pdf_history->test_id = $exam->test_id;
+        $this->pdf_history->exam_id = $id;
+        $this->pdf_history->save();
 
         // テストパターン
         $this->test = new Test();

@@ -188,4 +188,10 @@ class Exam extends Authenticatable
     {
         return $this->belongsTo(User::class, 'customer_id');
     }
+
+    public function pdfHistories()
+    {
+        return $this->hasMany(pdf_history::class, 'exam_id', 'id');
+    }
+
 }

@@ -12,6 +12,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use DateTime;
 
 class TestController extends UserController
 {
@@ -181,12 +182,43 @@ class TestController extends UserController
         ->where("exams.customer_id", $user_id)
         ->where("exams.partner_id", $partner_id)
         ->whereNull("exams.deleted_at")
+        ->withCount('pdfHistories')
         ->orderby("exams.id", "ASC")
         ->get();
         if (count($rlt[ 'exams' ])) {
             foreach ($rlt[ 'exams' ] as $key => $value) {
                 $pwd = openssl_decrypt($value->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
                 $rlt[ 'exams' ][$key]->birth = ($pwd === "password" || $pwd === "Test") ? "" : $pwd;
+
+                // デフォルト値
+                $rlt['exams'][$key]->birth = "";
+                $rlt['exams'][$key]->age = null;
+
+                // 無効値はスキップ
+                if ($pwd === null || $pwd === "password") {
+                    continue;
+                }
+                $pwd = preg_replace('/^\xEF\xBB\xBF/', '', $pwd);
+                $pwd = trim($pwd);
+                // birth に設定
+                $rlt['exams'][$key]->birth = $pwd;
+
+                // "YYYY/MM/DD" の日付かをチェック
+                $birth = DateTime::createFromFormat('Y/m/d', $pwd);
+                if ($birth === false) {
+                    continue; // パース失敗 → 年齢は null のまま
+                }
+                // updated_at を基準日にする
+                $updatedAt = new DateTime($value->started_at);
+                // 年齢を計算
+                $age = $updatedAt->format('Y') - $birth->format('Y');
+                // 誕生日がまだ来ていなければ -1
+                if (
+                    (int)$updatedAt->format('md') < (int)$birth->format('md')
+                ) {
+                    $age--;
+                }
+                $rlt['exams'][$key]->age = $age;
             }
         } else {
             return response([], 200);
@@ -194,11 +226,14 @@ class TestController extends UserController
         $testparts = testparts::where("testparts.test_id", $test_id)
             ->get();
         $pfsArray = [];
+
         foreach ($testparts as $key => $value) {
             if ($value['code'] === 'PFS') {
                 $pfsArray = $this->getPFSDetail($test_id, $value[ 'threeflag' ]);
+                break;
             }
         }
+
         foreach ($rlt[ 'exams' ] as $key => $value) {
             // PFSデータの表示
             $rlt['exams'][$key]['pfs'] = (isset($pfsArray[$value->id])) ? $pfsArray[$value->id] : [];
@@ -255,31 +290,34 @@ class TestController extends UserController
     {
         $code = "PFS";
         $sql = "
-            SELECT
-                e.exam_id,
-                e.testparts_id,
-                DATE_FORMAT(e.endtime, '%Y/%m/%d') AS endtime,
-                e.id,
-                e.level,
-                e.dev1,
-                e.dev2,
-                e.dev3,
-                e.dev6
-            FROM
-                exampfses e
-            JOIN
-                (SELECT MAX(id) AS id
-                FROM exampfses
-                WHERE testparts_id = (SELECT id FROM testparts WHERE test_id = ? AND code = ?)
-                GROUP BY exam_id, testparts_id) AS max_ids
-            ON e.id = max_ids.id
-            WHERE
-                e.endtime IS NOT NULL;
-            ;
+            SELECT *
+            FROM (
+                SELECT
+                    e.exam_id,
+                    e.testparts_id,
+                    DATE_FORMAT(e.starttime, '%Y/%m/%d') AS starttime,
+                    DATE_FORMAT(e.endtime, '%Y/%m/%d') AS endtime,
+                    e.id,
+                    e.level,
+                    e.dev1,
+                    e.dev2,
+                    e.dev3,
+                    e.dev6,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY e.exam_id, e.testparts_id
+                        ORDER BY e.id DESC
+                    ) AS rn
+                FROM exampfses e
+                WHERE e.testparts_id = (
+                    SELECT id FROM testparts WHERE test_id = ? AND code = ?
+                )
+            ) t
+            WHERE t.rn = 1
         ";
         $pfsdetails = DB::select($sql, [$test_id, $code]);
         $pfsArray = [];
         foreach ($pfsdetails as $value) {
+            $pfsArray[$value->exam_id]['starttime'] = $value->starttime;
             $pfsArray[$value->exam_id]['endtime'] = $value->endtime;
             $pfsArray[$value->exam_id]['level'] = $value->level;
             $pfsArray[$value->exam_id]['dev1'] = $value->dev1;

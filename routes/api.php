@@ -19,6 +19,7 @@ use App\Http\Controllers\FileuploadsController;
 use App\Http\Controllers\WeightController;
 use App\Http\Controllers\PdfDownloadController;
 use App\Http\Controllers\TestExecController;
+use App\Http\Controllers\TriggerHistoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -110,6 +111,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("test/getSearchExam", [TestController::class, 'getSearchExam']);
     Route::post("test/getTest", [TestController::class, 'getTest']);
     Route::post("test/deleteTest", [TestController::class, 'deleteTest']);
+
+    Route::post("testhistory/index", [TriggerHistoryController::class, 'index']);
+
 
     Route::post("weight/editStatusWeightMaster", [WeightController::class, 'editStatusWeightMaster']);
     Route::post("weight/editWeightMaster", [WeightController::class, 'editWeightMaster']);

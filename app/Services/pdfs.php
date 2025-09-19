@@ -93,11 +93,11 @@ class pdfs extends Model
             echo "PDFの出力に失敗しました。";
             exit();
         }
-
         // pdf_historyにダウンロード実施したログを取得
         $this->pdf_history = new pdf_history();
         $this->pdf_history->test_id = $exam->test_id;
         $this->pdf_history->exam_id = $id;
+        $this->pdf_history->ip = request()->ip();
         $this->pdf_history->save();
 
         // テストパターン

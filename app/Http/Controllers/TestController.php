@@ -908,6 +908,9 @@ class TestController extends UserController
                 "id,
                     user_id,
                     testname,
+                    pdfstartday,
+                    pdfendday,
+                    pdfuseflag,
                     DATE_FORMAT(startdaytime, '%Y/%m/%d') as formatted_startdaytime,DATE_FORMAT(enddaytime, '%Y/%m/%d') as formatted_enddaytime"
             )
                 ->where([

@@ -188,7 +188,21 @@ class Exam extends Authenticatable
     {
         return $this->belongsTo(User::class, 'customer_id');
     }
-
+    public function partner()
+    {
+        return $this->belongsTo(User::class, 'partner_id');
+    }
+    // アクセサ(customer_name)
+    // Eloquent は get〇〇Attribute を自動でキャッチして「仮想カラム」として返してくれます
+    public function getCustomerNameAttribute()
+    {
+        return $this->customer?->name;
+    }
+    // アクセサ(partner_name)
+    public function getPartnerNameAttribute()
+    {
+        return $this->partner?->name;
+    }
     public function pdfHistories()
     {
         return $this->hasMany(pdf_history::class, 'exam_id', 'id');

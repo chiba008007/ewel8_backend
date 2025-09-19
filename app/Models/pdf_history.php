@@ -11,4 +11,11 @@ class pdf_history extends Model
     protected $table = 'pdf_history';
     protected $fillable = ['test_id', 'exam_id'];
 
+
+    // Examとのリレーション
+    public function exam()
+    {
+        return $this->belongsTo(Exam::class, 'exam_id');
+    }
+
 }

@@ -20,6 +20,7 @@ use App\Http\Controllers\WeightController;
 use App\Http\Controllers\PdfDownloadController;
 use App\Http\Controllers\TestExecController;
 use App\Http\Controllers\TriggerHistoryController;
+use App\Http\Controllers\pdfHistoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -113,6 +114,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("test/deleteTest", [TestController::class, 'deleteTest']);
 
     Route::post("testhistory/index", [TriggerHistoryController::class, 'index']);
+    Route::post("pdfhistory/index", [pdfHistoryController::class, 'index']);
 
 
     Route::post("weight/editStatusWeightMaster", [WeightController::class, 'editStatusWeightMaster']);

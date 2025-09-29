@@ -5,10 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use App\Models\Exam;
 
 class Test extends Model
 {
     use HasFactory;
+
+    public function exams()
+    {
+        return $this->hasMany(Exam::class, 'test_id');
+    }
 
     public static function getTestDetail($id)
     {

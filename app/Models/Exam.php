@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\RemainCountMail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
+use App\Models\exampfs;
 
 class Exam extends Authenticatable
 {
@@ -206,6 +207,11 @@ class Exam extends Authenticatable
     public function pdfHistories()
     {
         return $this->hasMany(pdf_history::class, 'exam_id', 'id');
+    }
+
+    public function exampfses()
+    {
+        return $this->hasMany(exampfs::class, 'exam_id');
     }
 
 }

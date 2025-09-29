@@ -245,7 +245,7 @@ class Pfs
         }
         return $width;
     }
-    public function getSougoPoint($array)
+    public static function getSougoPoint($array)
     {
         $pt = 0.5;
         $p1 = $array[ 'dev6' ] - $array[ 'dev7' ];
@@ -279,5 +279,18 @@ class Pfs
         } else {
             return number_format($pt, 1);
         }
+    }
+    public static function getPawaharaRiskRowCalc($list)
+    {
+        $calc = config('const.consts.PAWAHARA_RISK_CALC');
+        $result = [];
+        foreach ($calc as $key => $value) {
+            if ($value[0]) {
+                $result[$key] = $value[0] - $list[$value[1]];
+            } else {
+                $result[$key] = $list[$value[1]];
+            }
+        }
+        return $result;
     }
 }

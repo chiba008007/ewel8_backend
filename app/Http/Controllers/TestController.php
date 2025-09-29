@@ -337,7 +337,7 @@ class TestController extends UserController
 
 
     //ストレスデータ取得ストレスフラグ無し
-    public function getStress($dev1, $dev2)
+    public static function getStress($dev1, $dev2)
     {
         $ave = ($dev1 + $dev2) / 2;
         $roundedAve = round($ave, 1);
@@ -421,7 +421,7 @@ class TestController extends UserController
 
 
     //ストレスデータ取得ストレスフラグあり
-    public function getStress2($dev1, $dev2, $dev3)
+    public static function getStress2($dev1, $dev2, $dev3)
     {
 
         $dev1 = sprintf("%s", ($dev1 >= 70) ? 60 : $dev1);

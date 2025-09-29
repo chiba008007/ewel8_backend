@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PDF\IndexController;
+use App\Http\Controllers\examRowDataController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,10 @@ Route::get('/excels/{filename}', function ($filename) {
     }
     return response()->download($file);
 });
+
+// CSVのダウンロード(検査種別rowデータ)
+// PFS
+Route::get("examRowData/{code}", [examRowDataController::class, 'index'])->name("examRowData");
 
 
 //Route::post('/save-radar-image', [PfsController::class, 'saveRadarImage']);

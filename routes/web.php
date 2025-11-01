@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PDF\IndexController;
 use App\Http\Controllers\examRowDataController;
+use App\Http\Controllers\billController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,5 +36,7 @@ Route::get('/excels/{filename}', function ($filename) {
 // PFS
 Route::get("examRowData/{code}", [examRowDataController::class, 'index'])->name("examRowData");
 
+// 請求書ダウンロード
+Route::get("bill/download/{code?}", [billController::class, 'download']);
 
 //Route::post('/save-radar-image', [PfsController::class, 'saveRadarImage']);

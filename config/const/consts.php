@@ -1,6 +1,8 @@
 <?php
 
 return[
+    'TAX' => 10,
+    'BUSSINESS_NUMBER' => 'T4370001019528',
     'PAWAHARA' => [
         1 => '対人共感リスク',
         2 => '状況察知リスク',

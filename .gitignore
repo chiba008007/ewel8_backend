@@ -25,3 +25,5 @@ public/images/PDF/*
 /storage/*
 !/storage/app/
 !/storage/app/testExecTemplate.xls
+!/storage/fonts/
+!/storage/fonts/*

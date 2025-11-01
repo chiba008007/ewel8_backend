@@ -21,6 +21,7 @@ use App\Http\Controllers\PdfDownloadController;
 use App\Http\Controllers\TestExecController;
 use App\Http\Controllers\TriggerHistoryController;
 use App\Http\Controllers\pdfHistoryController;
+use App\Http\Controllers\billController;
 
 /*
 |--------------------------------------------------------------------------
@@ -115,6 +116,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post("testhistory/index", [TriggerHistoryController::class, 'index']);
     Route::post("pdfhistory/index", [pdfHistoryController::class, 'index']);
+    Route::post("bill/index", [billController::class, 'index']);
+    Route::post("bill/set", [billController::class, 'set']);
+    Route::post("bill/get", [billController::class, 'get']);
 
 
     Route::post("weight/editStatusWeightMaster", [WeightController::class, 'editStatusWeightMaster']);

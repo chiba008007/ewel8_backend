@@ -31,11 +31,17 @@ class pdfs extends Model
             'margin_bottom' => 5,   // 下余白
             'margin_header' => 0,    // ヘッダー余白
             'margin_footer' => 0,    // フッター余白
-            'fontDir' => [base_path('resources/fonts')],
+            'fontDir' => [
+                base_path('resources/fonts'),
+                base_path('storage/fonts')
+            ],
             'fontdata' => [
-                'ipag' => [
-            'R' => 'ipag.ttf', // 日本語フォントを指定
-            'B' => 'ipag.ttf'
+                'ipag' => [ // 既存
+                    'R' => 'ipag.ttf',
+                    'B' => 'ipag.ttf',
+                ],
+                'ipaexm' => [ // 明朝体
+                    'R' => 'ipaexm.ttf',
                 ],
             ],
             'default_font' => 'ipag', // デフォルトのフォントを設定

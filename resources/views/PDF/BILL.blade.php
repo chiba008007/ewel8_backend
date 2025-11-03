@@ -52,9 +52,13 @@
         border-right:1px solid #000;
         border-bottom:1px solid #000;
         text-align: center;
+        padding:2px;
     }
     .list td.text-right{
         text-align: right;
+    }
+    .list td.text-left{
+        text-align: left;
     }
     .purple{
         background-color:rgb(239, 220, 247);
@@ -157,12 +161,12 @@
                     $even =  ($i % 2 === 1)?"purple":"";
                 @endphp
                 <tr>
-                    <td class="{{ $even }} text-left">{{ $list->number}}</td>
+                    <td class="{{ $even }} ">{{ $list->number}}</td>
                     <td class="{{ $even }} text-left">{{ $list->title}}</td>
                     <td class="{{ $even }} text-left">{{ $list->name}}</td>
                     <td class="{{ $even }} text-left">{{ $list->kikaku}}</td>
-                    <td class="{{ $even }} text-left">{{ $list->quantity}}</td>
-                    <td class="{{ $even }} text-left">{{ $list->unit}}</td>
+                    <td class="{{ $even }} ">{{ $list->quantity}}</td>
+                    <td class="{{ $even }} ">{{ $list->unit}}</td>
                     <td class="{{ $even }} text-right">{{ number_format($list->money)}}</td>
                     <td class="{{ $even }} text-right">{{ number_format($list->quantity * $list->money) }}</td>
                 </tr>
@@ -203,11 +207,10 @@
                 <td class="text-right">{{ number_format($total) }}
             </tr>
         </table>
-        <div>
+        <div class="mt-2">
             ※ 備考
-            <div>{{ $bill->note }}</div>
+            <div>{!! nl2br(e($bill->note)) !!}</div>
         </div>
     </div>
-    @include("PDF.FOOTER")
 </body>
 </html>

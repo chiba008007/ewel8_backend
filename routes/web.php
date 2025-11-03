@@ -38,5 +38,7 @@ Route::get("examRowData/{code}", [examRowDataController::class, 'index'])->name(
 
 // 請求書ダウンロード
 Route::get("bill/download/{code?}", [billController::class, 'download']);
+// 納品書ダウンロード
+Route::get("bill/slip/download/{code?}", [billController::class, 'slip']);
 
 //Route::post('/save-radar-image', [PfsController::class, 'saveRadarImage']);

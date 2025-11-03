@@ -119,6 +119,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("bill/index", [billController::class, 'index']);
     Route::post("bill/set", [billController::class, 'set']);
     Route::post("bill/get", [billController::class, 'get']);
+    Route::post("bill/delete", [billController::class, 'delete']);
 
 
     Route::post("weight/editStatusWeightMaster", [WeightController::class, 'editStatusWeightMaster']);

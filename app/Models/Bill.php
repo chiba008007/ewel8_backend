@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 
 class Bill extends Model
 {
@@ -57,6 +58,17 @@ class Bill extends Model
         'create_ts',
         'update_ts',
     ];
+
+    /**
+     * グローバルスコープの登録
+     */
+    protected static function booted()
+    {
+        // 常に status = true のレコードのみ取得
+        static::addGlobalScope('active', function (Builder $builder) {
+            $builder->where('status', true);
+        });
+    }
 
     /**
      * 日付カラムのフォーマット化

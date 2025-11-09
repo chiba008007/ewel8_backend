@@ -22,6 +22,8 @@ use App\Http\Controllers\TestExecController;
 use App\Http\Controllers\TriggerHistoryController;
 use App\Http\Controllers\pdfHistoryController;
 use App\Http\Controllers\billController;
+use App\Http\Controllers\userlicenseController;
+use App\Http\Controllers\ExamLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -139,6 +141,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post("pdf/setPDFUpload", [PdfDownloadController::class, 'setPDFUpload']);
     Route::post("pdf/getPDFUpload", [PdfDownloadController::class, 'getPDFUpload']);
+
+    Route::post("userlicense/list", [userlicenseController::class, 'list']);
+    Route::post("ExamLog/set", [ExamLogController::class, 'set']);
 
 });
 Route::post("user/upload", [UserController::class, 'upload']);

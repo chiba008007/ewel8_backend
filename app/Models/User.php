@@ -96,4 +96,11 @@ class User extends Authenticatable
         return $this->hasMany(UserLisence::class, 'user_id');
     }
 
+    public function informations()
+    {
+        return $this->belongsToMany(Information::class, 'information_user')
+                    ->withPivot('status')
+                    ->withTimestamps();
+    }
+
 }

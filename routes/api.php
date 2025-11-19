@@ -24,6 +24,7 @@ use App\Http\Controllers\pdfHistoryController;
 use App\Http\Controllers\billController;
 use App\Http\Controllers\userlicenseController;
 use App\Http\Controllers\ExamLogController;
+use App\Http\Controllers\InformationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -144,6 +145,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post("userlicense/list", [userlicenseController::class, 'list']);
     Route::post("ExamLog/set", [ExamLogController::class, 'set']);
+
+    Route::post("infomation/getInfoList", [InformationController::class, 'getInfoList']);
+    Route::post("infomation/setInfoList", [InformationController::class, 'setInfoList']);
 
 });
 Route::post("user/upload", [UserController::class, 'upload']);

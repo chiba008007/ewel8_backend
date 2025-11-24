@@ -20,6 +20,7 @@ class Information extends Model
         'display',
         'note',
         'file',
+        'status'
     ];
 
     protected $appends = ['display_labels'];
@@ -43,6 +44,12 @@ class Information extends Model
         return $this->belongsToMany(User::class, 'information_user')
                     ->withPivot('status')
                     ->withTimestamps();
+    }
+
+    // display=4 の個別指定を参照する
+    public function informationUsers()
+    {
+        return $this->hasMany(InformationUser::class, 'information_id');
     }
 
 }

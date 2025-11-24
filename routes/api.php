@@ -148,6 +148,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post("infomation/getInfoList", [InformationController::class, 'getInfoList']);
     Route::post("infomation/setInfoList", [InformationController::class, 'setInfoList']);
+    Route::post("infomation/getUser", [InformationController::class, 'getUser']);
+    Route::post("infomation/editInfoListDelete", [InformationController::class, 'editInfoListDelete']);
+    Route::post("infomation/getInformation", [InformationController::class, 'getInformation']);
 
 });
 Route::post("user/upload", [UserController::class, 'upload']);

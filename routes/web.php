@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PDF\IndexController;
 use App\Http\Controllers\examRowDataController;
 use App\Http\Controllers\billController;
+use App\Http\Controllers\ExamLoginHistoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,3 +43,6 @@ Route::get("bill/download/{code?}", [billController::class, 'download']);
 Route::get("bill/slip/download/{code?}", [billController::class, 'slip']);
 
 //Route::post('/save-radar-image', [PfsController::class, 'saveRadarImage']);
+
+// 受検者ログイン情報
+Route::get("examLoginHistory/download/", [ExamLoginHistoryController::class, 'download']);

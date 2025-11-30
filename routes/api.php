@@ -24,6 +24,7 @@ use App\Http\Controllers\pdfHistoryController;
 use App\Http\Controllers\billController;
 use App\Http\Controllers\userlicenseController;
 use App\Http\Controllers\ExamLogController;
+use App\Http\Controllers\ExamLoginHistoryController;
 use App\Http\Controllers\InformationController;
 
 /*
@@ -167,3 +168,6 @@ Route::get('test', [UserController::class, 'test']);
 
 Route::post("exam/login", [ExamController::class, 'index']);
 Route::post("exam/getExam", [ExamController::class, 'getExam']);
+
+Route::post("examloginhistory/getData", [ExamLoginHistoryController::class, 'getData']);
+

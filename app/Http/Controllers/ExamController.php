@@ -11,6 +11,7 @@ use App\Models\examfins;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Models\ExamLoginHistory;
 
 class ExamController extends Controller
 {
@@ -44,6 +45,14 @@ class ExamController extends Controller
                 'user' => $user,
                 'token' => $token
             ];
+
+            ExamLoginHistory::create([
+                'exam_id'    => $user->id,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'logged_in_at' => now(),
+            ]);
+
             return response($response, 201);
         }
         return response("error", 401);

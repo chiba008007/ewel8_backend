@@ -1,0 +1,18 @@
+# 環境変数ファイル（必ず除外）
+.env
+.env.*
+
+# キャッシュ・ログ
+storage/
+bootstrap/cache/
+
+# ベンダーコード
+vendor/
+
+# 公開ストレージ
+public/storage/
+public/uploads/
+public/hot
+
+# ビルド関連
+node_modules/

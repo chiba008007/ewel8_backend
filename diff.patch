@@ -1,0 +1,449 @@
+diff --git a/.clineignore b/.clineignore
+new file mode 100644
+index 0000000..5577944
+--- /dev/null
++++ b/.clineignore
+@@ -0,0 +1,18 @@
++# 環境変数ファイル（必ず除外）
++.env
++.env.*
++
++# キャッシュ・ログ
++storage/
++bootstrap/cache/
++
++# ベンダーコード
++vendor/
++
++# 公開ストレージ
++public/storage/
++public/uploads/
++public/hot
++
++# ビルド関連
++node_modules/
+diff --git a/app/Http/Controllers/AdminPageLogController.php b/app/Http/Controllers/AdminPageLogController.php
+new file mode 100644
+index 0000000..62afe45
+--- /dev/null
++++ b/app/Http/Controllers/AdminPageLogController.php
+@@ -0,0 +1,87 @@
++<?php
++
++namespace App\Http\Controllers;
++
++use Illuminate\Http\Request;
++use Illuminate\Support\Facades\Auth;
++use App\Models\AdminPageLog;
++
++class AdminPageLogController extends Controller
++{
++
++    private $limit = 2;
++
++    public function getPageLog(Request $request){
++
++        $offset = (int)$request->get("offset");
++        $ceil = 0;
++
++        // デフォルト値（必要に応じて調整）
++        $limit  = $request->input('limit', $this->limit);
++        $offset = $request->input('offset', $offset);
++
++        // 総件数を取得
++        $total = AdminPageLog::count();
++
++        // 最大ページ数（総ページ数）
++        $ceil = (int) ceil($total / $limit);
++
++        $list = AdminPageLog::with("user")
++        ->orderBy('created_at', 'desc')
++        ->limit($limit)
++        ->offset($offset)
++        ->get()
++        ->map(function($item){
++            $item->created_at_formatted = $item->created_at->format('Y-m-d H:xi:s');
++
++            $item->partner_name = $item->user->company_name ?? null;
++            $item->customer_name = $item->user->name ?? null;
++
++            return $item;
++        });
++
++        $response = [
++            'success' => true,
++            "list" =>$list,
++            'offset' => $offset,
++            'ceil' => $ceil,
++        ];
++
++        return response($response, 201);
++
++    }
++    //
++    public function setPageLog(Request $request){
++
++        $user = Auth::user(); // Sanctum 認証ユーザー
++
++        $today = now()->format('Y-m-d');
++
++        // すでに同じ人・同じ日・同じページのログがあるか？
++        $exists = AdminPageLog::where('user_id', $user->id)
++            ->whereDate('created_at', $today)
++            ->where('path', $request->path)
++            ->exists();
++
++        if ($exists) {
++            // すでに記録済み → 新規作成しない
++            return response(['success' => true, 'duplicated' => true], 200);
++        }
++
++        AdminPageLog::create([
++            'user_id'    => $user ? $user->id : null,
++            'route_name' => $request->route_name,
++            'title'      => $request->title,
++            'path'       => $request->path,
++            'params'     => $request->params,
++            'ip'         => $request->ip(),
++            'user_agent' => $request->userAgent(),
++        ]);
++
++        $response = [
++            'success' => true,
++        ];
++
++        return response($response, 201);
++    }
++}
+diff --git a/app/Http/Controllers/ExamLoginHistoryController.php b/app/Http/Controllers/ExamLoginHistoryController.php
+index 645064d..7dcc05a 100644
+--- a/app/Http/Controllers/ExamLoginHistoryController.php
++++ b/app/Http/Controllers/ExamLoginHistoryController.php
+@@ -38,7 +38,7 @@ public function getData(Request $request){
+         $total = ExamLoginHistory::count();
+ 
+         // 最大ページ数（総ページ数）
+-        $ceil = (int) ceil($total / $limit)-1;
++        $ceil = (int) ceil($total / $limit);
+ 
+         $query = ExamLoginHistory::with([
+             'exam',
+diff --git a/app/Http/Controllers/UserController.php b/app/Http/Controllers/UserController.php
+index 6559884..ef1232e 100644
+--- a/app/Http/Controllers/UserController.php
++++ b/app/Http/Controllers/UserController.php
+@@ -8,6 +8,7 @@
+ use Illuminate\Http\Request;
+ use App\Models\User;
+ use App\Models\userlisence;
++use App\Models\AdminPageLog;
+ use App\Models\userpdf;
+ use Exception;
+ use Illuminate\Support\Facades\Hash;
+diff --git a/app/Models/AdminPageLog.php b/app/Models/AdminPageLog.php
+new file mode 100644
+index 0000000..f4b951a
+--- /dev/null
++++ b/app/Models/AdminPageLog.php
+@@ -0,0 +1,31 @@
++<?php
++
++namespace App\Models;
++
++use Illuminate\Database\Eloquent\Factories\HasFactory;
++use Illuminate\Database\Eloquent\Model;
++
++class AdminPageLog extends Model
++{
++    use HasFactory;
++    protected $table = 'admin_page_logs';
++
++    protected $fillable = [
++        'user_id',
++        'route_name',
++        'title',
++        'path',
++        'params',
++        'ip',
++        'user_agent',
++    ];
++
++    protected $casts = [
++        'params' => 'array',
++    ];
++
++    // リレーション
++    public function user(){
++        return $this->belongsTo(User::class);
++    }
++}
+diff --git a/app/Models/User.php b/app/Models/User.php
+index deec4a9..83ecdfc 100644
+--- a/app/Models/User.php
++++ b/app/Models/User.php
+@@ -103,4 +103,8 @@ public function informations()
+                     ->withTimestamps();
+     }
+ 
++    public function pageLogs()
++    {
++        return $this->hasMany(AdminPageLog::class);
++    }
+ }
+diff --git a/database/migrations/2025_12_02_232917_create_admin_page_logs_table.php b/database/migrations/2025_12_02_232917_create_admin_page_logs_table.php
+new file mode 100644
+index 0000000..718ad32
+--- /dev/null
++++ b/database/migrations/2025_12_02_232917_create_admin_page_logs_table.php
+@@ -0,0 +1,39 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++
++return new class extends Migration
++{
++    /**
++     * Run the migrations.
++     */
++    public function up(): void
++    {
++        Schema::create('admin_page_logs', function (Blueprint $table) {
++            $table->id();
++
++            $table->unsignedBigInteger('user_id')->index();   // 必須
++
++            $table->string('route_name');
++            $table->string('title')->nullable();
++            $table->string('path');
++            $table->json('params')->nullable();
++
++            $table->string('ip', 45)->nullable();
++            $table->text('user_agent')->nullable();
++
++            // created_at, updated_at
++            $table->timestamps();
++        });
++    }
++
++    /**
++     * Reverse the migrations.
++     */
++    public function down(): void
++    {
++        Schema::dropIfExists('admin_page_logs');
++    }
++};
+diff --git a/diff.patch b/diff.patch
+new file mode 100644
+index 0000000..f58bca8
+--- /dev/null
++++ b/diff.patch
+@@ -0,0 +1,186 @@
++diff --git a/.clineignore b/.clineignore
++new file mode 100644
++index 0000000..5577944
++--- /dev/null
+++++ b/.clineignore
++@@ -0,0 +1,18 @@
+++# 環境変数ファイル（必ず除外）
+++.env
+++.env.*
+++
+++# キャッシュ・ログ
+++storage/
+++bootstrap/cache/
+++
+++# ベンダーコード
+++vendor/
+++
+++# 公開ストレージ
+++public/storage/
+++public/uploads/
+++public/hot
+++
+++# ビルド関連
+++node_modules/
++diff --git a/database/migrations/2025_12_02_232917_create_admin_page_logs_table.php b/database/migrations/2025_12_02_232917_create_admin_page_logs_table.php
++new file mode 100644
++index 0000000..718ad32
++--- /dev/null
+++++ b/database/migrations/2025_12_02_232917_create_admin_page_logs_table.php
++@@ -0,0 +1,39 @@
+++<?php
+++
+++use Illuminate\Database\Migrations\Migration;
+++use Illuminate\Database\Schema\Blueprint;
+++use Illuminate\Support\Facades\Schema;
+++
+++return new class extends Migration
+++{
+++    /**
+++     * Run the migrations.
+++     */
+++    public function up(): void
+++    {
+++        Schema::create('admin_page_logs', function (Blueprint $table) {
+++            $table->id();
+++
+++            $table->unsignedBigInteger('user_id')->index();   // 必須
+++
+++            $table->string('route_name');
+++            $table->string('title')->nullable();
+++            $table->string('path');
+++            $table->json('params')->nullable();
+++
+++            $table->string('ip', 45)->nullable();
+++            $table->text('user_agent')->nullable();
+++
+++            // created_at, updated_at
+++            $table->timestamps();
+++        });
+++    }
+++
+++    /**
+++     * Reverse the migrations.
+++     */
+++    public function down(): void
+++    {
+++        Schema::dropIfExists('admin_page_logs');
+++    }
+++};
++diff --git a/diff.patch b/diff.patch
++new file mode 100644
++index 0000000..7607f48
++--- /dev/null
+++++ b/diff.patch
++@@ -0,0 +1,111 @@
+++diff --git a/.clineignore b/.clineignore
+++new file mode 100644
+++index 0000000..5577944
+++--- /dev/null
++++++ b/.clineignore
+++@@ -0,0 +1,18 @@
++++# 環境変数ファイル（必ず除外）
++++.env
++++.env.*
++++
++++# キャッシュ・ログ
++++storage/
++++bootstrap/cache/
++++
++++# ベンダーコード
++++vendor/
++++
++++# 公開ストレージ
++++public/storage/
++++public/uploads/
++++public/hot
++++
++++# ビルド関連
++++node_modules/
+++diff --git a/database/migrations/2025_12_02_232917_create_admin_page_logs_table.php b/database/migrations/2025_12_02_232917_create_admin_page_logs_table.php
+++new file mode 100644
+++index 0000000..718ad32
+++--- /dev/null
++++++ b/database/migrations/2025_12_02_232917_create_admin_page_logs_table.php
+++@@ -0,0 +1,39 @@
++++<?php
++++
++++use Illuminate\Database\Migrations\Migration;
++++use Illuminate\Database\Schema\Blueprint;
++++use Illuminate\Support\Facades\Schema;
++++
++++return new class extends Migration
++++{
++++    /**
++++     * Run the migrations.
++++     */
++++    public function up(): void
++++    {
++++        Schema::create('admin_page_logs', function (Blueprint $table) {
++++            $table->id();
++++
++++            $table->unsignedBigInteger('user_id')->index();   // 必須
++++
++++            $table->string('route_name');
++++            $table->string('title')->nullable();
++++            $table->string('path');
++++            $table->json('params')->nullable();
++++
++++            $table->string('ip', 45)->nullable();
++++            $table->text('user_agent')->nullable();
++++
++++            // created_at, updated_at
++++            $table->timestamps();
++++        });
++++    }
++++
++++    /**
++++     * Reverse the migrations.
++++     */
++++    public function down(): void
++++    {
++++        Schema::dropIfExists('admin_page_logs');
++++    }
++++};
+++diff --git a/diff.patch b/diff.patch
+++new file mode 100644
+++index 0000000..e69de29
+++<?php
+++
+++use Illuminate\Database\Migrations\Migration;
+++use Illuminate\Database\Schema\Blueprint;
+++use Illuminate\Support\Facades\Schema;
+++
+++return new class extends Migration
+++{
+++    /**
+++     * Run the migrations.
+++     */
+++    public function up(): void
+++    {
+++        Schema::create('admin_page_logs', function (Blueprint $table) {
+++            $table->id();
+++
+++            $table->unsignedBigInteger('user_id')->index();   // 必須
+++
+++            $table->string('route_name');
+++            $table->string('title')->nullable();
+++            $table->string('path');
+++            $table->json('params')->nullable();
+++
+++            $table->string('ip', 45)->nullable();
+++            $table->text('user_agent')->nullable();
+++
+++            // created_at, updated_at
+++            $table->timestamps();
+++        });
+++    }
+++
+++    /**
+++     * Reverse the migrations.
+++     */
+++    public function down(): void
+++    {
+++        Schema::dropIfExists('admin_page_logs');
+++    }
+++};
+diff --git a/routes/api.php b/routes/api.php
+index 9350001..3ed27f9 100644
+--- a/routes/api.php
++++ b/routes/api.php
+@@ -1,5 +1,6 @@
+ <?php
+ 
++use App\Http\Controllers\AdminPageLogController;
+ use Illuminate\Http\Request;
+ use Illuminate\Support\Facades\Route;
+ use App\Http\Controllers\ApiProductController;
+@@ -152,6 +153,8 @@
+     Route::post("infomation/getUser", [InformationController::class, 'getUser']);
+     Route::post("infomation/editInfoListDelete", [InformationController::class, 'editInfoListDelete']);
+     Route::post("infomation/getInformation", [InformationController::class, 'getInformation']);
++    Route::post("page/log", [AdminPageLogController::class, 'setPageLog']);
++    Route::post("page/list", [AdminPageLogController::class, 'getPageLog']);
+ 
+ });
+ Route::post("user/upload", [UserController::class, 'upload']);

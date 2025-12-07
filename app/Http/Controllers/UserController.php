@@ -8,6 +8,7 @@ use App\Models\fileuploads;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\userlisence;
+use App\Models\AdminPageLog;
 use App\Models\userpdf;
 use Exception;
 use Illuminate\Support\Facades\Hash;

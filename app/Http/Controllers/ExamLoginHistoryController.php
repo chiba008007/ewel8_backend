@@ -38,7 +38,7 @@ class ExamLoginHistoryController extends Controller
         $total = ExamLoginHistory::count();
 
         // 最大ページ数（総ページ数）
-        $ceil = (int) ceil($total / $limit)-1;
+        $ceil = (int) ceil($total / $limit);
 
         $query = ExamLoginHistory::with([
             'exam',

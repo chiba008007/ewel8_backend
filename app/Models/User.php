@@ -103,4 +103,8 @@ class User extends Authenticatable
                     ->withTimestamps();
     }
 
+    public function pageLogs()
+    {
+        return $this->hasMany(AdminPageLog::class);
+    }
 }

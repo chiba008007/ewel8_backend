@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminPageLogController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiProductController;
@@ -152,6 +153,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("infomation/getUser", [InformationController::class, 'getUser']);
     Route::post("infomation/editInfoListDelete", [InformationController::class, 'editInfoListDelete']);
     Route::post("infomation/getInformation", [InformationController::class, 'getInformation']);
+    Route::post("page/log", [AdminPageLogController::class, 'setPageLog']);
+    Route::post("page/list", [AdminPageLogController::class, 'getPageLog']);
 
 });
 Route::post("user/upload", [UserController::class, 'upload']);

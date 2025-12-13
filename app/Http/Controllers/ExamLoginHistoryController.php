@@ -24,12 +24,12 @@ class ExamLoginHistoryController extends Controller
     //
     public function getData(Request $request){
 
-        $offset = (int)$request->get("offset");
+        $page = (int)$request->get("page",1);
         $ceil = 0;
 
         // デフォルト値（必要に応じて調整）
         $limit  = $request->input('limit', $this->limit);
-        $offset = $request->input('offset', $offset);
+        $offset = ($page - 1) * $limit;
 
         // 最大取得件数を制限（安全のため）
        // $limit = min($limit, 500); // 500 以上は取得させない

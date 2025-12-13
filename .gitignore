@@ -27,4 +27,5 @@ public/images/PDF/*
 !/storage/app/testExecTemplate.xls
 !/storage/fonts/
 !/storage/fonts/*
+!/storage/app/tmp/
 diff.patch

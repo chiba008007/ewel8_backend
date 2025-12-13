@@ -24,8 +24,9 @@ yarn-error.log
 public/images/PDF/*
 /storage/*
 !/storage/app/
+!/storage/app/tmp/
+!/storage/app/tmp/.gitkeep
 !/storage/app/testExecTemplate.xls
 !/storage/fonts/
 !/storage/fonts/*
-!/storage/app/tmp/
 diff.patch

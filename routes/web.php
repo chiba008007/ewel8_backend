@@ -5,6 +5,7 @@ use App\Http\Controllers\PDF\IndexController;
 use App\Http\Controllers\examRowDataController;
 use App\Http\Controllers\billController;
 use App\Http\Controllers\ExamLoginHistoryController;
+use App\Http\Controllers\CompanyController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,3 +47,6 @@ Route::get("bill/slip/download/{code?}", [billController::class, 'slip']);
 
 // 受検者ログイン情報
 Route::get("examLoginHistory/download/", [ExamLoginHistoryController::class, 'download']);
+
+// 企業一覧ダウンロード
+Route::get("company/downloadFile/{file}", [CompanyController::class, 'downloadFile']);

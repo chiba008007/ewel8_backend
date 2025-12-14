@@ -1,3 +1,5 @@
 *
 !public/
+!tmp/
+!tmp/.gitkeep
 !.gitignore

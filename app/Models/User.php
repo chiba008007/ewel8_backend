@@ -107,4 +107,26 @@ class User extends Authenticatable
     {
         return $this->hasMany(AdminPageLog::class);
     }
+
+    public static function getPartnerData()
+    {
+
+        $query = DB::table("users")->where("type","partner");
+
+        return $query->orderBy('id')->get();
+    }
+    public static function getCustomerData()
+    {
+        $result = User::where('type', 'customer')
+            ->with('partner')
+            ->orderBy('id')
+            ->get();
+        return $result;
+    }
+    public function partner()
+    {
+        return $this->belongsTo(User::class, 'partner_id', 'id');
+    }
+
+
 }

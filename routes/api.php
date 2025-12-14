@@ -27,6 +27,7 @@ use App\Http\Controllers\userlicenseController;
 use App\Http\Controllers\ExamLogController;
 use App\Http\Controllers\ExamLoginHistoryController;
 use App\Http\Controllers\InformationController;
+use App\Http\Controllers\CompanyController;
 
 /*
 |--------------------------------------------------------------------------
@@ -155,6 +156,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("infomation/getInformation", [InformationController::class, 'getInformation']);
     Route::post("page/log", [AdminPageLogController::class, 'setPageLog']);
     Route::post("page/list", [AdminPageLogController::class, 'getPageLog']);
+
+    // 企業一覧ダウンロード
+    Route::post("company/download/", [CompanyController::class, 'download']);
 
 });
 Route::post("user/upload", [UserController::class, 'upload']);

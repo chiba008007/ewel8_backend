@@ -1,6 +1,7 @@
 <?php
 
 return[
+    'PDF_PREFIX'=>'batchdownload_',
     'TAX' => 10,
     'BUSSINESS_NUMBER' => 'T4370001019528',
     'PAWAHARA' => [

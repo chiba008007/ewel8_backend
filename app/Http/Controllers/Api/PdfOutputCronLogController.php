@@ -16,7 +16,14 @@ class PdfOutputCronLogController extends Controller
     {
         //
     }
-
+    public function getList(){
+        $result = PdfOutputCronLog::with([
+            "partner:id,name",
+            "customer:id,name",
+            "test:id,testname",
+        ])->orderByDesc('id')->get();
+        return response()->json($result);
+    }
     public function set(Request $request)
     {
 

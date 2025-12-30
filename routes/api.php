@@ -161,6 +161,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("company/download/", [CompanyController::class, 'download']);
 
     Route::post("pdfOutputCronLog/set/", [PdfOutputCronLogController::class, 'set']);
+    Route::post("pdfOutputCronLog/getList/", [PdfOutputCronLogController::class, 'getList']);
 
 });
 Route::post("user/upload", [UserController::class, 'upload']);

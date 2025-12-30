@@ -23,4 +23,18 @@ class PdfOutputCronLog extends Model
         'error_message',
     ];
 
+    // リレーションを記載
+    // パートナー
+    public function partner(){
+        return $this->belongsTo(User::class, 'partner_id');
+    }
+    // 企業
+    public function customer(){
+        return $this->belongsTo(User::class, 'customer_id');
+    }
+    // テスト
+    public function test(){
+        return $this->belongsTo(Test::class,'test_id');
+    }
+
 }

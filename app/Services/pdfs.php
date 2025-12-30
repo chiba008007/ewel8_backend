@@ -20,6 +20,8 @@ class pdfs extends Model
     //
     public function __construct($orientation = "P")
     {
+        require_once(public_path()."/PDF/pfsCreateGraph.php");
+
         $pdf = new \Mpdf\Mpdf(
             [
             'mode' => 'ja', // 日本語モードを指定

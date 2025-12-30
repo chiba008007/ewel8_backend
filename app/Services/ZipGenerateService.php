@@ -25,6 +25,7 @@ class ZipGenerateService
     $dir = $path.$trigger->test_id;
     $passwd = config('const.consts.PASSWORD');
     $prefix = config('const.consts.PDF_PREFIX');
+    $status = $trigger->status;
     // それぞれPDFを作る
     $pdfPaths = [];
     foreach ($exams as $value) {
@@ -40,28 +41,30 @@ class ZipGenerateService
       //INFOレベルでメッセージを出力
       Log::info($message);
     }
-    $uploadFileMail = "";
+    $uploadFileNames = [];
     $chunks = array_chunk($pdfPaths, $this->pdfSlice);
     if ($zipFilename = $this->downloadZip($chunks, $trigger, $zipDir)) {
         // 成功
         foreach ($chunks as $index => $pdfGroup) {
-            $this->repository->setFileupload($index,"zip",$trigger,$zipFilename);
-            $uploadFileMail .= $prefix."_".$trigger->test_id."_".date('Ymd')."_0".($index + 1)."_inv.zip / ";
+            // status=2の時は管理者が操作したPDFのため、fileuploadに登録を行わない
+            if($status != 2){
+              $this->repository->setFileupload($index,"zip",$trigger,$zipFilename);
+            }
+            //$uploadFileMail .= $prefix."_".$trigger->test_id."_".date('Ymd')."_0".($index + 1)."_inv.zip / ";
+            $uploadFileNames[] = $zipFilename[$index];
         }
     } else {
         // 失敗
 
     }
-    $uploadFileMail = substr($uploadFileMail, 0, -3);
-    return $uploadFileMail;
-
+    return $uploadFileNames;
   }
 
   public function downloadZip($chunks, $trigger, $zipDir)
   {
     $prefix = config('const.consts.PDF_PREFIX');
     $zipFilename = [];
-    $filename = $prefix."_".$trigger->test_id."_".date('YmdH');
+    $filename = $prefix."_".$trigger->test_id."_".date('YmdHis');
     foreach ($chunks as $index => $pdfGroup) {
         $zipFilename[$index] = $filename."_0".($index + 1)."_inv.zip";
         $zipPath = $zipDir . "/".$zipFilename[$index];

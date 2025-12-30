@@ -14,6 +14,10 @@ class pdfDownloads extends Model
     // 1: "実行前",
     // 2: "実行中",
     // 3: "実行後",
+    // statusの用途
+    // 0: "無効",
+    // 1: "テストから登録",
+    // 2: "管理者から登録",
 
     protected $fillable = [
     'partner_id',
@@ -22,6 +26,27 @@ class pdfDownloads extends Model
     'admin_id',
     'type',
     'code',
+    'status',
+    'admin_cronfile_path',
     ];
+
+    protected $casts = [
+        'admin_cronfile_path' => 'array',
+    ];
+
+    public function partner()
+    {
+        return $this->belongsTo(User::class, 'partner_id');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(User::class, 'customer_id');
+    }
+
+    public function test()
+    {
+        return $this->belongsTo(Test::class, 'test_id');
+    }
 
 }

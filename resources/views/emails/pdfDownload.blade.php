@@ -19,7 +19,11 @@ Welcome-k サポートデスクです。
 2. 開いた画面の上の段にボタンが表示されており、ダウンロードボタンをクリックしてください。<br />
 3. 格納されているファイルの一覧が表示されます。<br />
 4. ファイル名をクリックし、ダウンロードしてください。。<br />
-{{ $uploadFileMail }}
+
+@foreach ($uploadFileMail as $filename)
+    {{ $filename }}<br>
+@endforeach
+
 </p>
 <p>
 ご確認の程、よろしくお願いいたします。

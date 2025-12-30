@@ -9,7 +9,7 @@ use App\Services\MailService;
 use App\Models\User;
 use App\Models\Test;
 
-class PdfBatchDownloadService
+class PdfOutPutService
 {
   private $repository;
   private $pdfService;
@@ -35,7 +35,7 @@ class PdfBatchDownloadService
 
   public function execute()
   {
-    Log::info('PDF Download start (service)');
+    Log::info('PDF OutPut start (service)');
     // pdfダウンロードするトリガーの取得
     $trigger = $this->repository->getTrigger();
     if (!$trigger) {
@@ -77,11 +77,8 @@ class PdfBatchDownloadService
       $filename = $this->zipService->generateZip($exams, $trigger, $this->zipDir);
     }
     // 取得データを実行済に変更
-    $this->repository->markCompleted($trigger,$filename);
-    // 管理者用の画面から操作したもの status=2のデータはメールを送信しない
-    if($trigger->status != 2){
-      $this->mailService->sendCompleteMail($user, $test, $filename);
-    }
+    $this->repository->markCompleted($trigger);
+    $this->mailService->sendCompleteMail($user, $test, $filename);
     return ;
   }
 }

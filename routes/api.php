@@ -28,7 +28,6 @@ use App\Http\Controllers\ExamLogController;
 use App\Http\Controllers\ExamLoginHistoryController;
 use App\Http\Controllers\InformationController;
 use App\Http\Controllers\CompanyController;
-use App\Http\Controllers\Api\PdfOutputCronLogController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -145,6 +144,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post("pdf/setPDFUpload", [PdfDownloadController::class, 'setPDFUpload']);
     Route::post("pdf/getPDFUpload", [PdfDownloadController::class, 'getPDFUpload']);
+    Route::post("pdf/setOutPutLog", [PdfDownloadController::class, 'setOutPutLog']);
+    Route::post("pdf/getOutPutLog", [PdfDownloadController::class, 'getOutPutLog']);
+
 
     Route::post("userlicense/list", [userlicenseController::class, 'list']);
     Route::post("ExamLog/set", [ExamLogController::class, 'set']);
@@ -159,9 +161,6 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     // 企業一覧ダウンロード
     Route::post("company/download/", [CompanyController::class, 'download']);
-
-    Route::post("pdfOutputCronLog/set/", [PdfOutputCronLogController::class, 'set']);
-    Route::post("pdfOutputCronLog/getList/", [PdfOutputCronLogController::class, 'getList']);
 
 });
 Route::post("user/upload", [UserController::class, 'upload']);

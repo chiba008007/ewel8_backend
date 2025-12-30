@@ -40,6 +40,7 @@ class PdfDownloadController extends Controller
                 'partner_id'  => $request->partner_id,
                 'customer_id' => $request->customer_id,
                 'test_id'     => $request->test_id,
+                'status'     => 1,
             ])
             ->orderBy('id')
             ->get();
@@ -70,4 +71,45 @@ class PdfDownloadController extends Controller
             return false;
         }
     }
+    public function setOutPutLog(Request $request)
+    {
+        $loginUser = auth()->user()->currentAccessToken();
+        $user_id = $loginUser->tokenable->id;
+        if (!$user_id) {
+            throw new Exception();
+        }
+        // パートナーIDの取得
+        try {
+            pdfDownloads::create([
+                'partner_id'  => $request->partner_id,
+                'customer_id' => $request->customer_id,
+                'test_id'     => $request->test_id,
+                'admin_id'    => $loginUser->tokenable->id,
+                'type'        => $request->type,
+                'code'        => $request->code,
+                'status' => 2 // PDF一覧から登録したとき
+            ]);
+
+            return response(true, 200);
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    public function getOutPutLog(Request $request)
+    {
+
+        $list = pdfDownloads::with([
+            'partner:id,name',
+            'customer:id,name',
+            'test:id,testname',
+        ])
+        ->where('status', 2)
+        ->orderBy('id', 'desc')
+        ->get();
+
+        return response($list, 200);
+
+    }
+
 }

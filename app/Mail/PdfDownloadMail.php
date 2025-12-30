@@ -14,6 +14,15 @@ class PdfDownloadMail extends Mailable
     use Queueable;
     use SerializesModels;
 
+    protected string $adminMail;
+    protected string $app_url;
+    protected string $invgfoot;
+    protected string $title;
+    protected string $name;
+    protected string $testname;
+    protected string $person;
+    protected array  $uploadFileMail;
+
     /**
      * Create a new message instance.
      */

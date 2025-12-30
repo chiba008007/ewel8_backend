@@ -63,12 +63,12 @@ class PdfGenerateService
         $start = $examGroup->first()->number;
 
         //$end   = $examGroup->last()->number;
-        $filename = $prefix."_".$trigger->test_id."_".date('YmdH')."_0".$start;
+        $filename = $prefix."_".$trigger->test_id."_".date('YmdHis')."_0".$start;
         $savefile = "{$zipDir}/{$filename}.pdf";
         $zipFilename[$start] = $filename.".pdf";
         $pdf->Output($savefile, 'F');
         $this->repository->setFileupload($start,"pdf",$trigger,$zipFilename);
-        return $filename;
+        return $zipFilename;
     }
   }
 

@@ -12,10 +12,10 @@ class PdfDownloadRepository
   public function getTrigger()
   {
       // pdfダウンロードするトリガーの取得
-      $trigger = pdfDownloads::where([
-          'status' => 1,
-          'type' => 1
-          ])->first();
+      $trigger = pdfDownloads::
+          where('type', 1)
+          ->whereIn('status', [1, 2])
+          ->first();
       if (is_null($trigger)) {
           Log::info("実行データが無いため終了");
           return ;
@@ -64,8 +64,8 @@ class PdfDownloadRepository
   public function setFileupload($index, $type = "zip", $trigger,$zipFilename)
   {
     $prefix = config('const.consts.PDF_PREFIX');
-    $filename = $prefix."_".$trigger->test_id."_".date('YmdH');
     $size = filesize(storage_path('/app/public/uploads/').$zipFilename[$index]);
+    $filename = $zipFilename[$index];
     $params = [];
     $params[ 'test_id'    ] = $trigger->test_id;
     $params[ 'customer_id'] = $trigger->customer_id;
@@ -86,10 +86,10 @@ class PdfDownloadRepository
   }
 
   // 取得データを実行済に変更
-  public function markCompleted($trigger){
+  public function markCompleted($trigger, array $filename){
     pdfDownloads::where('id', $trigger->id)->update([
       'type' => 3,
+      'admin_cronfile_path'=>$filename
     ]);
   }
-
 }

@@ -41,6 +41,9 @@ class User extends Authenticatable
         'person_tel',
         'system_name',
         'pdfImagePath',
+        'two_factor_secret',
+        'two_factor_enabled',
+
     ];
 
     /**

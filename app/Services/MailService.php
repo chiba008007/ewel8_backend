@@ -4,6 +4,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PdfDownloadMail;
+use App\Mail\TwoFactorMail;
 
 class MailService
 {
@@ -31,4 +32,25 @@ class MailService
     Log::info('INFOレベルでメッセージを出力 : '.$message);
   }
 
+  public function twoFacterSend($user,$code){
+    // 2段階認証配信
+    Log::info('2段階認証メール配信:'.$user->tanto_name);
+    $mailbody = [];
+    $mailbody[ 'title' ] = "2段階認証メール配信のお知らせ";
+    $mailbody[ 'name' ] = $user->name;
+    $mailbody[ 'person' ] = $user->person;
+    $mailbody[ 'code' ] = $code;
+    $tanto_address = $user->person_address;
+    Mail::to($tanto_address)
+        ->send(
+            (new TwoFactorMail($mailbody))
+            ->from(config('mail.from.address'), config('mail.from.name'))
+        );
+
+    //標準出力&ログに出力するメッセージのフォーマット
+    $message = '[' . date('Y-m-d h:i:s') . ']';
+    //INFOレベルでメッセージを出力
+    Log::info('INFOレベルでメッセージを出力 : '.$message);
+
+  }
 }

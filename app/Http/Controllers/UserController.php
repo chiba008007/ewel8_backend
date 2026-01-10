@@ -21,11 +21,27 @@ use App\Mail\EditUserDataMail;
 use App\Mail\SetUserDataMailPassword;
 use App\Mail\EditPartnerEditMail;
 use Illuminate\Support\Facades\Log;
+use App\Services\MailService;
+use App\Services\UserService;
+use App\Services\PasswordService;
+
 
 class UserController extends Controller
 {
     public const G_ADMIN = "admin";
     public const G_PARTNER = "partner";
+
+    private $mailService;
+    private $passwordService;
+    private $twoFactorCache;
+    public function __construct(
+        MailService $mailService,
+        PasswordService $passwordService,
+    )
+    {
+        $this->mailService = $mailService;
+        $this->passwordService = $passwordService;
+    }
     public function checkAdmin()
     {
         $loginUser = auth()->user()->currentAccessToken();
@@ -36,13 +52,29 @@ class UserController extends Controller
     //
     public function index(Request $request)
     {
-
-        $passwd = config('const.consts.PASSWORD');
-        $userdata = User::where('login_id', $request->login_id)->first();
-        $user = User::find($userdata[ 'id' ]);
-
+        $two_factor = $request->two_factor;
+        $user = User::where('login_id', $request->login_id)->first();
         $token = "";
-        if (openssl_decrypt($user['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']) == $request->password) {
+        if ($this->passwordService->verify($user,$request->password)) {
+            // 2段階認証が有効な時
+            if($user[ 'two_factor_enabled' ] && !$two_factor){
+                // コードの生成
+                $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+                // 2段階認証コードの保持
+                $user->update(['two_factor_secret'=> $code]);
+                // 2段階認証用コードメール発送
+                $this->mailService->twoFacterSend($user,$code);
+                return response()->json([
+                    'two_factor_required' => $user->two_factor_enabled,
+                    'two_factor_token'    => $user->id
+                ], 200);
+            }
+            // 2段階認証のチェック
+            if($user[ 'two_factor_enabled' ] && $two_factor){
+                if($user['two_factor_secret'] != $two_factor){
+                    return response(false, 400);
+                }
+            }
             $token = $user->createToken('my-app-token')->plainTextToken;
             $response = [
                 'user' => $user,

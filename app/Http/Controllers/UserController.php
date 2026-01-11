@@ -368,6 +368,7 @@ FROM (
                 'tel' => $request['tel'],
                 'fax' => $request['fax'],
                 'requestFlag' => $request['requestFlag'],
+                'two_factor_enabled' => $request['two_factor_enabled'],
                 'person' => $request['person'],
                 'person_address' => $request['person_address'],
                 'person2' => $request['person2'],
@@ -494,6 +495,7 @@ FROM (
                 "tel" => $request->tel,
                 "fax" => $request->fax,
                 "requestFlag" => $request->requestFlag,
+                "two_factor_enabled" => $request->two_factor_enabled,
                 "person" => $request->person,
                 "person_address" => $request->person_address,
                 "person2" => $request->person2,
@@ -590,6 +592,7 @@ FROM (
                 'weightFlag' => $request['weightFlag'],
                 'excelFlag' => $request['excelFlag'],
                 'customFlag' => $request['customFlag'],
+                'two_factor_enabled' => $request['two_factor_enabled'],
                 'sslFlag' => $request['sslFlag'],
                 'logoImagePath' => $request['logoImagePath'],
                 'privacy' => $request['privacy'],
@@ -646,7 +649,8 @@ FROM (
             return response("success", 200);
         } catch (\Exception $e) {
             Log::info('新規顧客登録失敗'.$e);
-            return response("error", 400);
+
+            return response($e, 400);
         }
     }
     public function setUserLicense(Request $request)
@@ -932,6 +936,7 @@ FROM (
                 'weightFlag',
                 'excelFlag',
                 'customFlag',
+                'two_factor_enabled',
                 'sslFlag',
                 'logoImagePath',
                 'privacy',
@@ -982,6 +987,7 @@ FROM (
                 'weightFlag' => $request->weightFlag,
                 'excelFlag' => $request->excelFlag,
                 'customFlag' => $request->customFlag,
+                'two_factor_enabled' => $request->two_factor_enabled,
                 'sslFlag' => $request->sslFlag,
                 'logoImagePath' => $request->logoImagePath,
                 'privacy' => $request->privacy,

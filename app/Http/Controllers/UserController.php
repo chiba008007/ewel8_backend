@@ -327,7 +327,11 @@ FROM (
                 [
                     'login_id' => $request[$i]['login_id'],
                     'person' => $request[$i]['person'],
-                    'person_address' => $request[$i]['person_address']
+                    'person_address' => $request[$i]['person_address'],
+                    'two_factor_enabled' => (int) filter_var(
+                        $request[$i]['two_factor_enabled'],
+                        FILTER_VALIDATE_BOOLEAN
+                    ),
                 ]
             );
         }

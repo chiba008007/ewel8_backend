@@ -97,6 +97,21 @@ class UserController extends Controller
         $request->photo->storeAs('public/app/myImage', $filename);
         return response($filename, 201);
     }
+
+    public function editUserDeleteDate(Request $request)
+    {
+        $loginUser = auth()->user()->currentAccessToken();
+        $params = [];
+        $params[ 'partner_id' ] = $request->partner_id;
+        $params[ 'id'] = $request->id;
+        $params[ 'admin_id' ] = $loginUser->tokenable->id;
+        $user = User::where($params)->firstOrFail();
+        $user->deleted_at = now();
+        $user->save();
+
+        return response($loginUser, 201);
+    }
+
     public function fileupload(Request $request)
     {
         $loginUser = auth()->user()->currentAccessToken();

@@ -87,6 +87,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/getPartnerDetailData', [UserController::class, 'getPartnerDetailData']);
     Route::post('user/editPartner', [UserController::class, 'editPartner']);
     Route::post('user/editUserPdfLogo', [UserController::class, 'editUserPdfLogo']);
+    Route::post('user/editUserDeleteDate', [UserController::class, 'editUserDeleteDate']);
     Route::post('user/getUserPdfLogo', [UserController::class, 'getUserPdfLogo']);
     Route::post('user/getPartnerid', [UserController::class, 'getPartnerid']);
     Route::post('user/setCustomerAdd', [UserController::class, 'setCustomerAdd']);

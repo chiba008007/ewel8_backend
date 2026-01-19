@@ -43,6 +43,20 @@ class User extends Authenticatable
         'pdfImagePath',
         'two_factor_secret',
         'two_factor_enabled',
+        'element1',
+        'element2',
+        'element3',
+        'element4',
+        'element5',
+        'element6',
+        'element7',
+        'element8',
+        'element9',
+        'element10',
+        'element11',
+        'element12',
+        'element13',
+        'element14',
 
     ];
 

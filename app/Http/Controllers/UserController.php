@@ -484,84 +484,83 @@ FROM (
     }
     public function editPartnerData(Request $request)
     {
-        Log::info('editPartnerData実施:'.$request);
         DB::beginTransaction();
         try {
             $loginUser = auth()->user()->currentAccessToken();
             $admin_id = $loginUser->tokenable->id;
-            $user = User::where("id", $request->id)->where("admin_id", $admin_id)->where("type", $request->type);
-            if ($request->password) {
-                $passwd = config('const.consts.PASSWORD');
-                $user->update([
-                        "password" => openssl_encrypt($request->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv'])
-                    ]);
-            }
-            if ($request->person) {
-                $user->update(["person" => $request->person]);
-            }
-            if ($request->person_address) {
-                $user->update(["person_address" => $request->person_address]);
-            }
-            $user->update([
-                "post_code" => $request->post_code,
-                "pref" => $request->pref,
-                "address1" => $request->address1,
-                "address2" => $request->address2,
-                "tel" => $request->tel,
-                "fax" => $request->fax,
-                "requestFlag" => $request->requestFlag,
-                "two_factor_enabled" => $request->two_factor_enabled,
-                "person" => $request->person,
-                "person_address" => $request->person_address,
-                "person2" => $request->person2,
-                "person_address2" => $request->person_address2,
-                "person_tel" => $request->person_tel,
-                "system_name" => $request->system_name,
-                "element1" => $request->element1,
-                "element2" => $request->element2,
-                "element3" => $request->element3,
-                "element4" => $request->element4,
-                "element5" => $request->element5,
-                "element6" => $request->element6,
-                "element7" => $request->element7,
-                "element8" => $request->element8,
-                "element9" => $request->element9,
-                "element10" => $request->element10,
-                "element11" => $request->element11,
-                "element12" => $request->element12,
-                "element13" => $request->element13,
-                "element14" => $request->element14,
+            $user = User::where("id", $request->id)
+                ->where("admin_id", $admin_id)
+                ->where("type", $request->type)
+                ->firstOrFail();
+            Log::info(
+                'editPartnerData request',
+                collect($request->all())->except(['password'])->toArray()
+            );
+
+            $data = $request->only([
+                'name',
+                'login_id',
+                'post_code',
+                'pref',
+                'address1',
+                'address2',
+                'tel',
+                'fax',
+                'requestFlag',
+                'two_factor_enabled',
+                'person',
+                'person_address',
+                'person2',
+                'person_address2',
+                'person_tel',
+                'system_name',
+                'element1','element2','element3','element4','element5',
+                'element6','element7','element8','element9','element10',
+                'element11','element12','element13','element14',
             ]);
 
-            $this->setLicensed($request, $request->id);
-
-            Log::info('更新パートナーの実施成功:'.$request);
-            // 情報登録メール
-            $mailbody = [];
-            $mailbody[ 'title' ] = "【Welcome-k】 企業情報更新のお知らせ";
-            $mailbody[ 'name' ] = $request->name;
-            $mailbody[ 'systemname' ] = $request->systemname;
-            $licenses = $request->input('licensesBody', []);
-            $mailbody[ 'licensesBody' ] = is_array($licenses) ? array_sum($licenses) : 0;
-            if ($request->person_address) {
-                Log::info('更新パートナーへメール:'.$request->person_address);
-                $mailbody[ 'person' ] = $request->person;
-                Mail::to($request->person_address)
-                    ->send(
-                        (new EditUserDataMail($mailbody))
-                        ->from(config('mail.from.address'), config('mail.from.name'))
-                    );
+            // パスワードは明示的に処理
+            if ($request->filled('password')) {
+                $passwd = config('const.consts.PASSWORD');
+                $data['password'] = openssl_encrypt(
+                    $request->password,
+                    'aes-256-cbc',
+                    $passwd['key'],
+                    0,
+                    $passwd['iv']
+                );
             }
-            if ($request->person_address2) {
-                Log::info('更新パートナーへメール:'.$request->person_address2);
-                $mailbody[ 'person' ] = $request->person2;
-                Mail::to($request->person_address2)
-                    ->send(
-                        (new EditUserDataMail($mailbody))
-                        ->from(config('mail.from.address'), config('mail.from.name'))
-                    );
-            }
+            $user->update($data);
+            $this->setLicensed($request, $user->id);
 
+            // メール送信（変更があった場合のみ）
+            //if ($user->wasChanged(['person_address', 'person_address2'])) {
+                // 情報登録メール
+                $mailbody = [];
+                $mailbody[ 'title' ] = "【Welcome-k】 企業情報更新のお知らせ";
+                $mailbody[ 'name' ] = $request->name;
+                $mailbody['systemname'] = $request->system_name;
+                $licenses = $request->input('licensesBody', []);
+                $mailbody[ 'licensesBody' ] = is_array($licenses) ? array_sum($licenses) : 0;
+                if ($request->person_address) {
+                    Log::info('更新パートナーへメール:'.$request->person_address);
+                    $mailbody[ 'person' ] = $request->person;
+                    Mail::to($request->person_address)
+                        ->send(
+                            (new EditUserDataMail($mailbody))
+                            ->from(config('mail.from.address'), config('mail.from.name'))
+                        );
+                }
+                if ($request->person_address2) {
+                    Log::info('更新パートナーへメール:'.$request->person_address2);
+                    $mailbody[ 'person' ] = $request->person2;
+                    Mail::to($request->person_address2)
+                        ->send(
+                            (new EditUserDataMail($mailbody))
+                            ->from(config('mail.from.address'), config('mail.from.name'))
+                        );
+                }
+            //}
             DB::commit();
             return response("success", 200);
         } catch (\Exception $exception) {

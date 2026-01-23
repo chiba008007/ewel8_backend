@@ -12,50 +12,23 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\ExamLoginHistory;
+use App\Services\ExamAuthService;
+use App\Services\ExamProfileService;
+use App\Services\TestExamMenuService;
 
 class ExamController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * 検査ログイン
      */
-    public function index(Request $request)
+    public function index(Request $request,ExamAuthService $service)
     {
-
-        $passwd = config('const.consts.PASSWORD');
-        $userdata = Exam::where('email', $request->email)
-        ->where("test_id", $request->test_id)
-        ->whereNull('deleted_at')
-        ->first();
-        $user = Exam::find($userdata[ 'id' ]);
-        // パスワードがデフォルト状態(password)の時、パスワードの再設定を行う
-        if (openssl_decrypt($user['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']) == "password" ||
-        openssl_decrypt($user['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']) == ""
-        ) {
-            $pwd = openssl_encrypt($request->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
-            $user->password = $pwd;
-            $user->save();
-
-            $user = Exam::find($userdata[ 'id' ]);
-
+        try {
+            $response = $service->authenticate($request);
+            return response($response, 200);
+        } catch (\Throwable $e) {
+            return response('error', 400);
         }
-        $token = "";
-        if (openssl_decrypt($user['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']) == $request->password) {
-            $token = $user->createToken('my-app-token')->plainTextToken;
-            $response = [
-                'user' => $user,
-                'token' => $token
-            ];
-
-            ExamLoginHistory::create([
-                'exam_id'    => $user->id,
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-                'logged_in_at' => now(),
-            ]);
-
-            return response($response, 201);
-        }
-        return response("error", 401);
     }
 
     public function setStarttime()
@@ -136,41 +109,68 @@ class ExamController extends Controller
 
     }
 
-    public function editExamData(Request $request)
+    /**
+     * 個人情報の編集
+     */
+    public function editExamData(Request $request, ExamProfileService $service)
     {
-        $loginUser = auth()->user()->currentAccessToken();
-        $id = $loginUser->tokenable->id;
-        $k = $request->k;
-        $params = [];
-        $params['name'] = $request->name;
-        $params['kana'] = $request->kana;
-        $params['gender'] = $request->gender;
-        DB::beginTransaction();
-        try {
-            //
-            //Exam::find($id)->update($params);
-            $exam_ids = Exam::select("id")
-            ->where("param", $k)
-            ->where("email", $loginUser->tokenable->email)
-            ->get();
-            foreach ($exam_ids as $value) {
-                if ($value[ 'id' ]) {
-                    Exam::find($value[ 'id' ])->update($params);
-                } else {
-                    throw new Exception();
-                }
-            }
-            DB::commit();
-            return response(true, 200);
-        } catch (Exception $e) {
-            DB::rollBack();
-            return response(false, 201);
-        }
+        // 認証済みユーザー（トークンの所有者）
+        /** @var \App\Models\Exam $user */
+        $user = auth()->user();
+        //$token = $user->currentAccessToken();
 
+        // 更新対象のパラメータ
+        $params = [
+            'name'   => $request->name,
+            'kana'   => $request->kana,
+            'gender' => $request->gender,
+        ];
+
+        try {
+            // 業務ロジックは Service に委譲
+            $service->updateProfile(
+                $user->id,
+                $user->email,
+                $request->k,
+                $params
+            );
+
+            return response(true, 200);
+        } catch (\Throwable $e) {
+            // 失敗時は詳細を返さない
+            return response(false, 400);
+        }
     }
 
-    public function getTestExamMenu(Request $request)
+    /**
+     * 試験メニュー一覧取得 API
+     *
+     * - 認証済み試験ユーザーを前提とする
+     * - params に紐づくテスト構成を返却する
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function getTestExamMenu(
+        Request $request,
+        TestExamMenuService $service
+    )
     {
+        /** @var \App\Models\Exam $exam */
+        $exam = auth()->user();
+        //$token = $user->currentAccessToken();
+        try {
+            $result = $service->getMenuForExam(
+                $exam->id,
+                $request->params
+            );
+
+            return response($result, 200);
+        } catch (\Throwable $e) {
+            // 取得失敗時は空配列を返却
+            return response([], 400);
+        }
+    /*
         $loginUser = auth()->user()->currentAccessToken();
         $examid = $loginUser->tokenable->id;
         $params = $request->params;
@@ -198,6 +198,7 @@ class ExamController extends Controller
             return response([], 201);
         }
         return response($result, 200);
+    */
     }
     public function getTestDataExam(Request $request)
     {

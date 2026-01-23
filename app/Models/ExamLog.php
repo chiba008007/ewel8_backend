@@ -9,6 +9,9 @@ class ExamLog extends Model
 {
     use HasFactory;
 
+    public const STATUS_STARTED = 1;
+    public const STATUS_FINISHED = 2;
+
     protected $fillable = [
     'code',
     'test_id',

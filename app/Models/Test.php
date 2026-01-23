@@ -49,4 +49,32 @@ class Test extends Model
             ->get();
         return $result;
     }
+
+    /**
+     * 試験メニュー取得用クエリ
+     *
+     * - 有効な TestPart のみ結合
+     * - 試験ユーザーごとの進捗を付加
+     */
+    // Eloquent の scopeXxx は、自動的に解決されます。
+    public function scopeMenuForExam($query, int $examId, string $params)
+    {
+        return $query
+            ->select(
+                'tests.*',
+                'testparts.code',
+                'testparts.id as testparts_id',
+                'examfins.status as examstatus'
+            )
+            ->leftJoin('testparts', function ($join) {
+                $join->on('testparts.test_id', '=', 'tests.id')
+                     ->where('testparts.status', 1);
+            })
+            ->leftJoin('examfins', function ($join) use ($examId) {
+                $join->on('examfins.testparts_id', '=', 'testparts.id')
+                     ->where('examfins.exam_id', $examId);
+            })
+            ->where('params', $params);
+    }
+
 }

@@ -458,7 +458,7 @@ FROM (
     }
     public function setLicensed($data, $user_id)
     {
-        Log::info('ライセンス登録関数の実施:user_id:'.$user_id.":".$data);
+       // Log::info('ライセンス登録関数の実施:user_id:'.$user_id.":".$data);
         $licensesKey = $data['licensesKey'];
         $licensesBody = $data['licensesBody'];
         foreach ($licensesKey as $key => $value) {
@@ -492,11 +492,6 @@ FROM (
                 ->where("admin_id", $admin_id)
                 ->where("type", $request->type)
                 ->firstOrFail();
-            Log::info(
-                'editPartnerData request',
-                collect($request->all())->except(['password'])->toArray()
-            );
-
             $data = $request->only([
                 'name',
                 'login_id',
@@ -529,6 +524,7 @@ FROM (
                     0,
                     $passwd['iv']
                 );
+
             }
             $user->update($data);
             $this->setLicensed($request, $user->id);

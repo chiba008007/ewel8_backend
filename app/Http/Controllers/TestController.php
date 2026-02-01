@@ -160,7 +160,7 @@ class TestController extends UserController
             ->orderBy('tests.id', 'desc')
             ->get();
         } catch (Exception $e) {
-            return response([], 201);
+            return response([], 400);
         }
         return response($result, 200);
     }

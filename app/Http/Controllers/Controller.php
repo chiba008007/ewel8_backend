@@ -17,6 +17,24 @@ class Controller extends BaseController
     {
         $loginUser = auth()->user()->currentAccessToken();
         $this->admin_id = $loginUser->tokenable->id;
+        // 顧客でログイン
+        if ($loginUser->tokenable->type == "customer") {
+            if($this->admin_id != $user_id){
+                return false;
+            }
+            $subquery = User::select("partner_id")->where([
+                "id" => $this->admin_id,
+                "type"=>'customer',
+                "deleted_at" => null
+            ]);
+            $result = User::whereIn("id", $subquery)
+            ->get();
+            if (count($result) < 1) {
+                return false;
+            }
+            $this->admin_id = $result[0][ 'admin_id' ];
+            return true;
+        }
         // 管理者でログインしたとき
         if ($loginUser->tokenable->type == "admin") {
 

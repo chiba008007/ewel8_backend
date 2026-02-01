@@ -19,7 +19,9 @@ class FileuploadsController extends Controller
 
         $partner_id = $request->partner_id;
         $customer_id = $request->customer_id;
-
+        if (!$this->checkuser($customer_id)) {
+            throw new Exception();
+        }
         $list = fileuploads::selectRaw('DATE_FORMAT(created_at, "%Y年%m月%d日") AS date')
             ->selectRaw('id,partner_id,admin_id,filename,filepath,size,openflag,status')
             ->where([

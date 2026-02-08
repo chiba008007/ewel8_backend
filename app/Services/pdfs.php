@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Libraries\Pfs;
 use App\Libraries\Age;
+use App\Libraries\PdfCountLimit;
 use App\Libraries\LineBreak;
 use App\Models\Exam;
 use App\Models\pdf_history;
@@ -17,8 +18,11 @@ class pdfs extends Model
     use HasFactory;
 
     public $pdf;
+    public $pdfCountLimit;
     //
-    public function __construct($orientation = "P")
+    public function __construct(
+        $orientation = "P"
+    )
     {
         require_once(public_path()."/PDF/pfsCreateGraph.php");
 
@@ -50,6 +54,7 @@ class pdfs extends Model
             ]
         );
         $this->pdf = $pdf;
+        $this->pdfCountLimit = new PdfCountLimit();
     }
 
     // 証明書ダウンロード
@@ -93,6 +98,11 @@ class pdfs extends Model
             ['id', '=', $id],
             ['email', '=', $code],
         ])->first();
+        // PDFの出力数の上限チェック
+        if(!$this->pdfCountLimit->pdfCountLimitCheck($exam[ 'test_id' ])){
+            echo "PDF出力制限数エラー";
+            exit();
+        }
         // pdfロゴパス取得
         $user = User::find($exam->partner_id);
         $pdfImagePath = $user->pdfImagePath;

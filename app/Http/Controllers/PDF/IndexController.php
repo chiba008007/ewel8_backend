@@ -15,12 +15,14 @@ class IndexController extends Controller
     public function index(Request $request, $id, $code, $birth, $encode)
     {
 
+//        abort(403, 'PDF上限エラー');
         Log::info('PDF@index called', compact('id', 'code', 'birth', 'encode'));
         try {
             $this->checkedCode($encode, $code);
             // PFS用のチャートグラフを生成するよう
             require_once(public_path()."/PDF/pfsCreateGraph.php");
             $obj = new pdfs();
+            // pdfのダウンロードログを保存
             $pdf = $obj->addPageToPdf($id, $code, $birth);
 
             $filename = $code . "_" . date('Y') . date('m') . date('d') . ".pdf";

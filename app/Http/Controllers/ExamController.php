@@ -313,18 +313,32 @@ class ExamController extends Controller
 
             // 計算
             $this->resultPFS($testparts_id);
-            $params = [];
-            $params[ 'exam_id' ] = $exam_id;
-            $params[ 'testparts_id' ] = $testparts_id;
-            $params[ 'status' ] = 1;
-            $params[ 'created_at' ] = date("Y-m-d H:i:s");
-            $params[ 'updated_at' ] = date("Y-m-d H:i:s");
-            examfins::insert($params);
+            // $params = [];
+            // $params[ 'exam_id' ] = $exam_id;
+            // $params[ 'testparts_id' ] = $testparts_id;
+            // $params[ 'status' ] = 1;
+            // $params[ 'created_at' ] = date("Y-m-d H:i:s");
+            // $params[ 'updated_at' ] = date("Y-m-d H:i:s");
+            // examfins::insert($params);
 
-            // 最終登録データ確認
-            exam::setEndTime();
-            // メール配信受検者残数
-            exam::sendRemainMail($request);
+            // // 最終登録データ確認
+            // exam::setEndTime();
+            // // メール配信受検者残数
+            // exam::sendRemainMail($request);
+
+            try {
+                examfins::complete($exam_id, $testparts_id);
+
+                // 最終登録データ確認
+                exam::setEndTime();
+                // メール配信受検者残数
+                exam::sendRemainMail($request);
+
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 409); // Conflict
+            }
 
         }
         return response("success", 200);

@@ -28,6 +28,7 @@ use App\Http\Controllers\ExamLogController;
 use App\Http\Controllers\ExamLoginHistoryController;
 use App\Http\Controllers\InformationController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\ExamBaj3Controller;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -67,6 +68,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post("examEdit/getExamEditData", [ExamEditController::class, 'getExamEditData']);
     Route::post("examEdit/editExamEditData", [ExamEditController::class, 'editExamEditData']);
+
+    Route::post("exam/getBAJ3", [ExamBaj3Controller::class, 'getBAJ3']);
+    Route::post("exam/setBAJ3", [ExamBaj3Controller::class, 'setBAJ3']);
+    Route::post("exam/editBAJ3", [ExamBaj3Controller::class, 'editBAJ3']);
 
     Route::post("csvupload/csvUploadFile", [csvUploadController::class, 'csvUploadFile']);
     Route::post("csvupload/updateCsvExam", [csvUploadController::class, 'updateCsvExam']);

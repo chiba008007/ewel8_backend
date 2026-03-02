@@ -14,5 +14,11 @@ class testparts extends Model
     {
         return $this->hasMany(exampfs::class, 'testparts_id', 'id');
     }
-
+    public static function getActiveCodes($testId)
+    {
+        return self::where('test_id', $testId)
+            ->where('status', 1)
+            ->get()
+            ->keyBy('code');
+    }
 }

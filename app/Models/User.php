@@ -84,6 +84,21 @@ class User extends Authenticatable
 
 
 
+    public function isAdmin()
+    {
+        return $this->type === 'admin';
+    }
+
+    public function isPartner()
+    {
+        return $this->type === 'partner';
+    }
+
+    public function isCustomer()
+    {
+        return $this->type === 'customer';
+    }
+
     /**
      * PassportやSanctumがユーザーを認証する際に使用するメソッド。
      *

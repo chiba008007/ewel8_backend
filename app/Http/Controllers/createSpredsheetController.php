@@ -9,21 +9,40 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Exam;
 use App\Models\Test;
+use App\Models\testparts;
 use App\Models\User;
 use App\Libraries\Age;
 use Illuminate\Support\Carbon;
 use App\Http\Controllers\TestExecController;
+use App\Services\Export\PFSSpredSheetService;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use App\Services\Export\UserExportService;
+use App\Http\Controllers\TestController;
 
 class createSpredsheetController extends Controller
 {
+    private $userExportService;
+    private $pfsSpredSheetService;
+    public function __construct(
+        UserExportService $userExportService,
+        PFSSpredSheetService $pfsSpredSheetService
+    )
+    {
+        $this->userExportService = $userExportService;
+        $this->pfsSpredSheetService = $pfsSpredSheetService;
+    }
     //
     public function create(Request $request)
     {
+        $user = auth()->user();
+        $id = auth()->id();
+
         $temp = [];
         $temp['test_id'] = $request->test_id;
         $temp['customer_id'] = $request->customer_id;
         $temp['type'] = $request->type;
-        $data = Exam::getExamSpredData($temp);
+        $codes = testparts::getActiveCodes($request->test_id);
+        $data = Exam::getExamSpredData($temp,$codes);
         $test = Test::getTestDetail($request->test_id);
         $user = User::getDetail($request->customer_id);
         // テンプレートの読み込み
@@ -36,10 +55,71 @@ class createSpredsheetController extends Controller
         $sheet1 = $spreadsheet->getSheet(1);
         $sheet->setCellValue('C1', $user->name);
         $sheet->setCellValue('I1', $test->testname);
+
+        $col = 2; // B列
+        $row = 6;
+        // 名前等の個人データを表示
+        foreach ($data as $value) {
+
+            $values = [
+                $value->email,
+                $this->userExportService->getStatus($value, $status),
+                $value->name,
+                $value->kana,
+                $this->userExportService->decryptPassword($value->password, $passwd),
+                $this->userExportService->getAgeValue($value, $passwd),
+                $this->userExportService->formatDate($value->started_at),
+                $passflag[$value->passflag] ?? '',
+                $value->memo1,
+                $value->memo2,
+            ];
+
+            foreach ($values as $val) {
+                $columnLetter = Coordinate::stringFromColumnIndex($col);
+                $cell = $columnLetter . $row;
+
+                $sheet->setCellValue($cell, $val);
+                $sheet->duplicateStyle(
+                    $sheet1->getStyle($columnLetter . '6'),
+                    $cell
+                );
+
+                $col++;
+            }
+
+            $col = 2; // 次行のためにリセット
+            $row++;
+        }
+        // 高さを変更
+        $sheet->getRowDimension(5)->setRowHeight(120);
+
+        // 今の列
+        $lastColumnLetter = $sheet->getHighestColumn(); // K
+        $lastColIndex = Coordinate::columnIndexFromString($lastColumnLetter);
+        // 受検の総数においてのデータ列の総数
+        $colTotal = 0;
+        $maxCol = config('const.spreadsheet.maxCol');
+        $message = config('const.spreadsheet.BAJ_Text');
+        // スプレッドシートのtitleを指定
+        foreach($codes as $code) {
+            //PFS
+            if($code['code'] === 'PFS'){
+                // 重み付けがあるとき
+                if($code[ 'weightflag' ] === 1){
+                    // 行動価値で青枠になっているのは御社で重要な素養です
+                    $sheet->setCellValue('P1', $message);
+                    $sheet->duplicateStyle(clone $sheet1->getStyle('P1:S1'), 'P1:S1');
+                }
+                $this->pfsSpredSheetService->createTitle($sheet,$sheet1,$lastColIndex,$code);
+                // PFS専用
+                $this->pfsSpredSheetService->createTitlePlus($sheet,$sheet1,$lastColIndex);
+            }
+            $colTotal += ($maxCol[$code['code']][0]??0)+($maxCol[$code['code']][1]??0);
+        }
         $row = 6;
         foreach ($data as $value) {
             $sheet->setCellValue('B'.$row, $value->email);
-            $sheet->duplicateStyle(clone $sheet1->getStyle('B6'), 'B'.$row);
+            $sheet->duplicateStyle(clone $sheet1->getStyle('B7'), 'B'.$row);
 
             $str = $status[0];
             if ($value->ended_at) {
@@ -48,30 +128,55 @@ class createSpredsheetController extends Controller
                 $str = $status[1];
             }
             $sheet->setCellValue('C'.$row, $str);
-            $sheet->duplicateStyle(clone $sheet1->getStyle('C6'), 'C'.$row);
+            $sheet->duplicateStyle(clone $sheet1->getStyle('C7'), 'C'.$row);
             $sheet->setCellValue('D'.$row, $value->name);
-            $sheet->duplicateStyle(clone $sheet1->getStyle('D6'), 'D'.$row);
+            $sheet->duplicateStyle(clone $sheet1->getStyle('D7'), 'D'.$row);
             $sheet->setCellValue('E'.$row, $value->kana);
-            $sheet->duplicateStyle(clone $sheet1->getStyle('E6'), 'E'.$row);
+            $sheet->duplicateStyle(clone $sheet1->getStyle('E7'), 'E'.$row);
             $pwd = openssl_decrypt($value->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
-            $sheet->setCellValue('F'.$row, $pwd);
-            $sheet->duplicateStyle(clone $sheet1->getStyle('F6'), 'F'.$row);
+            $sheet->setCellValue('F'.$row, ($pwd === 'password' )?'':$pwd);
+            $sheet->duplicateStyle(clone $sheet1->getStyle('F7'), 'F'.$row);
             $startAt = $value->started_at;
             $age = "";
             if ($startAt) {
                 $age = ((new Age()))->getAge($startAt, $pwd);
             }
             $sheet->setCellValue('G'.$row, $age);
-            $sheet->duplicateStyle(clone $sheet1->getStyle('G6'), 'G'.$row);
+            $sheet->duplicateStyle(clone $sheet1->getStyle('G7'), 'G'.$row);
             $datetime = new Carbon($startAt);
-            $sheet->setCellValue('H'.$row, $datetime->format('Y/m/d'));
-            $sheet->duplicateStyle(clone $sheet1->getStyle('H6'), 'H'.$row);
+            $sheet->setCellValue('H'.$row, ($startAt)?$datetime->format('Y/m/d'):"");
+            $sheet->duplicateStyle(clone $sheet1->getStyle('H7'), 'H'.$row);
             $sheet->setCellValue('I'.$row, $passflag[$value->passflag]);
-            $sheet->duplicateStyle(clone $sheet1->getStyle('I6'), 'I'.$row);
+            $sheet->duplicateStyle(clone $sheet1->getStyle('I7'), 'I'.$row);
             $sheet->setCellValue('J'.$row, $value->memo1);
-            $sheet->duplicateStyle(clone $sheet1->getStyle('J6'), 'J'.$row);
+            $sheet->duplicateStyle(clone $sheet1->getStyle('J7'), 'J'.$row);
             $sheet->setCellValue('K'.$row, $value->memo2);
-            $sheet->duplicateStyle(clone $sheet1->getStyle('K6'), 'K'.$row);
+            $sheet->duplicateStyle(clone $sheet1->getStyle('K7'), 'K'.$row);
+
+            // メモの隣データ
+            // データの開始
+            $plus = 1;
+            if (!empty($value->PFS)) {
+                $this->pfsSpredSheetService->createBody(
+                    $sheet,
+                    $sheet1,
+                    $codes,
+                    $value,
+                    $lastColIndex,
+                    $plus,
+                    $row
+                    );
+
+            }else{
+                // 最大列数を指定して空欄を作成
+                for($i=0;$i<$colTotal;$i++){
+                    $nextColLetter = Coordinate::stringFromColumnIndex($lastColIndex + $plus);
+                    $sheet->duplicateStyle(clone $sheet1->getStyle('L7'), $nextColLetter.$row);
+                    $plus++;
+                }
+            }
+
+
             $row++;
         }
 

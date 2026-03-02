@@ -287,8 +287,11 @@ class ExamController extends Controller
     public function editPFS(Request $request)
     {
 
-        $loginUser = auth()->user()->currentAccessToken();
-        $exam_id = $loginUser->tokenable->id;
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $token = $user->currentAccessToken();
+        $exam_id = $token->tokenable->id;
+
         $testparts_id = $request->testparts_id;
         Log::info('PFS検査回答登録');
         Log::info('ページ数:'.$request->page);
@@ -313,19 +316,6 @@ class ExamController extends Controller
 
             // 計算
             $this->resultPFS($testparts_id);
-            // $params = [];
-            // $params[ 'exam_id' ] = $exam_id;
-            // $params[ 'testparts_id' ] = $testparts_id;
-            // $params[ 'status' ] = 1;
-            // $params[ 'created_at' ] = date("Y-m-d H:i:s");
-            // $params[ 'updated_at' ] = date("Y-m-d H:i:s");
-            // examfins::insert($params);
-
-            // // 最終登録データ確認
-            // exam::setEndTime();
-            // // メール配信受検者残数
-            // exam::sendRemainMail($request);
-
             try {
                 examfins::complete($exam_id, $testparts_id);
 
@@ -363,8 +353,12 @@ class ExamController extends Controller
     }
     public function resultPFS($testparts_id)
     {
-        $loginUser = auth()->user()->currentAccessToken();
-        $exam_id = $loginUser->tokenable->id;
+
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $token = $user->currentAccessToken();
+        $exam_id = $token->tokenable->id;
+
         // 最後の1件を取得
         $last = exampfs::select("*")->latest("id")->where("testparts_id", $testparts_id)->where("exam_id", $exam_id)->first();
         // 重みデータ取得
@@ -414,6 +408,8 @@ class ExamController extends Controller
         ];
         list($row, $lv, $standard_score, $dev_number) = $this->BA12($last, $weights, $raw_data, $dev_data);
 
+        // PFS結果の計算
+        $pfsdata = $this->calcPFS($row);
         // var_dump($row,$lv,$standard_score,$dev_number);
         $exam = exampfs::find($last[ 'id' ]);
         $exam->endtime = date("Y-m-d H:i:s");
@@ -432,12 +428,66 @@ class ExamController extends Controller
         $exam->soyo = $dev_number;
         $exam->level = $lv;
         $exam->score = $standard_score;
+        $exam->sougo = $pfsdata['sougo'];
+        $exam->personal = $pfsdata['personal'];
+        $exam->state = $pfsdata['state'];
+        $exam->job = $pfsdata['job'];
+        $exam->image = $pfsdata['image'];
+        $exam->positive = $pfsdata['positive'];
+        $exam->self = $pfsdata['self'];
 
         $exam->save();
 
 
         return response("success", 200);
     }
+
+    public function calcPFS($row){
+        $return = array();
+		$return['personal'] = sprintf("%.1f",round(100-$row['dev7'],1));
+		$return['state'   ] = sprintf("%.1f",round(100-$row['dev8'],1));
+		$return['job'     ] = sprintf("%.1f",round($row['dev2'],1));
+		$return['image'   ] = sprintf("%.1f",round(100-$row['dev4'],1));
+		$return['positive'] = sprintf("%.1f",round($row['dev6'],1));
+		$return['self'    ] = sprintf("%.1f",round($row['dev3'],1));
+		$return['sougo'   ] = sprintf("%.1f",$this->getSougo($row));
+
+		return $return;
+    }
+	public function getSougo($set){
+		$point = 0.5;
+
+		if($set['dev6']-$set[ 'dev7' ] >= 5
+			AND  $set['dev6']-$set[ 'dev7' ] < 10
+		){
+			$point += 3;
+		}elseif( $set['dev6']-$set[ 'dev7' ] >= 10 ){
+			$point += 4;
+		}
+
+		if($set['dev3']-$set[ 'dev4' ] >= 5
+			AND  $set['dev3']-$set[ 'dev4' ] < 10
+		){
+			$point += 2;
+		}elseif( $set['dev3']-$set[ 'dev4' ] >= 10 ){
+			$point += 3;
+		}
+
+		if($set['dev8'] < 45 ){
+			$point += 1;
+		}
+
+		if($set['dev2'] >= 52 ){
+			$point += 0.5;
+		}
+
+		if($set[ 'dev11' ]-$set[ 'dev7' ] >= 5 ){
+			$point += 1;
+		}
+
+		return $point;
+
+	}
 
     public function BA12($line, $row2, $raw_data, $dev_data, $flg = "")
     {

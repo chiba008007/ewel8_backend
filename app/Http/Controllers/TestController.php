@@ -226,10 +226,15 @@ class TestController extends UserController
         $testparts = testparts::where("testparts.test_id", $test_id)
             ->get();
         $pfsArray = [];
+        $baj3Array = [];
 
         foreach ($testparts as $key => $value) {
             if ($value['code'] === 'PFS') {
                 $pfsArray = $this->getPFSDetail($test_id, $value[ 'threeflag' ]);
+                break;
+            }
+            if ($value['code'] === 'BAJ3') {
+                $baj3Array = $this->getBAJ3Detail($test_id, $value[ 'threeflag' ]);
                 break;
             }
         }
@@ -237,6 +242,8 @@ class TestController extends UserController
         foreach ($rlt[ 'exams' ] as $key => $value) {
             // PFSデータの表示
             $rlt['exams'][$key]['pfs'] = (isset($pfsArray[$value->id])) ? $pfsArray[$value->id] : [];
+            // BAJ3データの表示
+            $rlt['exams'][$key]['baj3'] = (isset($baj3Array[$value->id])) ? $baj3Array[$value->id] : [];
         }
         return response($rlt, 200);
     }
@@ -308,6 +315,54 @@ class TestController extends UserController
                         ORDER BY e.id DESC
                     ) AS rn
                 FROM exampfses e
+                WHERE e.testparts_id = (
+                    SELECT id FROM testparts WHERE test_id = ? AND code = ?
+                )
+            ) t
+            WHERE t.rn = 1
+        ";
+        $pfsdetails = DB::select($sql, [$test_id, $code]);
+        $pfsArray = [];
+        foreach ($pfsdetails as $value) {
+            $pfsArray[$value->exam_id]['starttime'] = $value->starttime;
+            $pfsArray[$value->exam_id]['endtime'] = $value->endtime;
+            $pfsArray[$value->exam_id]['level'] = $value->level;
+            $pfsArray[$value->exam_id]['dev1'] = $value->dev1;
+            $pfsArray[$value->exam_id]['dev2'] = $value->dev2;
+            $pfsArray[$value->exam_id]['dev3'] = $value->dev3;
+            $pfsArray[$value->exam_id]['dev6'] = $value->dev6;
+            if ($threeflag) {
+                list($lv, $score) = $this->getStress2($value->dev1, $value->dev2, $value->dev6);
+            } else {
+                list($lv, $score) = $this->getStress($value->dev1, $value->dev2);
+            }
+            $pfsArray[$value->exam_id]['lv'] = $lv;
+            $pfsArray[$value->exam_id]['score'] = $score;
+        }
+        return $pfsArray;
+    }
+    private function getBAJ3Detail($test_id, $threeflag = 0)
+    {
+        $code = "BAJ3";
+        $sql = "
+            SELECT *
+            FROM (
+                SELECT
+                    e.exam_id,
+                    e.testparts_id,
+                    DATE_FORMAT(e.starttime, '%Y/%m/%d') AS starttime,
+                    DATE_FORMAT(e.endtime, '%Y/%m/%d') AS endtime,
+                    e.id,
+                    e.level,
+                    e.dev1,
+                    e.dev2,
+                    e.dev3,
+                    e.dev6,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY e.exam_id, e.testparts_id
+                        ORDER BY e.id DESC
+                    ) AS rn
+                FROM exam_baj3s e
                 WHERE e.testparts_id = (
                     SELECT id FROM testparts WHERE test_id = ? AND code = ?
                 )
@@ -818,26 +873,18 @@ class TestController extends UserController
 
         $exam_id = $request->exam_id;
 
-        $sql = "
-            SELECT
-                *
-            FROM
-                exampfses
-            WHERE
-                id =
-            (
-                SELECT
-                    MAX(id) as id
-                FROM
-                    exampfses
-                WHERE
-                    exam_id=?
-                GROUP BY exam_id,testparts_id
-            )
-            ";
-        $pfsdetails = DB::select($sql, [$exam_id]);
+        $pfsdetail = DB::table('exampfses')
+            ->where('exam_id', $exam_id)
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$pfsdetail) {
+            return response()->json(null, 404);
+        }
+
         $ans_data = config('const.PFS3.PFS3');
-        $result = $ans_data[$pfsdetails[0]->soyo];
+        $result = $ans_data[$pfsdetail->soyo] ?? null;
+
         return response($result, 200);
     }
 

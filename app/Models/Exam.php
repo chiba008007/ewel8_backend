@@ -13,6 +13,7 @@ use App\Mail\RemainCountMail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use App\Models\exampfs;
+use App\Models\User;
 
 class Exam extends Authenticatable
 {
@@ -74,19 +75,59 @@ class Exam extends Authenticatable
 
         return $buldInsertKey;
     }
-    public static function getExamSpredData($temp)
+    public static function getExamSpredData($temp,$codes)
     {
+
+        // codesに対応した利用テーブルの指定
+        $map = [
+            'PFS'  => 'exampfses',
+            'BAJ3' => 'exam_baj3s',
+        ];
+
+        $user = auth()->user();
+
         $exams = DB::table('exams')
         ->where([
             'test_id' => $temp[ 'test_id' ],
             'customer_id' => $temp[ 'customer_id' ],
         ])
         ->whereNull('deleted_at');
+        /** @var \App\Models\User|null $user */
+        if ($user->isPartner()) {
+            $exams->where('partner_id', $user->id);
+        }
+        /** @var \App\Models\User|null $user */
+        if ($user->isCustomer()) {
+            $exams->where('customer_id', $user->id);
+        }
+
         if ($temp[ 'type' ] === 2) {
             $exams = $exams->wherenotNull('ended_at');
         }
         $exams = $exams->orderBy('id')
         ->get();
+        // id一覧
+        $examIds = $exams->pluck('id')->toArray();
+
+        foreach ($codes as $code) {
+            if (!isset($map[$code[ 'code' ]])) {
+                continue;
+            }
+            $table = $map[$code[ 'code' ]];
+
+            $latestData = DB::table($table)
+                ->whereIn('exam_id', $examIds)
+                ->where('status', 1)
+                ->orderByDesc('id')
+                ->get()
+                ->groupBy('exam_id')
+                ->map(fn($rows) => $rows->first());
+
+            foreach ($exams as $exam) {
+                $exam->{$code[ 'code' ]} = $latestData[$exam->id] ?? null;
+            }
+        }
+
         return $exams;
     }
 

@@ -38,7 +38,7 @@ class PFSSpredSheetService
         $lastColIndex + $maxCol
     );
     $sheet->mergeCells($nextColLetter.$threeRow .':'.$endColLetter.$threeRow);
-    $sheet->duplicateStyle( $sheet1->getStyle('L3:AA3'),'L3:AA3');
+    $sheet->duplicateStyle( $sheet1->getStyle('L3:AA3'),$nextColLetter.$threeRow .':'.$endColLetter.$threeRow);
 
     // 幅を10にする
     $startIndex = Coordinate::columnIndexFromString($nextColLetter);
@@ -65,10 +65,10 @@ class PFSSpredSheetService
 
     $cell = $nextColLetter . $fiveRow;
     $sheet->setCellValue($cell, 'レベル');
-    $sheet->duplicateStyle($sheet1->getStyle('L5'),'L5');
+    $sheet->duplicateStyle($sheet1->getStyle('L5'),$cell);
     $cell = $nextColLetter_plus2 . $fiveRow;
     $sheet->setCellValue($cell, 'スコア');
-    $sheet->duplicateStyle($sheet1->getStyle('M5'),'M5');
+    $sheet->duplicateStyle($sheet1->getStyle('M5'),$cell);
 
     // 適合レベル
     $nextColLetter_plus3 = Coordinate::stringFromColumnIndex(
@@ -246,7 +246,7 @@ class PFSSpredSheetService
     $codes,
     $value,
     $lastColIndex,
-    $plus,
+    & $plus,
     $row )
     {
         $this->sheet = $sheet;

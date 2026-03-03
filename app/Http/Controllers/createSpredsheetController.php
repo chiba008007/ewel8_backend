@@ -15,6 +15,7 @@ use App\Libraries\Age;
 use Illuminate\Support\Carbon;
 use App\Http\Controllers\TestExecController;
 use App\Services\Export\PFSSpredSheetService;
+use App\Services\Export\BAJ3SpredSheetService;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use App\Services\Export\UserExportService;
 use App\Http\Controllers\TestController;
@@ -23,17 +24,22 @@ class createSpredsheetController extends Controller
 {
     private $userExportService;
     private $pfsSpredSheetService;
+    private $baj3SpredSheetService;
+
     public function __construct(
         UserExportService $userExportService,
-        PFSSpredSheetService $pfsSpredSheetService
+        PFSSpredSheetService $pfsSpredSheetService,
+        BAJ3SpredSheetService $baj3SpredSheetService
     )
     {
         $this->userExportService = $userExportService;
         $this->pfsSpredSheetService = $pfsSpredSheetService;
+        $this->baj3SpredSheetService = $baj3SpredSheetService;
     }
     //
     public function create(Request $request)
     {
+
         $user = auth()->user();
         $id = auth()->id();
 
@@ -103,17 +109,26 @@ class createSpredsheetController extends Controller
         // スプレッドシートのtitleを指定
         foreach($codes as $code) {
             //PFS
-            if($code['code'] === 'PFS'){
+            if(
+                $code['code'] === 'PFS' ||
+                $code['code'] === 'BAJ3'
+            ){
+                $lastColumnLetter = $sheet->getHighestColumn();
+                $columnIndex = Coordinate::columnIndexFromString($lastColumnLetter);
                 // 重み付けがあるとき
                 if($code[ 'weightflag' ] === 1){
                     // 行動価値で青枠になっているのは御社で重要な素養です
                     $sheet->setCellValue('P1', $message);
                     $sheet->duplicateStyle(clone $sheet1->getStyle('P1:S1'), 'P1:S1');
                 }
-                $this->pfsSpredSheetService->createTitle($sheet,$sheet1,$lastColIndex,$code);
+                $this->pfsSpredSheetService->createTitle($sheet,$sheet1,$columnIndex,$code);
                 // PFS専用
-                $this->pfsSpredSheetService->createTitlePlus($sheet,$sheet1,$lastColIndex);
+                if($code['code'] === 'PFS')
+                {
+                    $this->pfsSpredSheetService->createTitlePlus($sheet,$sheet1,$columnIndex);
+                }
             }
+
             $colTotal += ($maxCol[$code['code']][0]??0)+($maxCol[$code['code']][1]??0);
         }
         $row = 6;
@@ -156,6 +171,14 @@ class createSpredsheetController extends Controller
             // メモの隣データ
             // データの開始
             $plus = 1;
+            // 最大列数を指定して空欄を作成
+            for($i=0;$i<$colTotal;$i++){
+                $nextColLetter = Coordinate::stringFromColumnIndex($lastColIndex + $plus);
+                $sheet->duplicateStyle(clone $sheet1->getStyle('L7'), $nextColLetter.$row);
+                $plus++;
+            }
+            $plus = 1;
+            $plus++;
             if (!empty($value->PFS)) {
                 $this->pfsSpredSheetService->createBody(
                     $sheet,
@@ -166,16 +189,18 @@ class createSpredsheetController extends Controller
                     $plus,
                     $row
                     );
-
-            }else{
-                // 最大列数を指定して空欄を作成
-                for($i=0;$i<$colTotal;$i++){
-                    $nextColLetter = Coordinate::stringFromColumnIndex($lastColIndex + $plus);
-                    $sheet->duplicateStyle(clone $sheet1->getStyle('L7'), $nextColLetter.$row);
-                    $plus++;
-                }
             }
-
+            if(!empty($value->BAJ3)) {
+                $this->baj3SpredSheetService->createBody(
+                    $sheet,
+                    $sheet1,
+                    $codes,
+                    $value,
+                    $lastColIndex,
+                    $plus,
+                    $row
+                    );
+            }
 
             $row++;
         }

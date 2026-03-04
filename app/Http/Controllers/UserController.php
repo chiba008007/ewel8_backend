@@ -913,7 +913,7 @@ FROM (
     {
         $user_id = $request->user_id;
         $test_id = $request->test_id;
-        $loginUser = auth()->user()->currentAccessToken();
+        $loginUser = $request->user()->currentAccessToken();
         $admin_id = $loginUser->tokenable->id;
         $partner_id = User::find($user_id)->partner_id;
         $partner = User::where("id", $partner_id)->where("admin_id", $admin_id)->first();

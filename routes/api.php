@@ -122,6 +122,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("test/getCsvList", [TestController::class, 'getCsvList']);
     Route::post("test/getTestTableTh", [TestController::class, 'getTestTableTh']);
     Route::post("test/getPFSTestDetail", [TestController::class, 'getPFSTestDetail']);
+    Route::post("test/getBaj3TestDetail", [TestController::class, 'getBaj3TestDetail']);
     Route::post("test/getSearchExam", [TestController::class, 'getSearchExam']);
     Route::post("test/getTest", [TestController::class, 'getTest']);
     Route::post("test/deleteTest", [TestController::class, 'deleteTest']);

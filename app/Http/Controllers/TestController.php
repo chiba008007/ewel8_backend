@@ -888,6 +888,26 @@ class TestController extends UserController
         return response($result, 200);
     }
 
+    public function getBaj3TestDetail(Request $request)
+    {
+
+        $exam_id = $request->exam_id;
+
+        $baj3detail = DB::table('exam_baj3s')
+            ->where('exam_id', $exam_id)
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$baj3detail) {
+            return response()->json(null, 404);
+        }
+
+        $ans_data = config('const.PFS3.PFS3');
+        $result = $ans_data[$baj3detail->soyo] ?? null;
+
+        return response($result, 200);
+    }
+
     public function getSearchExam()
     {
         // $loginUser = auth()->user()->currentAccessToken();

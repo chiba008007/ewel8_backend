@@ -231,14 +231,12 @@ class TestController extends UserController
         foreach ($testparts as $key => $value) {
             if ($value['code'] === 'PFS') {
                 $pfsArray = $this->getPFSDetail($test_id, $value[ 'threeflag' ]);
-                break;
             }
+
             if ($value['code'] === 'BAJ3') {
                 $baj3Array = $this->getBAJ3Detail($test_id, $value[ 'threeflag' ]);
-                break;
             }
         }
-
         foreach ($rlt[ 'exams' ] as $key => $value) {
             // PFSデータの表示
             $rlt['exams'][$key]['pfs'] = (isset($pfsArray[$value->id])) ? $pfsArray[$value->id] : [];
@@ -370,24 +368,24 @@ class TestController extends UserController
             WHERE t.rn = 1
         ";
         $pfsdetails = DB::select($sql, [$test_id, $code]);
-        $pfsArray = [];
+        $baj3Array = [];
         foreach ($pfsdetails as $value) {
-            $pfsArray[$value->exam_id]['starttime'] = $value->starttime;
-            $pfsArray[$value->exam_id]['endtime'] = $value->endtime;
-            $pfsArray[$value->exam_id]['level'] = $value->level;
-            $pfsArray[$value->exam_id]['dev1'] = $value->dev1;
-            $pfsArray[$value->exam_id]['dev2'] = $value->dev2;
-            $pfsArray[$value->exam_id]['dev3'] = $value->dev3;
-            $pfsArray[$value->exam_id]['dev6'] = $value->dev6;
+            $baj3Array[$value->exam_id]['starttime'] = $value->starttime;
+            $baj3Array[$value->exam_id]['endtime'] = $value->endtime;
+            $baj3Array[$value->exam_id]['level'] = $value->level;
+            $baj3Array[$value->exam_id]['dev1'] = $value->dev1;
+            $baj3Array[$value->exam_id]['dev2'] = $value->dev2;
+            $baj3Array[$value->exam_id]['dev3'] = $value->dev3;
+            $baj3Array[$value->exam_id]['dev6'] = $value->dev6;
             if ($threeflag) {
                 list($lv, $score) = $this->getStress2($value->dev1, $value->dev2, $value->dev6);
             } else {
                 list($lv, $score) = $this->getStress($value->dev1, $value->dev2);
             }
-            $pfsArray[$value->exam_id]['lv'] = $lv;
-            $pfsArray[$value->exam_id]['score'] = $score;
+            $baj3Array[$value->exam_id]['lv'] = $lv;
+            $baj3Array[$value->exam_id]['score'] = $score;
         }
-        return $pfsArray;
+        return $baj3Array;
     }
 
 

@@ -30,8 +30,7 @@ class createSpredsheetController extends Controller
         UserExportService $userExportService,
         PFSSpredSheetService $pfsSpredSheetService,
         BAJ3SpredSheetService $baj3SpredSheetService
-    )
-    {
+    ) {
         $this->userExportService = $userExportService;
         $this->pfsSpredSheetService = $pfsSpredSheetService;
         $this->baj3SpredSheetService = $baj3SpredSheetService;
@@ -48,7 +47,7 @@ class createSpredsheetController extends Controller
         $temp['customer_id'] = $request->customer_id;
         $temp['type'] = $request->type;
         $codes = testparts::getActiveCodes($request->test_id);
-        $data = Exam::getExamSpredData($temp,$codes);
+        $data = Exam::getExamSpredData($temp, $codes);
         $test = Test::getTestDetail($request->test_id);
         $user = User::getDetail($request->customer_id);
         // テンプレートの読み込み
@@ -107,32 +106,32 @@ class createSpredsheetController extends Controller
         $maxCol = config('const.spreadsheet.maxCol');
         $message = config('const.spreadsheet.BAJ_Text');
         // スプレッドシートのtitleを指定
-        foreach($codes as $code) {
+        foreach ($codes as $code) {
             //PFS
-            if(
+            if (
                 $code['code'] === 'PFS' ||
                 $code['code'] === 'BAJ3'
-            ){
+            ) {
                 $lastColumnLetter = $sheet->getHighestColumn();
                 $columnIndex = Coordinate::columnIndexFromString($lastColumnLetter);
                 // 重み付けがあるとき
-                if($code[ 'weightflag' ] === 1){
+                if ($code[ 'weightflag' ] === 1) {
                     // 行動価値で青枠になっているのは御社で重要な素養です
                     $sheet->setCellValue('P1', $message);
                     $sheet->duplicateStyle(clone $sheet1->getStyle('P1:S1'), 'P1:S1');
                 }
-                $this->pfsSpredSheetService->createTitle($sheet,$sheet1,$columnIndex,$code);
+                $this->pfsSpredSheetService->createTitle($sheet, $sheet1, $columnIndex, $code);
                 // PFS専用
-                if($code['code'] === 'PFS')
-                {
-                    $this->pfsSpredSheetService->createTitlePlus($sheet,$sheet1,$columnIndex);
+                if ($code['code'] === 'PFS') {
+                    $this->pfsSpredSheetService->createTitlePlus($sheet, $sheet1, $columnIndex);
                 }
             }
 
-            $colTotal += ($maxCol[$code['code']][0]??0)+($maxCol[$code['code']][1]??0);
+            $colTotal += ($maxCol[$code['code']][0] ?? 0) + ($maxCol[$code['code']][1] ?? 0);
         }
         $row = 6;
         foreach ($data as $value) {
+            $has = false;
             $sheet->setCellValue('B'.$row, $value->email);
             $sheet->duplicateStyle(clone $sheet1->getStyle('B7'), 'B'.$row);
 
@@ -149,7 +148,7 @@ class createSpredsheetController extends Controller
             $sheet->setCellValue('E'.$row, $value->kana);
             $sheet->duplicateStyle(clone $sheet1->getStyle('E7'), 'E'.$row);
             $pwd = openssl_decrypt($value->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
-            $sheet->setCellValue('F'.$row, ($pwd === 'password' )?'':$pwd);
+            $sheet->setCellValue('F'.$row, ($pwd === 'password') ? '' : $pwd);
             $sheet->duplicateStyle(clone $sheet1->getStyle('F7'), 'F'.$row);
             $startAt = $value->started_at;
             $age = "";
@@ -159,7 +158,7 @@ class createSpredsheetController extends Controller
             $sheet->setCellValue('G'.$row, $age);
             $sheet->duplicateStyle(clone $sheet1->getStyle('G7'), 'G'.$row);
             $datetime = new Carbon($startAt);
-            $sheet->setCellValue('H'.$row, ($startAt)?$datetime->format('Y/m/d'):"");
+            $sheet->setCellValue('H'.$row, ($startAt) ? $datetime->format('Y/m/d') : "");
             $sheet->duplicateStyle(clone $sheet1->getStyle('H7'), 'H'.$row);
             $sheet->setCellValue('I'.$row, $passflag[$value->passflag]);
             $sheet->duplicateStyle(clone $sheet1->getStyle('I7'), 'I'.$row);
@@ -172,15 +171,17 @@ class createSpredsheetController extends Controller
             // データの開始
             $plus = 1;
             // 最大列数を指定して空欄を作成
-            for($i=0;$i<$colTotal;$i++){
+            for ($i = 0;$i < $colTotal;$i++) {
                 $nextColLetter = Coordinate::stringFromColumnIndex($lastColIndex + $plus);
                 $sheet->duplicateStyle(clone $sheet1->getStyle('L7'), $nextColLetter.$row);
                 $plus++;
             }
             $plus = 1;
-            $plus++;
             if (!empty($value->PFS)) {
-                $this->pfsSpredSheetService->createBody(
+                if ($has) {
+                    $plus++;
+                }
+                $plus = $this->pfsSpredSheetService->createBody(
                     $sheet,
                     $sheet1,
                     $codes,
@@ -188,10 +189,14 @@ class createSpredsheetController extends Controller
                     $lastColIndex,
                     $plus,
                     $row
-                    );
+                );
+                $has = true;
             }
-            if(!empty($value->BAJ3)) {
-                $this->baj3SpredSheetService->createBody(
+            if (!empty($value->BAJ3)) {
+                if ($has) {
+                    $plus++;
+                }
+                $plus = $this->baj3SpredSheetService->createBody(
                     $sheet,
                     $sheet1,
                     $codes,
@@ -199,7 +204,8 @@ class createSpredsheetController extends Controller
                     $lastColIndex,
                     $plus,
                     $row
-                    );
+                );
+                $has = true;
             }
 
             $row++;

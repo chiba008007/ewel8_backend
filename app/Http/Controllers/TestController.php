@@ -542,18 +542,14 @@ class TestController extends UserController
     public function setTest(Request $request)
     {
         $query = substr(bin2hex(random_bytes(8)), 0, 8);
-
-
         $lisence = config('const.consts.LISENCE');
-
-
 
         DB::beginTransaction();
         try {
             $user_id = $request->user_id;
             //所定のユーザーIDが利用可能かチェック
-            $loginUser = auth()->user()->currentAccessToken();
-            $admin_id = $loginUser->tokenable->id;
+            // $loginUser = auth()->user()->currentAccessToken();
+            // $admin_id = $loginUser->tokenable->id;
 
             if (!$this->checkuser($user_id)) {
                 throw new Exception();
@@ -611,11 +607,11 @@ class TestController extends UserController
 
             $codePfs = $lisence[1]['list'][5]['code'];
             $codeBAJ3 = preg_replace("/\-/", "", $lisence[1]['list'][3]['code']);
-
+            $vfj = preg_replace("/\-/", "", $lisence[4]['list'][1]['code']);
             foreach ($parts as $key => $value) {
                 $params = [];
                 if (
-                    (isset($value[$codePfs]) &&  $value[$codePfs]) //PFSの登録
+                    (isset($value[$codePfs]) &&  $value[$codePfs] && $value[ $codePfs ][ 'status' ]) //PFSの登録
                 ) {
                     $codePfs = $lisence[1]['list'][5]['code'];
                     $params[ 'test_id' ] = $id;
@@ -635,7 +631,7 @@ class TestController extends UserController
                 }
 
                 if (
-                    (isset($value[$codeBAJ3]) &&  $value[$codeBAJ3]) //BAJ3の登録
+                    (isset($value[$codeBAJ3]) &&  $value[$codeBAJ3] && $value[ $codeBAJ3 ][ 'status' ]) //BAJ3の登録
                 ) {
                     $params[ 'test_id' ] = $id;
                     $params[ 'code' ] = $codeBAJ3;
@@ -653,8 +649,21 @@ class TestController extends UserController
                     }
                 }
 
-            }
+                if (
+                    (isset($value[$vfj]) && $value[$vfj] && $value[ $vfj ][ 'status' ]) //VFJの登録
+                ) {
+                    $params = [];
+                    $params[ 'test_id' ] = $id;
+                    $params[ 'code' ] = $vfj;
+                    $params[ 'status' ] = $value[ $vfj ][ 'status' ] ? 1 : 0;
+                    $params[ 'examPersonName' ] = $value[$vfj]['examPersonName'] ?? null;
+                    $params[ 'created_at' ] = date("Y-m-d H:i:s");
 
+                    if (!testparts::insert($params)) {
+                        throw new Exception();
+                    }
+                }
+            }
 
             $this->testExamsInsert($query, $request, $id, $request->testcount);
 
@@ -663,7 +672,7 @@ class TestController extends UserController
 
         } catch (Exception $e) {
             DB::rollBack();
-            return response('error', 201);
+            return response('error', 400);
         }
 
     }
@@ -676,8 +685,8 @@ class TestController extends UserController
             $customer_id = $request->customer_id;
             $edit_id = $request->edit_id;
             //所定のユーザーIDが利用可能かチェック
-            $loginUser = auth()->user()->currentAccessToken();
-            $admin_id = $loginUser->tokenable->id;
+            // $loginUser = auth()->user()->currentAccessToken();
+            // $admin_id = $loginUser->tokenable->id;
 
             if (!$this->checkuser($user_id)) {
                 throw new Exception();
@@ -771,6 +780,7 @@ class TestController extends UserController
             $lisence = config('const.consts.LISENCE');
             $codePfs = $lisence[1]['list'][5]['code'];
             $codeBAJ3 = preg_replace("/\-/", "", $lisence[1]['list'][3]['code']);
+            $vfj = preg_replace("/\-/", "", $lisence[4]['list'][1]['code']);
 
             foreach ($parts as $key => $value) {
                 $params = [];
@@ -805,6 +815,21 @@ class TestController extends UserController
                     ])->first();
                     $baj3->threeflag = $value[$codeBAJ3]['threeflag'] ? 1 : 0;
                     $baj3->weightFlag = $value[$codeBAJ3]['weightFlag'] ? 1 : 0;
+                    $baj3->save();
+                }
+                if (
+                    (
+                        isset($value[$vfj]) &&
+                        $value[$vfj] &&
+                        $value[$vfj][ 'status' ]
+                    ) //vfjの登録
+                ) {
+                    $baj3 = testparts::where([
+                        'test_id' => $edit_id,
+                        'code' => $vfj,
+                        'status' => 1
+                    ])->first();
+                    $baj3->examPersonName = $value[$vfj]['examPersonName'];
                     $baj3->save();
                 }
 

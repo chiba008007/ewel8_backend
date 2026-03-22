@@ -30,6 +30,8 @@ use App\Http\Controllers\ExamLoginHistoryController;
 use App\Http\Controllers\InformationController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ExamBaj3Controller;
+use App\Http\Controllers\ExamVFJController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -73,6 +75,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("exam/getBAJ3", [ExamBaj3Controller::class, 'getBAJ3']);
     Route::post("exam/setBAJ3", [ExamBaj3Controller::class, 'setBAJ3']);
     Route::post("exam/editBAJ3", [ExamBaj3Controller::class, 'editBAJ3']);
+
+    Route::post("exam/getVFJ", [ExamVFJController::class, 'getVFJ']);
+    Route::post("exam/setVFJ", [ExamVFJController::class, 'setVFJ']);
+    Route::post("exam/editVFJ", [ExamVFJController::class, 'editVFJ']);
 
     Route::post("csvupload/csvUploadFile", [csvUploadController::class, 'csvUploadFile']);
     Route::post("csvupload/updateCsvExam", [csvUploadController::class, 'updateCsvExam']);
@@ -188,4 +194,3 @@ Route::post("exam/login", [ExamController::class, 'index']);
 Route::post("exam/getExam", [ExamController::class, 'getExam']);
 
 Route::post("examloginhistory/getData", [ExamLoginHistoryController::class, 'getData']);
-

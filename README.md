@@ -1,5 +1,11 @@
 php artisan serve
 
+### popularテーブルにデータを投入コマンド
+
+```
+php artisan db:seed --class=PopularSeeder
+```
+
 ### mysql 実行
 
 chiba@chiba:~/ewel8_backend/example-app$ sudo service mysql start

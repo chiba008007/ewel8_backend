@@ -11,7 +11,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('testparts', function (Blueprint $table) {
-            $table->string('examPersonName')->nullable()->after('weight14');
+            $table->string('examPersonName')->nullable()->default('社員（または契約社員等）')->after('weight14');
         });
     }
 

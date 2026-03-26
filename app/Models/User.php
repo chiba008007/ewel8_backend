@@ -143,7 +143,7 @@ class User extends Authenticatable
     public static function getPartnerData()
     {
 
-        $query = DB::table("users")->where("type","partner");
+        $query = DB::table("users")->where("type", "partner");
 
         return $query->orderBy('id')->get();
     }

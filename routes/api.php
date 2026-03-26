@@ -15,6 +15,7 @@ use App\Http\Controllers\PdfController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\CsvsController;
 use App\Http\Controllers\CSVBaj3Controller;
+use App\Http\Controllers\CSVVfjController;
 use App\Http\Controllers\csvUploadController;
 use App\Http\Controllers\FileuploadsController;
 // use App\Http\Controllers\PDF\PfsController;
@@ -150,6 +151,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post("csv/getPfs", [CsvsController::class, 'getPfs']);
     Route::post("csv/getBAJ3", [CSVBaj3Controller::class, 'getBAJ3']);
+    Route::post("csv/getVFJ", [CSVVfjController::class, 'getVFJ']);
     Route::post("excel/create", [createSpredsheetController::class, 'create']);
     Route::post("excel/testExec", [createSpredsheetController::class, 'testExec']);
     Route::post("user/fileupload", [UserController::class, 'fileupload']);

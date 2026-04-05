@@ -21,7 +21,7 @@ class ExamController extends Controller
     /**
      * 検査ログイン
      */
-    public function index(Request $request,ExamAuthService $service)
+    public function index(Request $request, ExamAuthService $service)
     {
         try {
             $response = $service->authenticate($request);
@@ -33,9 +33,8 @@ class ExamController extends Controller
 
     public function setStarttime()
     {
-        $loginUser = auth()->user()->currentAccessToken();
-
-        $flight = Exam::find($loginUser->tokenable->id);
+        $loginUser = auth()->user();
+        $flight = Exam::find($loginUser->id);
         if ($flight->started_at == null) {
             $flight->started_at =  date('Y-m-d H:i:s');
             $flight->save();
@@ -45,8 +44,8 @@ class ExamController extends Controller
 
     public function checkStatus(Request $request)
     {
-        $loginUser = auth()->user()->currentAccessToken();
-        $exam_id = $loginUser->tokenable->id;
+        $loginUser = auth()->user();
+        $exam_id = $loginUser->id;
         $testparts_id = $request->testparts_id;
 
         $last = examfins::Where("testparts_id", $testparts_id)->where("exam_id", $exam_id)->first();
@@ -154,8 +153,7 @@ class ExamController extends Controller
     public function getTestExamMenu(
         Request $request,
         TestExamMenuService $service
-    )
-    {
+    ) {
         /** @var \App\Models\Exam $exam */
         $exam = auth()->user();
         //$token = $user->currentAccessToken();
@@ -170,35 +168,35 @@ class ExamController extends Controller
             // 取得失敗時は空配列を返却
             return response([], 400);
         }
-    /*
-        $loginUser = auth()->user()->currentAccessToken();
-        $examid = $loginUser->tokenable->id;
-        $params = $request->params;
-        try {
-            $result = Test::select(
-                "tests.*",
-                "testparts.code",
-                "testparts.id as testparts_id",
-                "examfins.status as examstatus"
-            )
-            // ->leftJoin("testparts","testparts.test_id","=","tests.id")
-            ->leftJoin("testparts", function ($join) {
-                $join->on("testparts.test_id", "=", "tests.id")
-                ->where("testparts.status", "=", 1);
-            })
-            ->leftJoin("examfins", function ($join) use ($examid) {
-                $join->on("examfins.testparts_id", "=", "testparts.id")
-                ->where("examfins.exam_id", "=", $examid);
-            })
-            ->where("params", $params)
-            ->get();
+        /*
+            $loginUser = auth()->user()->currentAccessToken();
+            $examid = $loginUser->tokenable->id;
+            $params = $request->params;
+            try {
+                $result = Test::select(
+                    "tests.*",
+                    "testparts.code",
+                    "testparts.id as testparts_id",
+                    "examfins.status as examstatus"
+                )
+                // ->leftJoin("testparts","testparts.test_id","=","tests.id")
+                ->leftJoin("testparts", function ($join) {
+                    $join->on("testparts.test_id", "=", "tests.id")
+                    ->where("testparts.status", "=", 1);
+                })
+                ->leftJoin("examfins", function ($join) use ($examid) {
+                    $join->on("examfins.testparts_id", "=", "testparts.id")
+                    ->where("examfins.exam_id", "=", $examid);
+                })
+                ->where("params", $params)
+                ->get();
 
 
-        } catch (Exception $e) {
-            return response([], 201);
-        }
-        return response($result, 200);
-    */
+            } catch (Exception $e) {
+                return response([], 201);
+            }
+            return response($result, 200);
+        */
     }
     public function getTestDataExam(Request $request)
     {
@@ -442,52 +440,54 @@ class ExamController extends Controller
         return response("success", 200);
     }
 
-    public function calcPFS($row){
+    public function calcPFS($row)
+    {
         $return = array();
-		$return['personal'] = sprintf("%.1f",round(100-$row['dev7'],1));
-		$return['state'   ] = sprintf("%.1f",round(100-$row['dev8'],1));
-		$return['job'     ] = sprintf("%.1f",round($row['dev2'],1));
-		$return['image'   ] = sprintf("%.1f",round(100-$row['dev4'],1));
-		$return['positive'] = sprintf("%.1f",round($row['dev6'],1));
-		$return['self'    ] = sprintf("%.1f",round($row['dev3'],1));
-		$return['sougo'   ] = sprintf("%.1f",$this->getSougo($row));
+        $return['personal'] = sprintf("%.1f", round(100 - $row['dev7'], 1));
+        $return['state'   ] = sprintf("%.1f", round(100 - $row['dev8'], 1));
+        $return['job'     ] = sprintf("%.1f", round($row['dev2'], 1));
+        $return['image'   ] = sprintf("%.1f", round(100 - $row['dev4'], 1));
+        $return['positive'] = sprintf("%.1f", round($row['dev6'], 1));
+        $return['self'    ] = sprintf("%.1f", round($row['dev3'], 1));
+        $return['sougo'   ] = sprintf("%.1f", $this->getSougo($row));
 
-		return $return;
+        return $return;
     }
-	public function getSougo($set){
-		$point = 0.5;
+    public function getSougo($set)
+    {
+        $point = 0.5;
 
-		if($set['dev6']-$set[ 'dev7' ] >= 5
-			AND  $set['dev6']-$set[ 'dev7' ] < 10
-		){
-			$point += 3;
-		}elseif( $set['dev6']-$set[ 'dev7' ] >= 10 ){
-			$point += 4;
-		}
+        if ($set['dev6'] - $set[ 'dev7' ] >= 5
+            and  $set['dev6'] - $set[ 'dev7' ] < 10
+        ) {
+            $point += 3;
+        } elseif ($set['dev6'] - $set[ 'dev7' ] >= 10) {
+            $point += 4;
+        }
 
-		if($set['dev3']-$set[ 'dev4' ] >= 5
-			AND  $set['dev3']-$set[ 'dev4' ] < 10
-		){
-			$point += 2;
-		}elseif( $set['dev3']-$set[ 'dev4' ] >= 10 ){
-			$point += 3;
-		}
+        if ($set['dev3'] - $set[ 'dev4' ] >= 5
+            and  $set['dev3'] - $set[ 'dev4' ] < 10
+        ) {
+            $point += 2;
+        } elseif ($set['dev3'] - $set[ 'dev4' ] >= 10) {
+            $point += 3;
+        }
 
-		if($set['dev8'] < 45 ){
-			$point += 1;
-		}
+        if ($set['dev8'] < 45) {
+            $point += 1;
+        }
 
-		if($set['dev2'] >= 52 ){
-			$point += 0.5;
-		}
+        if ($set['dev2'] >= 52) {
+            $point += 0.5;
+        }
 
-		if($set[ 'dev11' ]-$set[ 'dev7' ] >= 5 ){
-			$point += 1;
-		}
+        if ($set[ 'dev11' ] - $set[ 'dev7' ] >= 5) {
+            $point += 1;
+        }
 
-		return $point;
+        return $point;
 
-	}
+    }
 
     public function BA12($line, $row2, $raw_data, $dev_data, $flg = "")
     {

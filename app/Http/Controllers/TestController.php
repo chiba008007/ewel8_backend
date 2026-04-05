@@ -227,6 +227,7 @@ class TestController extends UserController
             ->get();
         $pfsArray = [];
         $baj3Array = [];
+        $beaArray = [];
 
         foreach ($testparts as $key => $value) {
             if ($value['code'] === 'PFS') {
@@ -236,12 +237,18 @@ class TestController extends UserController
             if ($value['code'] === 'BAJ3') {
                 $baj3Array = $this->getBAJ3Detail($test_id, $value[ 'threeflag' ]);
             }
+
+            if ($value['code'] === 'BEA') {
+                $beaArray = $this->getBEADetail($test_id);
+            }
         }
         foreach ($rlt[ 'exams' ] as $key => $value) {
             // PFSデータの表示
             $rlt['exams'][$key]['pfs'] = (isset($pfsArray[$value->id])) ? $pfsArray[$value->id] : [];
             // BAJ3データの表示
             $rlt['exams'][$key]['baj3'] = (isset($baj3Array[$value->id])) ? $baj3Array[$value->id] : [];
+            // BEAデータ
+            $rlt['exams'][$key]['bea'] = (isset($beaArray[$value->id])) ? $beaArray[$value->id] : [];
         }
         return response($rlt, 200);
     }
@@ -386,6 +393,38 @@ class TestController extends UserController
             $baj3Array[$value->exam_id]['score'] = $score;
         }
         return $baj3Array;
+    }
+
+    private function getBEADetail($test_id)
+    {
+        $code = "BEA";
+        $sql = "
+            SELECT *
+            FROM (
+                SELECT
+                    e.exam_id,
+                    e.testparts_id,
+                    DATE_FORMAT(e.starttime, '%Y/%m/%d') AS starttime,
+                    DATE_FORMAT(e.endtime, '%Y/%m/%d') AS endtime,
+
+                    ROW_NUMBER() OVER (
+                        PARTITION BY e.exam_id, e.testparts_id
+                        ORDER BY e.id DESC
+                    ) AS rn
+                FROM exam_bea e
+                WHERE e.testparts_id = (
+                    SELECT id FROM testparts WHERE test_id = ? AND code = ?
+                )
+            ) t
+            WHERE t.rn = 1
+        ";
+        $beadetails = DB::select($sql, [$test_id, $code]);
+        $beaArray = [];
+        foreach ($beadetails as $value) {
+            $beaArray[$value->exam_id]['starttime'] = $value->starttime;
+            $beaArray[$value->exam_id]['endtime'] = $value->endtime;
+        }
+        return $beaArray;
     }
 
 
@@ -608,6 +647,9 @@ class TestController extends UserController
             $codePfs = $lisence[1]['list'][5]['code'];
             $codeBAJ3 = preg_replace("/\-/", "", $lisence[1]['list'][3]['code']);
             $vfj = preg_replace("/\-/", "", $lisence[4]['list'][1]['code']);
+            $bea = strtoupper($lisence[25]['list'][1]['code']);
+            // Log::info('BEA:' . json_encode($parts, JSON_PRETTY_PRINT));
+
             foreach ($parts as $key => $value) {
                 $params = [];
                 if (
@@ -649,19 +691,36 @@ class TestController extends UserController
                     }
                 }
 
-                if (
-                    (isset($value[$vfj]) && $value[$vfj] && $value[ $vfj ][ 'status' ]) //VFJの登録
-                ) {
-                    $params = [];
-                    $params[ 'test_id' ] = $id;
-                    $params[ 'code' ] = $vfj;
-                    $params[ 'status' ] = $value[ $vfj ][ 'status' ] ? 1 : 0;
-                    $params[ 'examPersonName' ] = $value[$vfj]['examPersonName'] ?? null;
-                    $params[ 'created_at' ] = date("Y-m-d H:i:s");
+            }
 
-                    if (!testparts::insert($params)) {
-                        throw new Exception();
-                    }
+            if (
+                (isset($value[$vfj]) && $value[$vfj] && $value[ $vfj ][ 'status' ]) //VFJの登録
+            ) {
+                $params = [];
+                $params[ 'test_id' ] = $id;
+                $params[ 'code' ] = $vfj;
+                $params[ 'status' ] = $value[ $vfj ][ 'status' ] ? 1 : 0;
+                $params[ 'examPersonName' ] = $value[$vfj]['examPersonName'] ?? null;
+                $params[ 'created_at' ] = date("Y-m-d H:i:s");
+
+                if (!testparts::insert($params)) {
+                    throw new Exception();
+                }
+            }
+            // Log::info('BEA=>:' . $bea);
+            // Log::info('BEA:' . json_encode($value, JSON_PRETTY_PRINT));
+            if (
+                (isset($value[$bea]) && $value[$bea] && $value[ $bea ][ 'status' ]) //beaの登録
+            ) {
+                $params = [];
+                $params[ 'test_id'    ] = $id;
+                $params[ 'code'       ] = $bea;
+                $params[ 'status'     ] = $value[$bea]['status'] ? 1 : 0;
+                $params[ 'timelimit'  ] = (int)$value[$bea]['timelimit'] ;
+                $params[ 'created_at' ] = date("Y-m-d H:i:s");
+
+                if (!testparts::insert($params)) {
+                    throw new Exception();
                 }
             }
 
@@ -781,6 +840,7 @@ class TestController extends UserController
             $codePfs = $lisence[1]['list'][5]['code'];
             $codeBAJ3 = preg_replace("/\-/", "", $lisence[1]['list'][3]['code']);
             $vfj = preg_replace("/\-/", "", $lisence[4]['list'][1]['code']);
+            $bea = strtoupper($lisence[25]['list'][1]['code']);
 
             foreach ($parts as $key => $value) {
                 $params = [];
@@ -831,6 +891,23 @@ class TestController extends UserController
                     ])->first();
                     $baj3->examPersonName = $value[$vfj]['examPersonName'];
                     $baj3->save();
+                }
+                if (
+                    (
+                        isset($value[$bea]) &&
+                        $value[$bea] &&
+                        $value[$bea][ 'status' ]
+                    ) //beaの登録
+                ) {
+
+                    $tp = testparts::where([
+                        'test_id' => $edit_id,
+                        'code' => $bea,
+                        'status' => 1
+                    ])->first();
+                    $tp->timelimit = (int)$value[$bea]['timelimit'];
+                    $tp->save();
+
                 }
 
             }

@@ -1080,11 +1080,15 @@ class TestController extends UserController
                     pdfuseflag,
                     DATE_FORMAT(startdaytime, '%Y/%m/%d') as formatted_startdaytime,DATE_FORMAT(enddaytime, '%Y/%m/%d') as formatted_enddaytime"
             )
-                ->where([
-            'id' => $test_id,
-            'user_id' => $user_id
+            ->withCount([
+                'testpdfs as testpdf_count' => function ($query) {
+                    $query->where('status', 1);
+                }
             ])
-                ->first();
+            ->where([
+                'id' => $test_id,
+                'user_id' => $user_id
+            ])->first();
             DB::commit();
             return response($data, 200);
         } catch (Exception $e) {

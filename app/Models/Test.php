@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use App\Models\Exam;
+use App\Models\Testpdf;
 
 class Test extends Model
 {
@@ -76,5 +77,11 @@ class Test extends Model
             })
             ->where('params', $params);
     }
+
+    public function testpdfs()
+    {
+        return $this->hasMany(Testpdf::class, 'test_id');
+    }
+
 
 }

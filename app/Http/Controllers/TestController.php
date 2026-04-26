@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Test;
 use App\Models\testparts;
-use App\Models\testpdf;
+use App\Models\Testpdf;
 use App\Models\User;
 use App\Models\Exam;
 use App\Models\exampfs;

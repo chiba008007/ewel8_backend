@@ -7,7 +7,7 @@ use App\Models\testparts;
 use App\Models\Testpdf;
 use App\Models\User;
 use App\Models\Exam;
-use App\Models\exampfs;
+//use App\Models\exampfs;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -278,7 +278,7 @@ class TestController extends UserController
             $rlt['testparts'] = $list;
 
 
-            $rlt['testpdf'] = testpdf::where([
+            $rlt['testpdf'] = Testpdf::where([
                 'test_id' => $id,
                 'status' => 1
             ])
@@ -634,7 +634,7 @@ class TestController extends UserController
                     $params['pdf_id'] = $value['key'];
                     $params[ 'status' ] = 1;
                     $params[ 'created_at'] = date("Y-m-d H:i:s");
-                    if (!testpdf::insert($params)) {
+                    if (!Testpdf::insert($params)) {
                         throw new Exception();
                     }
                 }
@@ -817,7 +817,7 @@ class TestController extends UserController
             $test->pdflimitcount = $request->pdflimitcount;
             $test->save();
 
-            testpdf::where('test_id', $edit_id)
+            Testpdf::where('test_id', $edit_id)
             ->update(['status' => 0]);
 
             $pdf = $request->pdf;
@@ -829,7 +829,7 @@ class TestController extends UserController
                     $params['pdf_id'] = $value['key'];
                     $params[ 'status' ] = 1;
                     $params[ 'created_at'] = date("Y-m-d H:i:s");
-                    if (!testpdf::insert($params)) {
+                    if (!Testpdf::insert($params)) {
                         throw new Exception();
                     }
                 }

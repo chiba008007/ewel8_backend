@@ -25,7 +25,6 @@ use App\Services\MailService;
 use App\Services\UserService;
 use App\Services\PasswordService;
 
-
 class UserController extends Controller
 {
     public const G_ADMIN = "admin";
@@ -37,8 +36,7 @@ class UserController extends Controller
     public function __construct(
         MailService $mailService,
         PasswordService $passwordService,
-    )
-    {
+    ) {
         $this->mailService = $mailService;
         $this->passwordService = $passwordService;
     }
@@ -55,23 +53,29 @@ class UserController extends Controller
         $two_factor = $request->two_factor;
         $user = User::where('login_id', $request->login_id)->first();
         $token = "";
-        if ($this->passwordService->verify($user,$request->password)) {
+        if ($this->passwordService->verify($user, $request->password)) {
             // 2段階認証が有効な時
-            if($user[ 'two_factor_enabled' ] && !$two_factor){
+            if ($user[ 'two_factor_enabled' ] && !$two_factor) {
                 // コードの生成
                 $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
                 // 2段階認証コードの保持
-                $user->update(['two_factor_secret'=> $code]);
+                $user->update(['two_factor_secret' => $code]);
                 // 2段階認証用コードメール発送
-                $this->mailService->twoFacterSend($user,$code);
+                $this->mailService->twoFacterSend($user, $code);
                 return response()->json([
                     'two_factor_required' => $user->two_factor_enabled,
                     'two_factor_token'    => $user->id
                 ], 200);
             }
             // 2段階認証のチェック
-            if($user[ 'two_factor_enabled' ] && $two_factor){
-                if($user['two_factor_secret'] != $two_factor){
+            if ($user[ 'two_factor_enabled' ] && $two_factor) {
+                if ($user['two_factor_secret'] != $two_factor) {
+
+                    Log::warning('2段階認証失敗', [
+                        'login_id' => $request->login_id,
+                        'ip' => $request->ip(),
+                    ]);
+
                     return response(false, 400);
                 }
             }
@@ -81,10 +85,17 @@ class UserController extends Controller
                 'token' => $token
             ];
 
-            return response($response, 201);
+            Log::info('ログイン成功', [
+                'user_id' => $user->id,
+                'ip' => $request->ip(),
+            ]);
+            return response($response, 200);
         }
-
-        return response("error", 401);
+        Log::warning('ログイン失敗', [
+            'login_id' => $request->login_id,
+            'ip' => $request->ip(),
+        ]);
+        return response("error", 400);
 
     }
     public function test()
@@ -138,17 +149,49 @@ class UserController extends Controller
     }
     public function getAdmin(Request $request)
     {
-        $user = User::where('type', $request->type)->get();
-        $response = [
-            'user' => $user,
-        ];
 
-        return response($response, 201);
+        try {
+
+            $user = User::where('type', $request->type)->get();
+
+            Log::info('企業情報変更データ取得に成功しました', [
+                'type' => $request->type,
+                'count' => $user->count(),
+            ]);
+
+            $response = [
+                'user' => $user,
+            ];
+
+            return response($response, 200);
+
+        } catch (\Exception $e) {
+            Log::error('企業情報変更データ取得に失敗しました', [
+                'type' => $request->type,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response([
+                'message' => 'error'
+            ], 500);
+        }
     }
+
     public function getPartner(Request $request)
     {
+
+        Log::info('getPartner called', [
+            'admin_id' => auth()->id(),
+            'type' => $request->type,
+            'ip' => $request->ip(),
+        ]);
+        $start = microtime(true);
+
         try {
             $this->checkAdmin();
+
+            $time = microtime(true) - $start;
+
             $sql = "
 SELECT
     *,
@@ -186,9 +229,19 @@ FROM (
             $param = [];
             $param[] = $request->type;
             $response = DB::select($sql, $param);
-            return response($response, 201);
+
+            Log::info('getPartner performance', [
+                'time' => $time
+            ]);
+
+            return response($response, 200);
         } catch (\Exception $e) {
-            return response([], 201);
+            Log::error('getPartner error', [
+                'message' => $e->getMessage(),
+                'admin_id' => auth()->id(),
+            ]);
+
+            return response([], 400);
         }
     }
 
@@ -337,28 +390,65 @@ FROM (
     }
     public function editAdmin(Request $request)
     {
-        for ($i = 0; $i <= 3; $i++) {
-            User::where('id', $request[$i]['id'])->update(
-                [
-                    'login_id' => $request[$i]['login_id'],
-                    'person' => $request[$i]['person'],
-                    'person_address' => $request[$i]['person_address'],
+
+        try {
+            DB::beginTransaction();
+
+            $items = $request->all();
+            $updatedCount = 0;
+
+            foreach ($items as $item) {
+                User::where('id', $item['id'])->update([
+                    'login_id' => $item['login_id'],
+                    'person' => $item['person'],
+                    'person_address' => $item['person_address'],
                     'two_factor_enabled' => (int) filter_var(
-                        $request[$i]['two_factor_enabled'],
+                        $item['two_factor_enabled'],
                         FILTER_VALIDATE_BOOLEAN
                     ),
-                ]
-            );
+                ]);
+
+                $updatedCount++;
+            }
+
+            DB::commit();
+
+            Log::info('管理者企業情報を更新しました', [
+                'updated_count' => $updatedCount,
+                'user_ids' => collect($items)->pluck('id')->values(),
+                'operator_id' => auth()->id(),
+            ]);
+
+            return response([
+                'result' => true,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            Log::error('管理者企業情報の更新に失敗しました', [
+                'operator_id' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return response([
+                'result' => false,
+                'message' => '更新に失敗しました。',
+            ], 500);
         }
-        return response(true, 201);
+
     }
     public function setUserData(Request $request)
     {
-        Log::info('新規パートナー登録の実施:'.$request);
+        Log::info('新規パートナー登録開始', [
+            'admin_id' => auth()->id(),
+            'type' => $request->type,
+            'login_id' => $request->login_id,
+            'name' => $request->name,
+            'ip' => $request->ip(),
+        ]);
         $passwd = config('const.consts.PASSWORD');
 
-        $response = true;
-        $loginUser = auth()->user()->currentAccessToken();
         DB::beginTransaction();
         try {
 
@@ -368,7 +458,7 @@ FROM (
             //     ]);
 
             User::insert([
-                "admin_id" => $loginUser->tokenable->id,
+                "admin_id" => auth()->id(),
                 'type' => $request['type'],
                 'login_id' => $request['login_id'],
                 'name' => $request['name'],
@@ -410,8 +500,12 @@ FROM (
 
             $this->setLicensed($request, $user_id);
 
-
-            Log::info('新規パートナー登録の実施成功:'.$request);
+            Log::info('新規パートナー登録成功', [
+                'admin_id' => auth()->id(),
+                'user_id' => $user_id,
+                'type' => $request->type,
+                'login_id' => $request->login_id,
+            ]);
             // 情報登録メール
             $mailbody = [];
             $mailbody[ 'title' ] = "【Welcome-k】 企業情報登録のお知らせ";
@@ -431,7 +525,11 @@ FROM (
                     (new SetUserDataMailPassword($mailbody))
                     ->from(config('mail.from.address'), config('mail.from.name'))
                 );
-                Log::info('新規パートナー登録メール配信担当者1');
+                Log::info('新規パートナー登録メール送信', [
+                    'user_id' => $user_id,
+                    'to' => $request->person_address,
+                    'target' => '担当者1',
+                ]);
             }
             if ($request->person_address2) {
                 $mailbody[ 'person' ] = $request->person2;
@@ -446,19 +544,28 @@ FROM (
                     ->from(config('mail.from.address'), config('mail.from.name'))
                 );
 
-                Log::info('新規パートナー登録メール配信担当者2');
+                Log::info('新規パートナー登録メール送信', [
+                    'user_id' => $user_id,
+                    'to' => $request->person_address2,
+                    'target' => '担当者2',
+                ]);
             }
             DB::commit();
             return response("success", 200);
         } catch (\Exception $exception) {
-            Log::error('新規パートナー登録の実施失敗:'.$request);
+            Log::error('新規パートナー登録失敗', [
+                'admin_id' => auth()->id(),
+                'type' => $request->type,
+                'login_id' => $request->login_id,
+                'message' => $exception->getMessage(),
+            ]);
             DB::rollback();
             throw $exception;
         }
     }
     public function setLicensed($data, $user_id)
     {
-       // Log::info('ライセンス登録関数の実施:user_id:'.$user_id.":".$data);
+        // Log::info('ライセンス登録関数の実施:user_id:'.$user_id.":".$data);
         $licensesKey = $data['licensesKey'];
         $licensesBody = $data['licensesBody'];
         foreach ($licensesKey as $key => $value) {
@@ -484,10 +591,16 @@ FROM (
     }
     public function editPartnerData(Request $request)
     {
+        Log::info('パートナー更新開始', [
+            'admin_id' => auth()->id(),
+            'target_user_id' => $request->id,
+            'ip' => $request->ip(),
+        ]);
         DB::beginTransaction();
         try {
-            $loginUser = auth()->user()->currentAccessToken();
-            $admin_id = $loginUser->tokenable->id;
+            // $loginUser = auth()->user()->currentAccessToken();
+            // $admin_id = $loginUser->tokenable->id;
+            $admin_id = auth()->id();
             $user = User::where("id", $request->id)
                 ->where("admin_id", $admin_id)
                 ->where("type", $request->type)
@@ -527,45 +640,67 @@ FROM (
 
             }
             $user->update($data);
+            $changed = $user->getChanges();
+            unset($changed['password']);
+            Log::info('パートナー更新成功', [
+                'admin_id' => $admin_id,
+                'target_user_id' => $user->id,
+                'changed' => $changed,
+            ]);
+
             $this->setLicensed($request, $user->id);
 
             // メール送信（変更があった場合のみ）
             //if ($user->wasChanged(['person_address', 'person_address2'])) {
-                // 情報登録メール
-                $mailbody = [];
-                $mailbody[ 'title' ] = "【Welcome-k】 企業情報更新のお知らせ";
-                $mailbody[ 'name' ] = $request->name;
-                $mailbody['systemname'] = $request->system_name;
-                $licenses = $request->input('licensesBody', []);
-                $mailbody[ 'licensesBody' ] = is_array($licenses) ? array_sum($licenses) : 0;
-                if ($request->person_address) {
-                    Log::info('更新パートナーへメール:'.$request->person_address);
-                    $mailbody[ 'person' ] = $request->person;
-                    Mail::to($request->person_address)
-                        ->send(
-                            (new EditUserDataMail($mailbody))
-                            ->from(config('mail.from.address'), config('mail.from.name'))
-                        );
-                }
-                if ($request->person_address2) {
-                    Log::info('更新パートナーへメール:'.$request->person_address2);
-                    $mailbody[ 'person' ] = $request->person2;
-                    Mail::to($request->person_address2)
-                        ->send(
-                            (new EditUserDataMail($mailbody))
-                            ->from(config('mail.from.address'), config('mail.from.name'))
-                        );
-                }
+            // 情報登録メール
+            $mailbody = [];
+            $mailbody[ 'title' ] = "【Welcome-k】 企業情報更新のお知らせ";
+            $mailbody[ 'name' ] = $request->name;
+            $mailbody['systemname'] = $request->system_name;
+            $licenses = $request->input('licensesBody', []);
+            $mailbody[ 'licensesBody' ] = is_array($licenses) ? array_sum($licenses) : 0;
+            if ($request->person_address) {
+
+                Log::info('パートナー更新メール送信', [
+                    'admin_id' => $admin_id,
+                    'target_user_id' => $user->id,
+                    'to' => $request->person_address,
+                ]);
+                $mailbody[ 'person' ] = $request->person;
+                Mail::to($request->person_address)
+                    ->send(
+                        (new EditUserDataMail($mailbody))
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                    );
+            }
+            if ($request->person_address2) {
+                Log::info('パートナー更新メール送信', [
+                    'admin_id' => $admin_id,
+                    'target_user_id' => $user->id,
+                    'to' => $request->person_address2,
+                ]);
+                $mailbody[ 'person' ] = $request->person2;
+                Mail::to($request->person_address2)
+                    ->send(
+                        (new EditUserDataMail($mailbody))
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                    );
+            }
             //}
             DB::commit();
             return response("success", 200);
         } catch (\Exception $exception) {
+
+            Log::error('パートナー更新エラー', [
+                'admin_id' => auth()->id(),
+                'target_user_id' => $request->id,
+                'message' => $exception->getMessage(),
+            ]);
+
             DB::rollback();
             throw $exception;
         }
     }
-
-
 
     public function setCustomerAdd(Request $request)
     {

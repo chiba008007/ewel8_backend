@@ -1052,7 +1052,7 @@ class TestController extends UserController
             $data->whereDate('exampfses.endtime', $request->date);
         }
 
-        $result = $data->paginate(30, ['*'], 'page', $request->input('page', 1));
+        $result = $data->paginate(100, ['*'], 'page', $request->input('page', 1));
 
         Log::info('受検者検索結果', [
             'user_id' => auth()->id(),

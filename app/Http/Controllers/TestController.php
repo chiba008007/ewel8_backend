@@ -1008,9 +1008,13 @@ class TestController extends UserController
         return response($result, 200);
     }
 
-    public function getSearchExam()
+    public function getSearchExam(Request $request)
     {
-        // $loginUser = auth()->user()->currentAccessToken();
+        Log::info('受検者検索開始', [
+            'user_id' => auth()->id(),
+            'ip' => request()->ip(),
+        ]);
+        $start = microtime(true);
         $data = Exam::select([
             'exams.*',
             'tests.testname as testname',
@@ -1029,7 +1033,38 @@ class TestController extends UserController
         })
         ->where("exams.name", "!=", "''")
         ->ORDERBY("exampfses.endtime", "DESC");
-        return response($data->get(), 200);
+
+
+
+        if ($request->filled('id')) {
+            $data->where('exams.email', $request->id);
+        }
+
+        if ($request->filled('customer_name')) {
+            $data->where('users_customer.name', $request->customer_name);
+        }
+
+        if ($request->filled('name')) {
+            $data->where('exams.name', $request->name);
+        }
+
+        if ($request->filled('date')) {
+            $data->whereDate('exampfses.endtime', $request->date);
+        }
+
+        $result = $data->paginate(30, ['*'], 'page', $request->input('page', 1));
+
+        Log::info('受検者検索結果', [
+            'user_id' => auth()->id(),
+            'page' => $result->currentPage(),
+            'count' => $result->count(),
+            'total' => $result->total(),
+            'last_page' => $result->lastPage(),
+        ]);
+        Log::info('受検者検索パフォーマンス', [
+            'time' => microtime(true) - $start
+        ]);
+        return response($result, 200);
     }
     public function deleteTest(Request $request)
     {

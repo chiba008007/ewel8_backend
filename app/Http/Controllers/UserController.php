@@ -1103,9 +1103,10 @@ FROM (
     }
     public function customerEdit(Request $request)
     {
-        Log::info('顧客情報編集開始'.$request);
-        //        $loginUser = auth()->user()->currentAccessToken();
-        //        $admin_id = $loginUser->tokenable->id;
+        Log::info('顧客情報編集開始', [
+            'user_id' => $request->id,
+            'partner_id' => $request->partner_id,
+        ]);
         $partner_id = $request->partner_id;
         $id = $request->id;
 
@@ -1113,11 +1114,20 @@ FROM (
             throw new Exception();
         }
         try {
-            $user = User::where(['id' => $id,'partner_id' => $partner_id,'admin_id' => $this->admin_id]);
+
+            $user = User::where([
+                    'id' => $id,
+                    'partner_id' => $partner_id,
+                    'admin_id' => $this->admin_id
+                ])->first();
+            if (!$user) {
+                Log::info('顧客情報編集対象なし');
+                return response(false, 404);
+            }
             $passwd = config('const.consts.PASSWORD');
             $password = openssl_encrypt($request->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
 
-            $flg = $user->update([
+            $user->update([
                 'login_id' => $request->login_id,
                 'name' => $request->name,
                 'post_code' => $request->post_code,
@@ -1147,20 +1157,25 @@ FROM (
                 'tanto_address2' => $request->tanto_address2
             ]);
             if ($request->password) {
-                Log::info('顧客情報編集パスワード'.$request);
-                $flg = $user->update(["password" => $password]);
+                Log::info('パスワード更新あり', [
+                    'user_id' => $id
+                ]);
+                $user->update(["password" => $password]);
             }
-            if ($flg) {
-                Log::info('顧客情報編集成功');
 
-                return response(true, 200);
-            } else {
-                Log::info('顧客情報編集失敗');
+            Log::info('顧客情報編集成功');
 
-                return response(false, 401);
-            }
+            return response(true, 200);
+
         } catch (Exception $e) {
-            Log::info('顧客情報編集失敗');
+            Log::error('顧客情報編集失敗', [
+                'user_id' => $id ?? null,
+                'partner_id' => $partner_id ?? null,
+                'input' => $request->except(['password']),
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+            ]);
             return response($e, 400);
         }
     }

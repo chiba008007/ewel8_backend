@@ -43,7 +43,8 @@ class TriggerHistoryController extends Controller
             $query->whereDay('trigger_history.created_at', $request->input('day'));
         }
         // 1ページあたりの件数はリクエストで指定できるように
-        $perPage = $request->input('per_page', 10);
+        //$perPage = $request->input('per_page', 10);
+        $perPage = (int) $request->input('per_page', 100);
 
         return $query->orderBy('id', 'desc')->paginate($perPage);
     }

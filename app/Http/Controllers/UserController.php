@@ -857,42 +857,113 @@ FROM (
     public function getCustomerList(Request $request)
     {
         try {
-            // パートナー権限でログインしたとき、パラメータとIDが一致しないときはエラー
-            $loginUser = auth()->user()->currentAccessToken();
-            $id = $loginUser->tokenable->id;
-            $partner_id = $request->partner_id;
-            if ($loginUser->tokenable->type === 'partner') {
-                $id = $loginUser->tokenable->admin_id;
+            // リクエスト値を検証
+            $request->validate([
+                'partner_id' => ['required', 'integer'],
+            ]);
 
-                $partner_id = $loginUser->tokenable->id;
-                if ($partner_id != $request->partner_id) {
-                    // 表示させない画面
-                    throw new Exception();
+            // ログインユーザーを取得
+            $loginUser = auth()->user();
+
+            // 未ログインの場合は401を返す
+            if (!$loginUser) {
+                return response([], 401);
+            }
+
+            // 初期値を設定
+            $adminId = $loginUser->id;
+            $partnerId = (int) $request->partner_id;
+
+            // 顧客一覧取得の開始ログ
+            Log::info('顧客一覧取得 開始', [
+                'login_user_id' => $loginUser->id,
+                'login_user_type' => $loginUser->type,
+                'request_partner_id' => $request->partner_id,
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            // パートナー権限でログインした場合
+            if ($loginUser->type === 'partner') {
+                // パートナーに紐づく管理者IDを設定
+                $adminId = $loginUser->admin_id;
+
+                // ログイン中のパートナーIDを設定
+                $partnerId = $loginUser->id;
+
+                // URLパラメータのpartner_idとログイン中のpartner_idが違う場合は403を返す
+                if ((int) $partnerId !== (int) $request->partner_id) {
+                    Log::warning('顧客一覧取得 権限不一致', [
+                        'login_user_id' => $loginUser->id,
+                        'login_user_type' => $loginUser->type,
+                        'login_partner_id' => $partnerId,
+                        'request_partner_id' => $request->partner_id,
+                        'ip' => $request->ip(),
+                    ]);
+
+                    return response([], 403);
                 }
             }
 
             $subQuery = User::select('users.*')
-            ->selectRaw('count(exams.id) AS count')
-            ->selectRaw('(SELECT count(exams.id) FROM exams WHERE started_at IS NOT NULL AND  deleted_at IS NULL AND exams.customer_id = users.id) AS syori')
-            ->selectRaw('(SELECT count(exams.id) FROM exams WHERE ended_at IS NOT NULL AND  deleted_at IS NULL AND exams.customer_id = users.id ) AS ended')
-            ->leftJoin('exams', function ($join) {
-                $join->on('exams.customer_id', '=', 'users.id')
-                    ->whereNull('exams.deleted_at');
-            })
-            ->where([
-            "users.type" => "customer",
-            "users.partner_id" => $partner_id
-            ,"users.admin_id" => $id
-            ,"users.deleted_at" => null
-            ])
-            ->groupBy('users.id');
+                ->selectRaw('count(exams.id) AS count')
+                ->selectRaw('
+                (
+                    SELECT count(exams.id)
+                    FROM exams
+                    WHERE started_at IS NOT NULL
+                    AND deleted_at IS NULL
+                    AND exams.customer_id = users.id
+                ) AS syori
+            ')
+                ->selectRaw('
+                (
+                    SELECT count(exams.id)
+                    FROM exams
+                    WHERE ended_at IS NOT NULL
+                    AND deleted_at IS NULL
+                    AND exams.customer_id = users.id
+                ) AS ended
+            ')
+                ->leftJoin('exams', function ($join) {
+                    $join->on('exams.customer_id', '=', 'users.id')
+                        ->whereNull('exams.deleted_at');
+                })
+                ->where([
+                    'users.type' => 'customer',
+                    'users.partner_id' => $partnerId,
+                    'users.admin_id' => $adminId,
+                    'users.deleted_at' => null,
+                ])
+                ->groupBy('users.id');
+
             $result = User::fromSub($subQuery, 'A')
-            ->selectRaw('A.* , (A.count - A.ended) as zan')
-            ->selectRaw('A.*')
-            ->get();
-            return response($result, 201);
+                ->selectRaw('A.*, (A.count - A.ended) as zan')
+                ->get();
+
+            // 顧客一覧取得の成功ログ
+            Log::info('顧客一覧取得 成功', [
+                'login_user_id' => $loginUser->id,
+                'login_user_type' => $loginUser->type,
+                'partner_id' => $partnerId,
+                'admin_id' => $adminId,
+                'count' => $result->count(),
+            ]);
+
+            return response($result, 200);
+
         } catch (\Exception $e) {
-            return response([], 401);
+            // 顧客一覧取得の失敗ログ
+            Log::error('顧客一覧取得 失敗', [
+                'login_user_id' => auth()->id(),
+                'request_partner_id' => $request->partner_id,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'ip' => $request->ip(),
+            ]);
+
+            return response([], 500);
         }
     }
 
@@ -912,7 +983,19 @@ FROM (
     public function getLisencesList(Request $request)
     {
         try {
-            $loginUser = auth()->user()->currentAccessToken();
+            // ログインユーザー情報を取得
+            $loginUser = auth()->user();
+
+            // 検索対象のユーザーIDを取得
+            $targetUserId = $request->user_id;
+
+            // API実行ログを出力
+            Log::info('ライセンス一覧取得 開始', [
+                'login_user_id' => $loginUser?->id,
+                'target_user_id' => $targetUserId,
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
 
             $result = DB::table('exams as e')
                 ->leftJoin('testparts as t', 'e.test_id', '=', 't.test_id')
@@ -936,9 +1019,25 @@ FROM (
                 ->groupBy('t.code', 'u.num')
                 ->get();
 
+            // API成功ログを出力
+            Log::info('ライセンス一覧取得 成功', [
+                'login_user_id' => $loginUser?->id,
+                'target_user_id' => $targetUserId,
+                'count' => $result->count(),
+            ]);
+
             return response($result, 200);
         } catch (\Exception $e) {
-            return response([], 201);
+            // エラーログを出力
+            Log::error('ライセンス一覧取得 失敗', [
+                'login_user_id' => auth()->id(),
+                'target_user_id' => $request->user_id,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response([], 500);
         }
     }
     public function getUserLisence(Request $request)

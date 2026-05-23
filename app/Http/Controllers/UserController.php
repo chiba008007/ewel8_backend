@@ -257,102 +257,187 @@ FROM (
 
         return $response;
     }
+
     public function editPartner(Request $request)
     {
-        Log::info('企業情報変更:'.$request);
-        $response = true;
-        // ログインしているユーザー情報取得
-        $loginUser = auth()->user()->currentAccessToken();
-        $passwd = config('const.consts.PASSWORD');
+        Log::info('企業情報変更処理を開始しました', [
+            'partner_id' => $request->id,
+        ]);
+
+        $validated = $request->validate([
+            'id' => ['required', 'integer'],
+            'password' => ['nullable', 'string'],
+            'post_code' => ['nullable', 'string'],
+            'pref' => ['nullable', 'string'],
+            'address1' => ['nullable', 'string'],
+            'address2' => ['nullable', 'string'],
+            'tel' => ['nullable', 'string'],
+            'fax' => ['nullable', 'string'],
+            'person' => ['nullable', 'string'],
+            'person_address' => ['nullable', 'email'],
+            'person2' => ['nullable', 'string'],
+            'person_address2' => ['nullable', 'email'],
+            'person_tel' => ['nullable', 'string'],
+        ]);
+
         DB::beginTransaction();
 
-
         try {
+            // ログインユーザーを取得する
+            $loginUser = auth()->user();
 
-            $customer = User::where("type", "partner")
-                    ->where('id', $request->id)
-                    ->select("login_id")
-                    ->first();
+            // 対象企業を取得する
+            $customer = User::where('type', 'partner')
+                ->where('id', $validated['id'])
+                ->first();
+
+            if (!$customer) {
+                Log::warning('企業情報変更対象が見つかりません', [
+                    'partner_id' => $validated['id'],
+                ]);
+
+                return response()->json(['message' => '対象企業が見つかりません'], 404);
+            }
+
             $params = [
-               // 'name' => $request['name'],
-               // 'email' => $request['email'],
-                'password' => openssl_encrypt($request['password'], 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']),
-                'post_code' => $request['post_code'],
-                'pref' => $request['pref'],
-                'address1' => $request['address1'],
-                'address2' => $request['address2'],
-                'tel' => $request['tel'],
-                'fax' => $request['fax'],
-                'person' => $request['person'],
-                'person_address' => $request['person_address'],
-                'person2' => $request['person2'],
-                'person_address2' => $request['person_address2'],
-                'person_tel' => $request['person_tel'],
-//                'system_name' => $request['system_name'],
-
+                'post_code' => $validated['post_code'] ?? null,
+                'pref' => $validated['pref'] ?? null,
+                'address1' => $validated['address1'] ?? null,
+                'address2' => $validated['address2'] ?? null,
+                'tel' => $validated['tel'] ?? null,
+                'fax' => $validated['fax'] ?? null,
+                'person' => $validated['person'] ?? null,
+                'person_address' => $validated['person_address'] ?? null,
+                'person2' => $validated['person2'] ?? null,
+                'person_address2' => $validated['person_address2'] ?? null,
+                'person_tel' => $validated['person_tel'] ?? null,
             ];
-            if (!$request['password']) {
-                unset($params['password']);
-            }
-            User::where('id', $request->id)
-           //->where('admin_id', $loginUser->tokenable->id)
-            ->update($params);
 
-            Log::info('企業情報変更メール配信');
+            // パスワード入力がある場合のみ更新する
+            if (!empty($validated['password'])) {
+                $passwd = config('const.consts.PASSWORD');
 
-            $mailbody = [];
-            $mailbody[ 'title' ] = "【Welcome-k】 企業情報変更のお知らせ";
-            $mailbody[ 'name' ] = $request->name;
-            $mailbody[ 'systemname' ] = $request->systemname;
-            $mailbody[ 'login_id' ] = $customer->login_id;
-
-            if ($request->person_address) {
-                $mailbody[ 'person' ] = $request->person;
-                Mail::to($request->person_address)
-                    ->send(
-                        (new EditPartnerEditMail($mailbody))
-                        ->from(config('mail.from.address'), config('mail.from.name'))
-                    );
-                Log::info('企業情報変更メール配信担当者1');
-            }
-            if ($request->person_address2) {
-                $mailbody[ 'person' ] = $request->person2;
-                Mail::to($request->person_address2)
-                    ->send(
-                        (new EditPartnerEditMail($mailbody))
-                        ->from(config('mail.from.address'), config('mail.from.name'))
-                    );
-
-                Log::info('企業情報変更メール配信担当者2');
+                $params['password'] = openssl_encrypt(
+                    $validated['password'],
+                    'aes-256-cbc',
+                    $passwd['key'],
+                    0,
+                    $passwd['iv']
+                );
             }
 
+            // 企業情報を更新する
+            $customer->update($params);
 
             DB::commit();
-            Log::info('企業情報変更成功:'.$request);
-            return response("success", 200);
-        } catch (\Exception $exception) {
-            Log::info('企業情報変更失敗:'.$exception);
-            DB::rollback();
-            throw $exception;
-        }
 
-        return response($response, 201);
+            Log::info('企業情報変更が完了しました', [
+                'partner_id' => $customer->id,
+                'login_user_id' => $loginUser?->id,
+            ]);
+
+            // メール送信はDB更新後に実行する
+            $mailbody = [
+                'title' => '【Welcome-k】 企業情報変更のお知らせ',
+                'name' => $request->name,
+                'systemname' => $request->systemname,
+                'login_id' => $customer->login_id,
+            ];
+
+            if (!empty($validated['person_address'])) {
+                $mailbody['person'] = $validated['person'];
+
+                Mail::to($validated['person_address'])->send(
+                    (new EditPartnerEditMail($mailbody))
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                );
+
+                Log::info('企業情報変更メールを主担当者へ送信しました', [
+                    'partner_id' => $customer->id,
+                ]);
+            }
+
+            if (!empty($validated['person_address2'])) {
+                $mailbody['person'] = $validated['person2'];
+
+                Mail::to($validated['person_address2'])->send(
+                    (new EditPartnerEditMail($mailbody))
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                );
+
+                Log::info('企業情報変更メールを副担当者へ送信しました', [
+                    'partner_id' => $customer->id,
+                ]);
+            }
+
+            return response()->json(['message' => 'success'], 200);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            Log::error('企業情報変更処理でエラーが発生しました', [
+                'partner_id' => $request->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['message' => '企業情報の変更に失敗しました'], 500);
+        }
     }
+
     public function getPartnerDetailData(Request $request)
     {
-        // ログインしているユーザー情報取得
-        $loginUser = auth()->user()->currentAccessToken();
-        $customer = User::where("type", "partner");
-        if ($loginUser->tokenable->type === "partner") {
-            $customer->where("id", $loginUser->tokenable->id);
-        } else {
-            $customer->where('id', $request->partnerId);
-            $customer->where("admin_id", $loginUser->tokenable->id);
-        }
-        $customer = $customer->first();
+        try {
+            // partnerId の入力チェック
+            $request->validate([
+                'partnerId' => ['nullable', 'integer'],
+            ]);
 
-        return response($customer, 200);
+            // ログインユーザーを取得
+            $loginUser = Auth::user();
+
+            // トークン情報がない場合は認証エラー
+            if (!$loginUser) {
+                Log::warning('Partner detail auth failed');
+                return response()->json(['message' => 'Unauthenticated'], 401);
+            }
+
+            $query = User::where('type', 'partner');
+
+            if ($loginUser->type === 'partner') {
+                // partner は自分自身のみ取得
+                $query->where('id', $loginUser->id);
+            } else {
+                // 管理者は自分の配下 partner のみ取得
+                $query->where('id', $request->partnerId)
+                      ->where('admin_id', $loginUser->id);
+            }
+
+            $customer = $query->first();
+
+            if (!$customer) {
+                Log::info('顧客情報が見当たらない', [
+                    'login_user_id' => $loginUser->id,
+                    'partner_id' => $request->partnerId,
+                ]);
+
+                return response()->json(['message' => '顧客情報が見当たらない'], 404);
+            }
+
+            Log::info('顧客情報取得', [
+                'login_user_id' => $loginUser->id,
+                'partner_id' => $customer->id,
+            ]);
+
+            return response()->json($customer, 200);
+        } catch (\Throwable $e) {
+            Log::error('エラー', [
+                'message' => $e->getMessage(),
+                'partner_id' => $request->partnerId,
+            ]);
+
+            return response()->json(['message' => 'Server error'], 500);
+        }
     }
+
     public function getPartnerDetail(Request $request)
     {
         $response = [];
@@ -704,8 +789,13 @@ FROM (
 
     public function setCustomerAdd(Request $request)
     {
-        $req = $request[ 'type' ];
-        Log::info('新規顧客登録開始:'.$request);
+        // 処理開始ログ
+        Log::info('新規顧客登録開始', [
+            'partner_id' => $request->partner_id,
+            'login_id' => $request->login_id,
+            'email' => $request->email,
+        ]);
+        DB::beginTransaction();
         try {
 
             $partner = User::where("type", "partner")
@@ -752,6 +842,17 @@ FROM (
                 'tanto_address2' => $request['tanto_address2']
             ]);
 
+
+            Log::info('新規顧客DB登録完了', [
+                'login_id' => $request->login_id,
+            ]);
+
+            // メール送信前ログ
+            Log::info('新規顧客メール送信開始', [
+                'to1' => $request->tanto_address,
+                'to2' => $request->tanto_address2,
+            ]);
+
             $mailbody = [];
             $mailbody[ 'title' ] = "【Welcome-k】 企業情報登録のお知らせ";
             $mailbody[ 'name' ] = $request['name'];
@@ -788,16 +889,24 @@ FROM (
                     );
                 Log::info('新規顧客登録メール配信担当者2');
             }
-
-            Log::info('新規顧客登録成功');
             DB::commit();
+
             return response("success", 200);
         } catch (\Exception $e) {
-            Log::info('新規顧客登録失敗'.$e);
+            DB::rollBack();
+            // 例外詳細ログ
+            Log::error('新規顧客登録失敗', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'partner_id' => $request->partner_id,
+                'login_id' => $request->login_id,
+            ]);
 
-            return response($e, 400);
+            return response('error', 400);
         }
     }
+
     public function setUserLicense(Request $request)
     {
         DB::beginTransaction();
@@ -1225,7 +1334,7 @@ FROM (
             }
             $passwd = config('const.consts.PASSWORD');
             $password = openssl_encrypt($request->password, 'aes-256-cbc', $passwd['key'], 0, $passwd['iv']);
-
+            Log::info('privacy:'.$request->privacy);
             $user->update([
                 'login_id' => $request->login_id,
                 'name' => $request->name,

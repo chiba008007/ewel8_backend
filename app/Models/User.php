@@ -21,28 +21,43 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        // 基本情報
         'type',
+        'admin_id',
+        'partner_id',
         'name',
         'email',
+        'email_verified_at',
         'password',
         'company_name',
         'login_id',
+
+        // 住所・連絡先
         'post_code',
         'pref',
         'address1',
         'address2',
         'tel',
         'fax',
+
+        // 二要素認証
+        'two_factor_secret',
+        'two_factor_enabled',
+
+        // 依頼・担当者
         'requestFlag',
         'person',
         'person_address',
         'person2',
         'person_address2',
         'person_tel',
+
+        // システム情報
         'system_name',
+        'logoImagePath',
         'pdfImagePath',
-        'two_factor_secret',
-        'two_factor_enabled',
+
+        // 要素
         'element1',
         'element2',
         'element3',
@@ -58,6 +73,28 @@ class User extends Authenticatable
         'element13',
         'element14',
 
+        // 各種フラグ
+        'trendFlag',
+        'csvFlag',
+        'pdfFlag',
+        'weightFlag',
+        'excelFlag',
+        'customFlag',
+        'sslFlag',
+        'privacy',
+        'displayFlag',
+
+        // プライバシーポリシー
+        'privacyText',
+
+        // 顧客担当者
+        'tanto_name',
+        'tanto_address',
+        'tanto_busyo',
+        'tanto_tel1',
+        'tanto_tel2',
+        'tanto_name2',
+        'tanto_address2',
     ];
 
     /**

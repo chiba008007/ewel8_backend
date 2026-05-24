@@ -6,6 +6,7 @@ use App\Models\fileuploads;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class FileuploadsController extends Controller
 {
@@ -14,38 +15,105 @@ class FileuploadsController extends Controller
      */
     public function list(Request $request)
     {
-        $loginUser = auth()->user()->currentAccessToken();
-        // $admin_id = $loginUser->tokenable->id;
+        try {
+            // リクエスト値を取得
+            $partner_id = $request->partner_id;
+            $customer_id = $request->customer_id;
 
-        $partner_id = $request->partner_id;
-        $customer_id = $request->customer_id;
-        if (!$this->checkuser($customer_id)) {
-            throw new Exception();
+            Log::info('ファイル一覧取得開始', [
+                'partner_id' => $partner_id,
+                'customer_id' => $customer_id,
+                'user_id' => auth()->id(),
+            ]);
+
+            // 顧客の利用権限チェック
+            if (!$this->checkuser($customer_id)) {
+                Log::warning('ファイル一覧取得 権限エラー', [
+                    'customer_id' => $customer_id,
+                    'user_id' => auth()->id(),
+                ]);
+
+                return response()->json(['message' => '権限がありません'], 403);
+            }
+
+            // ファイル一覧を取得
+            $list = fileuploads::selectRaw('DATE_FORMAT(created_at, "%Y年%m月%d日") AS date')
+                ->selectRaw('id, partner_id, admin_id, filename, filepath, size, openflag, status')
+                ->where([
+                    'customer_id' => $customer_id,
+                    'partner_id' => $partner_id,
+                    'status' => 1,
+                ])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            Log::info('ファイル一覧取得成功', [
+                'count' => $list->count(),
+            ]);
+
+            return response()->json($list, 200);
+
+        } catch (\Throwable $e) {
+            Log::error('ファイル一覧取得エラー', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json(['message' => 'サーバーエラー'], 500);
         }
-        $list = fileuploads::selectRaw('DATE_FORMAT(created_at, "%Y年%m月%d日") AS date')
-            ->selectRaw('id,partner_id,admin_id,filename,filepath,size,openflag,status')
-            ->where([
-            'customer_id' => $customer_id,
-            'partner_id' => $partner_id,
-            'status' => 1
-            ])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return response($list, 201);
     }
+
     public function openFlag(Request $request)
     {
-        fileuploads::where([
-            'id' => $request->id
-        ])->update(['openflag' => 1]);
-        return response(true, 201);
+        try {
+            // ファイルを既読状態に更新
+            $updatedCount = fileuploads::where([
+                'id' => $request->id,
+            ])->update(['openflag' => 1]);
+
+            Log::info('ファイル既読フラグ更新', [
+                'fileupload_id' => $request->id,
+                'updated_count' => $updatedCount,
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json(true, 200);
+
+        } catch (\Throwable $e) {
+            Log::error('ファイル既読フラグ更新エラー', [
+                'fileupload_id' => $request->id,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json(false, 500);
+        }
     }
     public function deleteStatus(Request $request)
     {
-        fileuploads::where([
-            'id' => $request->id
-        ])->update(['status' => 0]);
-        return response(true, 201);
+        try {
+            // ファイルを削除状態に更新
+            $updatedCount = fileuploads::where([
+                'id' => $request->id,
+            ])->update(['status' => 0]);
+
+            Log::info('ファイル削除ステータス更新', [
+                'fileupload_id' => $request->id,
+                'updated_count' => $updatedCount,
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json(true, 200);
+
+        } catch (\Throwable $e) {
+            Log::error('ファイル削除ステータス更新エラー', [
+                'fileupload_id' => $request->id,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json(false, 500);
+        }
     }
 }

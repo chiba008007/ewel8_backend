@@ -121,29 +121,45 @@ class TestController extends UserController
 
         return response($list, 200);
     }
+
     public function getTestList(Request $request)
     {
+        // ログイン中のユーザー情報を取得
+        $loginUser = $request->user();
+
+        // ログインユーザーID
+        $admin_id = $loginUser?->id;
+
         $user_id = $request->user_id;
         $partner_id = $request->partner_id;
+
         try {
+            Log::info('getTestList start', [
+                // 操作したログインユーザー
+                'admin_id' => $admin_id,
+
+                // 対象ユーザー
+                'user_id' => $user_id,
+                'partner_id' => $partner_id,
+            ]);
+
             if (!$this->checkuser($user_id)) {
-                throw new Exception();
+                throw new Exception('checkuser failed');
             }
-            $result = Test::LeftJoin('exams', function ($join) {
+
+            // ここに既存の検索処理
+            $result = Test::leftJoin('exams', function ($join) {
                 $join
-                ->on('exams.customer_id', '=', 'tests.customer_id')
-                ->on('exams.partner_id', '=', 'tests.partner_id')
-                ->on('exams.test_id', '=', 'tests.id')
-                ->whereNull('exams.deleted_at')
-                ;
+                    ->on('exams.customer_id', '=', 'tests.customer_id')
+                    ->on('exams.partner_id', '=', 'tests.partner_id')
+                    ->on('exams.test_id', '=', 'tests.id')
+                    ->whereNull('exams.deleted_at');
             })
-            ->Where(
-                [
-                    "tests.user_id" => $user_id,
-                    "tests.partner_id" => $partner_id,
-                    "tests.status" => 1
-                ]
-            )
+            ->where([
+                'tests.user_id' => $user_id,
+                'tests.partner_id' => $partner_id,
+                'tests.status' => 1,
+            ])
             ->select(
                 'tests.id',
                 'tests.testname',
@@ -151,19 +167,34 @@ class TestController extends UserController
                 'tests.startdaytime',
                 'tests.enddaytime',
                 DB::raw('
-                COUNT(CASE WHEN exams.started_at IS NOT NULL  THEN 1 END) as syori,
-                COUNT(CASE WHEN exams.ended_at IS NULL  THEN 1 END) as zan
-                ')
+                COUNT(CASE WHEN exams.started_at IS NOT NULL THEN 1 END) as syori,
+                COUNT(CASE WHEN exams.ended_at IS NULL THEN 1 END) as zan
+            ')
             )
             ->groupBy('tests.id')
             ->orderBy('tests.startdaytime', 'desc')
             ->orderBy('tests.id', 'desc')
             ->get();
+
+            return response($result, 200);
+
         } catch (Exception $e) {
+            Log::error('getTestList error', [
+                // 誰が操作したか
+                'admin_id' => $admin_id,
+
+                // どの対象で失敗したか
+                'user_id' => $user_id,
+                'partner_id' => $partner_id,
+
+                // エラー内容
+                'message' => $e->getMessage(),
+            ]);
+
             return response([], 400);
         }
-        return response($result, 200);
     }
+
 
     public function getTestDetail(Request $request)
     {
@@ -739,14 +770,22 @@ class TestController extends UserController
     public function editTest(Request $request)
     {
         DB::beginTransaction();
+        // ログイン中の操作ユーザーを取得
+        $loginUser = $request->user();
+        $admin_id = $loginUser?->id;
         try {
             $user_id = $request->user_id;
             $customer_id = $request->customer_id;
             $edit_id = $request->edit_id;
-            //所定のユーザーIDが利用可能かチェック
-            // $loginUser = auth()->user()->currentAccessToken();
-            // $admin_id = $loginUser->tokenable->id;
 
+            Log::info('editTest start', [
+                       // 操作したログインユーザー
+                       'admin_id' => $admin_id,
+                       // 編集対象
+                       'user_id' => $user_id,
+                       'customer_id' => $customer_id,
+                       'edit_id' => $edit_id,
+                   ]);
             if (!$this->checkuser($user_id)) {
                 throw new Exception();
             }
@@ -770,7 +809,6 @@ class TestController extends UserController
                     ])->count();
                 if ($basetestcount - $usedTestCount > $request->testcount) {
                     // 想定以上の数の削除を行っているためエラー
-                    echo "count Over";
                     throw new Exception();
                 }
                 $deleteCount = $basetestcount - $request->testcount;
@@ -917,7 +955,15 @@ class TestController extends UserController
 
         } catch (Exception $e) {
             DB::rollBack();
-            return response($e, 201);
+
+            Log::error('editTest error', [
+                // 誰が操作したか
+                'admin_id' => $admin_id,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            return response([], 400);
         }
     }
 

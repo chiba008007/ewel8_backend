@@ -611,16 +611,33 @@ class TestController extends UserController
 
     public function setTest(Request $request)
     {
+
+        $request->validate([
+            'user_id' => 'required|integer',
+            'partner_id' => 'required|integer',
+            'customer_id' => 'required|integer',
+            'testname' => 'required|string',
+            'testcount' => 'required|integer',
+            'pdf' => 'nullable|array',
+            'parts' => 'required|array',
+        ]);
+
         $query = substr(bin2hex(random_bytes(8)), 0, 8);
         $lisence = config('const.consts.LISENCE');
 
         DB::beginTransaction();
         try {
             $user_id = $request->user_id;
-            //所定のユーザーIDが利用可能かチェック
-            // $loginUser = auth()->user()->currentAccessToken();
-            // $admin_id = $loginUser->tokenable->id;
-
+            // 登録開始時に、調査に必要な入力値だけログ出力する
+            Log::info('検査登録の request', [
+                'user_id' => $request->user_id ?? null,
+                'partner_id' => $request->partner_id ?? null,
+                'customer_id' => $request->customer_id ?? null,
+                'testname' => $request->testname ?? null,
+                'testcount' => $request->testcount ?? null,
+                'pdf_count' => is_array($request->pdf) ? count($request->pdf) : 0,
+                'parts_count' => is_array($request->parts) ? count($request->parts) : 0,
+            ]);
             if (!$this->checkuser($user_id)) {
                 throw new Exception();
             }
@@ -762,6 +779,17 @@ class TestController extends UserController
 
         } catch (Exception $e) {
             DB::rollBack();
+
+            // 失敗原因を調査できるようにログ出力
+            Log::error('setTest failed', [
+                'user_id' => $request->user_id ?? null,
+                'partner_id' => $request->partner_id ?? null,
+                'customer_id' => $request->customer_id ?? null,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
             return response('error', 400);
         }
 

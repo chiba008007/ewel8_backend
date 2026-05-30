@@ -25,8 +25,27 @@ class ExamController extends Controller
     {
         try {
             $response = $service->authenticate($request);
+
+            // 成功ログ：個人情報・tokenは出さない
+            Log::info('検査ログイン成功', [
+                'user_id' => $response['user']['id'] ?? null,
+                'test_id' => $request->input('test_id'),
+                'ip' => $request->ip(),
+            ]);
+
             return response($response, 200);
+
         } catch (\Throwable $e) {
+            // ログインIDなどの個人情報はそのまま出さない
+            Log::warning('検査ログイン失敗', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'ip' => $request->ip(),
+                'test_id' => $request->input('test_id'),
+            ]);
+
+            // 画面には詳細を返さない
             return response('error', 400);
         }
     }
@@ -113,12 +132,9 @@ class ExamController extends Controller
      */
     public function editExamData(Request $request, ExamProfileService $service)
     {
-        // 認証済みユーザー（トークンの所有者）
         /** @var \App\Models\Exam $user */
         $user = auth()->user();
-        //$token = $user->currentAccessToken();
 
-        // 更新対象のパラメータ
         $params = [
             'name'   => $request->name,
             'kana'   => $request->kana,
@@ -126,7 +142,6 @@ class ExamController extends Controller
         ];
 
         try {
-            // 業務ロジックは Service に委譲
             $service->updateProfile(
                 $user->id,
                 $user->email,
@@ -134,9 +149,26 @@ class ExamController extends Controller
                 $params
             );
 
+            // 個人情報の値はログに出さない
+            Log::info('検査プロフィール更新成功', [
+                'exam_id' => $user->id,
+                'test_key' => $request->k,
+                'ip' => $request->ip(),
+            ]);
+
             return response(true, 200);
+
         } catch (\Throwable $e) {
-            // 失敗時は詳細を返さない
+            // name/kana/gender は出さない
+            Log::error('検査プロフィール更新失敗', [
+                'exam_id' => $user->id ?? null,
+                'test_key' => $request->k,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'ip' => $request->ip(),
+            ]);
+
             return response(false, 400);
         }
     }

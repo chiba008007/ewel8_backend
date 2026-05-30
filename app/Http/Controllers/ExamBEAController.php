@@ -202,104 +202,142 @@ class ExamBEAController extends Controller
     public function setBEA(Request $request)
     {
         $loginUser = auth()->user();
-        $exam_id = $loginUser->id;
-        // テスト時間の取得
-        $timelimit = testparts::where('test_id', $loginUser->test_id)
-            ->where('code', self::CODE)
-            ->value('timelimit');
-
-        // 既存のテストステータスを0にする
-        Exambea::where("exam_id", "=", $exam_id)
-        ->where("status", "=", 1)
-        ->update(['status' => 0]);
-
-        $params = [
-            'testparts_id' => $request->testparts_id,
-            'exam_id'      => $exam_id,
-            'status'       => 1,
-            'starttime'    => now(),
-            'limittime'    => now()->addMinutes($timelimit),
-        ];
 
         try {
-            if (Exambea::create($params)) {
-                return response("success", 200);
-            } else {
-                throw new Exception();
-            }
-        } catch (Exception $e) {
-            return response("error", 400);
+            DB::transaction(function () use ($request, $loginUser) {
+                // テスト時間を取得
+                $timelimit = testparts::where('test_id', $loginUser->test_id)
+                    ->where('code', self::CODE)
+                    ->value('timelimit');
+
+                // 既存の有効ステータスを無効化
+                Exambea::where('exam_id', $loginUser->id)
+                    ->where('status', 1)
+                    ->update(['status' => 0]);
+
+                // 新しい受検データを作成
+                Exambea::create([
+                    'testparts_id' => $request->testparts_id,
+                    'exam_id'      => $loginUser->id,
+                    'status'       => 1,
+                    'starttime'    => now(),
+                    'limittime'    => now()->addMinutes($timelimit),
+                ]);
+            });
+
+            Log::info('BEA開始成功', [
+                'exam_id' => $loginUser->id,
+                'test_id' => $loginUser->test_id,
+                'ip' => $request->ip(),
+            ]);
+
+            return response('success', 200);
+
+        } catch (\Throwable $e) {
+            Log::error('BEA開始失敗', [
+                'exam_id' => $loginUser->id ?? null,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'ip' => $request->ip(),
+            ]);
+
+            return response('error', 500);
         }
     }
+
     public function editBEA(Request $request)
     {
 
-        /** @var \App\Models\User $user */
+        /** @var \App\Models\Exam $user */
         $user = auth()->user();
-        $token = $user->currentAccessToken();
-        $exam_id = $token->tokenable->id;
 
+        // 認証済みの受検者ID
+        $exam_id = $user->id;
         $testparts_id = $request->testparts_id;
-        Log::info('BEA検査回答登録');
-        Log::info('ページ数:'.$request->page);
-        Log::info('受検者id:'.$exam_id);
-        Log::info('testparts_id:'.$testparts_id);
-        // 最後の1件を取得
-        $last = Exambea::select("id")->latest("id")->where("testparts_id", $testparts_id)->where("exam_id", $exam_id)->first();
-        $exam = Exambea::find($last[ 'id' ]);
 
-        if ($request->page == 2) {
-            $exam->starttime = date("Y-m-d H:i:s");
-        }
+        Log::info('BEA検査回答登録開始', [
+            'exam_id' => $exam_id,
+            'testparts_id' => $testparts_id,
+            'page' => $request->page,
+            'ip' => $request->ip(),
+        ]);
 
-        $selectPoint = $request->selectPoint;
-        foreach ($selectPoint as $key => $value) {
-            $q = "q".$key;
-            $exam[$q] = $value;
-        }
-        $exam->save();
+        try {
+            DB::transaction(function () use ($request, $exam_id, $testparts_id) {
+                // 最新の受検データを取得
+                $exam = Exambea::where('testparts_id', $testparts_id)
+                    ->where('exam_id', $exam_id)
+                    ->latest('id')
+                    ->firstOrFail();
 
-        // 最後のページ
-        if ($request->page == 12) {
-            $this->getArrayPoint();
-
-            try {
-                // 回答データの取得
-                $exam = Exambea::find($last[ 'id' ]);
-                $array_result = $this->getEAS($exam);
-                $score = [];
-                for ($i = 1; $i <= 106; $i++) {
-                    $score[$i] = $exam["q".$i];
+                // 2ページ目で開始時刻を更新
+                if ((int)$request->page === 2) {
+                    $exam->starttime = now();
                 }
-                $array_result = $this->getEAS($score);
 
-                $updateData = [];
-                $updateData[ 'sougo'  ] = $array_result[ 'sougo' ];
-                $updateData['yomitori'] = $array_result[ 'yomitori' ];
-                $updateData['rikai' ] = $array_result[ 'rikai'    ];
-                $updateData['sentaku' ] = $array_result[ 'sentaku'  ];
-                $updateData['kirikae' ] = $array_result[ 'kirikae'  ];
-                $updateData['jyoho'] = $array_result[ 'jyoho'    ];
-                $updateData['endtime'] = now();
-                // 更新
-                $exam->update($updateData);
+                // 回答を登録
+                foreach ($request->selectPoint as $key => $value) {
+                    $exam['q' . $key] = $value;
+                }
 
-                examfins::complete($exam_id, $testparts_id);
+                $exam->save();
 
-                // 最終登録データ確認
-                exam::setEndTime();
-                // メール配信受検者残数
-                exam::sendRemainMail($request);
+                // 最終ページなら採点・完了処理
+                if ((int)$request->page === 12) {
+                    $this->getArrayPoint();
+                    $score = [];
 
-            } catch (\Exception $e) {
-                return response()->json([
-                    'message' => $e->getMessage()
-                ], 409); // Conflict
-            }
+                    for ($i = 1; $i <= 106; $i++) {
+                        $score[$i] = $exam['q' . $i];
+                    }
 
+                    $array_result = $this->getEAS($score);
+
+                    $exam->update([
+                        'sougo'    => $array_result['sougo'],
+                        'yomitori' => $array_result['yomitori'],
+                        'rikai'    => $array_result['rikai'],
+                        'sentaku'  => $array_result['sentaku'],
+                        'kirikae'  => $array_result['kirikae'],
+                        'jyoho'    => $array_result['jyoho'],
+                        'endtime'  => now(),
+                    ]);
+                    Log::info('BEA採点結果保存成功', [
+                        'exam_id' => $exam_id,
+                        'testparts_id' => $testparts_id,
+                        'exambea_id' => $exam->id,
+                    ]);
+                    examfins::complete($exam_id, $testparts_id);
+                    exam::setEndTime();
+
+                    Log::info('受検者終了時刻更新成功', [
+                        'exam_id' => $exam_id,
+                    ]);
+
+                    exam::sendRemainMail($request);
+                    Log::info('残数メール処理成功', [
+                        'exam_id' => $exam_id,
+                        'testparts_id' => $testparts_id,
+                    ]);
+                }
+            });
+
+            return response('success', 200);
+
+        } catch (\Throwable $e) {
+            Log::error('BEA検査回答登録失敗', [
+                'exam_id' => $exam_id,
+                'testparts_id' => $testparts_id,
+                'page' => $request->page,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'ip' => $request->ip(),
+            ]);
+
+            return response('error', 500);
         }
-        return response("success", 200);
     }
+
 
     public function getArrayPoint()
     {

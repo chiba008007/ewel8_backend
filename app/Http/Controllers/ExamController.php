@@ -288,81 +288,146 @@ class ExamController extends Controller
         }
         return response($last, 200);
     }
+
     public function setPFS(Request $request)
     {
-        $loginUser = auth()->user()->currentAccessToken();
-        $exam_id = $loginUser->tokenable->id;
+        /** @var \App\Models\Exam $user */
+        $user = auth()->user();
 
-        // 既存のテストステータスを0にする
-        exampfs::where("exam_id", "=", $exam_id)
-        ->where("status", "=", 1)
-        ->update(['status' => 0]);
+        // 認証済み受検者ID
+        $exam_id = $user->id;
+        $testparts_id = $request->testparts_id;
 
-        $params = [];
-        $params[ 'testparts_id' ] = $request->testparts_id;
-        $params[ 'exam_id' ] = $exam_id;
-        $params[ 'status' ] = 1;
-        $params[ 'created_at' ] = date("Y-m-d H:i:s");
-        $params[ 'updated_at' ] = date("Y-m-d H:i:s");
+        Log::info('PFS開始API到達', [
+            'exam_id' => $exam_id,
+            'testparts_id' => $testparts_id,
+            'ip' => $request->ip(),
+        ]);
+
         try {
-            if (exampfs::insert($params)) {
-                return response("success", 200);
-            } else {
-                throw new Exception();
-            }
-        } catch (Exception $e) {
-            return response("error", 201);
+            DB::transaction(function () use ($exam_id, $testparts_id) {
+                // 既存の有効ステータスを無効化
+                exampfs::where('exam_id', $exam_id)
+                    ->where('status', 1)
+                    ->update(['status' => 0]);
+
+                // 新しい受検データを作成
+                exampfs::create([
+                    'testparts_id' => $testparts_id,
+                    'exam_id' => $exam_id,
+                    'status' => 1,
+                ]);
+            });
+
+            Log::info('PFS開始成功', [
+                'exam_id' => $exam_id,
+                'testparts_id' => $testparts_id,
+            ]);
+
+            return response('success', 200);
+
+        } catch (\Throwable $e) {
+            Log::error('PFS開始失敗', [
+                'exam_id' => $exam_id ?? null,
+                'testparts_id' => $testparts_id ?? null,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'ip' => $request->ip(),
+            ]);
+
+            return response('error', 500);
         }
     }
+
     public function editPFS(Request $request)
     {
-
-        /** @var \App\Models\User $user */
+        /** @var \App\Models\Exam $user */
         $user = auth()->user();
-        $token = $user->currentAccessToken();
-        $exam_id = $token->tokenable->id;
 
+        // 認証済み受検者ID
+        $exam_id = $user->id;
         $testparts_id = $request->testparts_id;
-        Log::info('PFS検査回答登録');
-        Log::info('ページ数:'.$request->page);
-        Log::info('受検者id:'.$exam_id);
-        Log::info('testparts_id:'.$testparts_id);
-        // 最後の1件を取得
-        $last = exampfs::select("id")->latest("id")->where("testparts_id", $testparts_id)->where("exam_id", $exam_id)->first();
-        $exam = exampfs::find($last[ 'id' ]);
-        if ($request->page == 2) {
-            $exam->starttime = date("Y-m-d H:i:s");
+
+        Log::info('PFS検査回答登録開始', [
+            'exam_id' => $exam_id,
+            'testparts_id' => $testparts_id,
+            'page' => $request->page,
+            'ip' => $request->ip(),
+        ]);
+
+        try {
+            DB::transaction(function () use ($request, $exam_id, $testparts_id) {
+                // 最新の受検データを取得
+                $exam = exampfs::where('testparts_id', $testparts_id)
+                    ->where('exam_id', $exam_id)
+                    ->latest('id')
+                    ->firstOrFail();
+
+                // 2ページ目で開始時刻を更新
+                if ((int) $request->page === 2) {
+                    $exam->starttime = now();
+                }
+
+                // 回答を登録
+                foreach ($request->selectPoint as $key => $value) {
+                    $exam['q' . $key] = $value;
+                }
+
+                $exam->save();
+
+                // 最終ページなら採点・完了処理
+                if ((int) $request->page === 5) {
+                    // PFS結果を計算・保存
+                    $this->resultPFS($testparts_id);
+
+                    Log::info('PFS採点結果保存成功', [
+                        'exam_id' => $exam_id,
+                        'testparts_id' => $testparts_id,
+                        'exampfs_id' => $exam->id,
+                    ]);
+
+                    // 検査完了登録
+                    examfins::complete($exam_id, $testparts_id);
+
+                    Log::info('PFS検査完了登録成功', [
+                        'exam_id' => $exam_id,
+                        'testparts_id' => $testparts_id,
+                        'exampfs_id' => $exam->id,
+                    ]);
+
+                    // 受検者全体の終了時刻更新
+                    exam::setEndTime();
+
+                    Log::info('受検者終了時刻更新成功', [
+                        'exam_id' => $exam_id,
+                    ]);
+
+                    // 残数メール処理
+                    exam::sendRemainMail($request);
+
+                    Log::info('残数メール処理成功', [
+                        'exam_id' => $exam_id,
+                        'testparts_id' => $testparts_id,
+                    ]);
+                }
+            });
+
+            return response('success', 200);
+
+        } catch (\Throwable $e) {
+            Log::error('PFS検査回答登録失敗', [
+                'exam_id' => $exam_id,
+                'testparts_id' => $testparts_id,
+                'page' => $request->page,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'ip' => $request->ip(),
+            ]);
+
+            return response('error', 500);
         }
-
-        $selectPoint = $request->selectPoint;
-        foreach ($selectPoint as $key => $value) {
-            $q = "q".$key;
-            $exam[$q] = $value;
-        }
-        $exam->save();
-
-        // 最後のページ
-        if ($request->page == 5) {
-
-            // 計算
-            $this->resultPFS($testparts_id);
-            try {
-                examfins::complete($exam_id, $testparts_id);
-
-                // 最終登録データ確認
-                exam::setEndTime();
-                // メール配信受検者残数
-                exam::sendRemainMail($request);
-
-            } catch (\Exception $e) {
-                return response()->json([
-                    'message' => $e->getMessage()
-                ], 409); // Conflict
-            }
-
-        }
-        return response("success", 200);
     }
+
     public function downloadExam()
     {
         $loginUser = auth()->user()->currentAccessToken();

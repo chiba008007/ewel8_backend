@@ -182,16 +182,42 @@ class ExamVFJController extends Controller
 
     public function getVFJ(Request $request)
     {
-        $loginUser = auth()->user();
-        $exam_id = $loginUser->tokenable->id;
+        /** @var \App\Models\Exam $user */
+        $user = auth()->user();
+
+        // 認証済みの受検者ID
+        $exam_id = $user->id;
         $testparts_id = $request->testparts_id;
-        // 最後の1件を取得
-        $last = Examvfj::select("*")->latest("id")->where("testparts_id", $testparts_id)->where("exam_id", $exam_id)->first();
-        // 結果データがあるときは結果をまとめて取得
+
+        Log::info('VFJ取得API到達', [
+            'exam_id' => $exam_id,
+            'testparts_id' => $testparts_id,
+            'ip' => $request->ip(),
+        ]);
+
+        // 最新のVFJデータを取得
+        $last = Examvfj::where('testparts_id', $testparts_id)
+            ->where('exam_id', $exam_id)
+            ->latest('id')
+            ->first();
+
+        // 開始データが無い場合
+        if (!$last) {
+            Log::warning('VFJデータ未作成', [
+                'exam_id' => $exam_id,
+                'testparts_id' => $testparts_id,
+                'ip' => $request->ip(),
+            ]);
+
+            return response(null, 404);
+        }
+
+        // 結果データがある場合
         if ($last->endtime) {
             $ans_data = config('const.PFS3.PFS3');
-            $last->result = $ans_data[$last->soyo];
+            $last->result = $ans_data[$last->soyo] ?? null;
         }
+
         return response($last, 200);
     }
     public function setVFJ(Request $request)
@@ -221,76 +247,114 @@ class ExamVFJController extends Controller
             return response("error", 400);
         }
     }
+
     public function editVFJ(Request $request)
     {
-
-        /** @var \App\Models\User $user */
+        /** @var \App\Models\Exam $user */
         $user = auth()->user();
-        $token = $user->currentAccessToken();
-        $exam_id = $token->tokenable->id;
 
+        // 認証済み受検者ID
+        $exam_id = $user->id;
         $testparts_id = $request->testparts_id;
-        Log::info('VFJ検査回答登録');
-        Log::info('ページ数:'.$request->page);
-        Log::info('受検者id:'.$exam_id);
-        Log::info('testparts_id:'.$testparts_id);
-        // 最後の1件を取得
-        $last = Examvfj::select("id")->latest("id")->where("testparts_id", $testparts_id)->where("exam_id", $exam_id)->first();
-        $exam = Examvfj::find($last[ 'id' ]);
 
-        if ($request->page == 2) {
-            $exam->starttime = date("Y-m-d H:i:s");
-        }
+        Log::info('VFJ検査回答登録開始', [
+            'exam_id' => $exam_id,
+            'testparts_id' => $testparts_id,
+            'page' => $request->page,
+            'ip' => $request->ip(),
+        ]);
 
-        $selectPoint = $request->selectPoint;
-        foreach ($selectPoint as $key => $value) {
-            $q = "q".$key;
-            $exam[$q] = $value;
-        }
-        $exam->save();
+        try {
+            DB::transaction(function () use ($request, $exam_id, $testparts_id) {
+                // 最新の受検データを取得
+                $exam = Examvfj::where('testparts_id', $testparts_id)
+                    ->where('exam_id', $exam_id)
+                    ->latest('id')
+                    ->firstOrFail();
 
-        // 最後のページ
-        if ($request->page == 8) {
-            try {
-                // 重み計算
-                $weight = $this->getResultVFJWeight($testparts_id);
-                //重みの算定・平均・標準偏差の取得
-                $avg = $this->getAVG($weight);
-
-                $updateData = [];
-
-                // w1〜w12
-                foreach ($weight as $i => $val) {
-                    $updateData['w'.$i] = $val;
-                }
-                // dev1〜dev12（ここが重要）
-                foreach ($weight as $key => $val) {
-                    $updateData["dev".$key] = isset($avg['top6'][$key]) ? $val : 0;
+                // 2ページ目で開始時刻を更新
+                if ((int) $request->page === 2) {
+                    $exam->starttime = now();
                 }
 
-                // avg / std
-                $updateData['avg'] = $avg['avg'];
-                $updateData['std'] = $avg['std'];
-                $updateData['endtime'] = date("Y-m-d H:i:s");
-                // 更新
-                $exam->update($updateData);
+                // 回答を登録
+                foreach ($request->selectPoint as $key => $value) {
+                    $exam['q' . $key] = $value;
+                }
 
-                examfins::complete($exam_id, $testparts_id);
+                $exam->save();
 
-                // 最終登録データ確認
-                exam::setEndTime();
-                // メール配信受検者残数
-                exam::sendRemainMail($request);
+                // 最終ページなら採点・完了処理
+                if ((int) $request->page === 8) {
+                    // 重み計算
+                    $weight = $this->getResultVFJWeight($testparts_id);
 
-            } catch (\Exception $e) {
-                return response()->json([
-                    'message' => $e->getMessage()
-                ], 409); // Conflict
-            }
+                    // 平均・標準偏差を取得
+                    $avg = $this->getAVG($weight);
 
+                    $updateData = [];
+
+                    // w1〜w12 を保存
+                    foreach ($weight as $i => $val) {
+                        $updateData['w' . $i] = $val;
+                    }
+
+                    // dev1〜dev12 を保存
+                    foreach ($weight as $key => $val) {
+                        $updateData['dev' . $key] = isset($avg['top6'][$key]) ? $val : 0;
+                    }
+
+                    $updateData['avg'] = $avg['avg'];
+                    $updateData['std'] = $avg['std'];
+                    $updateData['endtime'] = now();
+
+                    $exam->update($updateData);
+
+                    Log::info('VFJ採点結果保存成功', [
+                        'exam_id' => $exam_id,
+                        'testparts_id' => $testparts_id,
+                        'examvfj_id' => $exam->id,
+                    ]);
+
+                    examfins::complete($exam_id, $testparts_id);
+
+                    Log::info('VFJ検査完了登録成功', [
+                        'exam_id' => $exam_id,
+                        'testparts_id' => $testparts_id,
+                        'examvfj_id' => $exam->id,
+                    ]);
+
+                    exam::setEndTime();
+
+                    Log::info('受検者終了時刻更新成功', [
+                        'exam_id' => $exam_id,
+                    ]);
+
+                    exam::sendRemainMail($request);
+
+                    Log::info('残数メール処理成功', [
+                        'exam_id' => $exam_id,
+                        'testparts_id' => $testparts_id,
+                    ]);
+                }
+            });
+
+            return response('success', 200);
+
+        } catch (\Throwable $e) {
+            Log::error('VFJ検査回答登録失敗', [
+                'exam_id' => $exam_id,
+                'testparts_id' => $testparts_id,
+                'page' => $request->page,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'ip' => $request->ip(),
+            ]);
+
+            return response('error', 500);
         }
-        return response("success", 200);
     }
+
     public function downloadExam()
     {
         $loginUser = auth()->user();
@@ -306,8 +370,6 @@ class ExamVFJController extends Controller
         $params[ 'code' ] = $code;
         $params[ 'decript' ] = $decript;
         return response($params, 200);
-        exit();
-
     }
     public function getResultVFJWeight($testparts_id)
     {

@@ -14,6 +14,7 @@ use App\Models\testparts;
 class ExamBaj3Controller extends Controller
 {
     //
+
     public function getBAJ3(Request $request)
     {
         $request->validate([
@@ -23,15 +24,30 @@ class ExamBaj3Controller extends Controller
         $examId = auth()->id();
         $testpartsId = $request->input('testparts_id');
 
+        // 取得API到達ログ
+        Log::info('BAJ3取得API到達', [
+            'exam_id' => $examId,
+            'testparts_id' => $testpartsId,
+            'ip' => $request->ip(),
+        ]);
+
         $last = ExamBaj3::where('exam_id', $examId)
             ->where('testparts_id', $testpartsId)
             ->latest('id')
             ->first();
 
+        // データ未作成
         if (!$last) {
+            Log::warning('BAJ3データ未作成', [
+                'exam_id' => $examId,
+                'testparts_id' => $testpartsId,
+                'ip' => $request->ip(),
+            ]);
+
             return response()->json(null, 404);
         }
 
+        // 結果データがある場合
         if ($last->endtime) {
             $ansData = config('const.PFS3.PFS3');
             $last->result = $ansData[$last->soyo] ?? null;
@@ -39,88 +55,134 @@ class ExamBaj3Controller extends Controller
 
         return response()->json($last);
     }
+
     public function setBAJ3(Request $request)
     {
+        $examId = auth()->id();
+        $testpartsId = $request->testparts_id;
+
+        Log::info('BAJ3開始API到達', [
+            'exam_id' => $examId,
+            'testparts_id' => $testpartsId,
+            'ip' => $request->ip(),
+        ]);
+
         try {
-            DB::transaction(function () use ($request) {
-
-                $exam_id = auth()->id();
-
-                ExamBaj3::where('exam_id', $exam_id)
+            DB::transaction(function () use ($examId, $testpartsId) {
+                // 既存の有効データを無効化
+                ExamBaj3::where('exam_id', $examId)
                     ->where('status', 1)
                     ->update(['status' => 0]);
 
+                // 新しい受検データを作成
                 ExamBaj3::create([
-                    'testparts_id' => $request->testparts_id,
-                    'exam_id'      => $exam_id,
+                    'testparts_id' => $testpartsId,
+                    'exam_id'      => $examId,
                     'starttime'    => now(),
                     'status'       => 1,
                 ]);
             });
 
-           return response('success', 200);
+            Log::info('BAJ3開始成功', [
+                'exam_id' => $examId,
+                'testparts_id' => $testpartsId,
+            ]);
+
+            return response('success', 200);
 
         } catch (\Throwable $e) {
-            return response('error', 400);
-        }
+            Log::error('BAJ3開始失敗', [
+                'exam_id' => $examId,
+                'testparts_id' => $testpartsId,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'ip' => $request->ip(),
+            ]);
 
+            return response('error', 500);
+        }
     }
 
     public function editBAJ3(Request $request)
     {
-        $exam_id = auth()->user()->id;
+        $exam_id = auth()->id();
         $testparts_id = $request->testparts_id;
-        Log::info('Baj3検査回答登録');
-        Log::info('ページ数:'.$request->page);
-        Log::info('受検者id:'.$exam_id);
-        Log::info('testparts_id:'.$testparts_id);
-        // 最後の1件を取得
-        // $last = ExamBaj3::select("id")->latest("id")->where("testparts_id", $testparts_id)->where("exam_id", $exam_id)->first();
-        // $exam = ExamBaj3::find($last[ 'id' ]);
 
-        $exam = ExamBaj3::where("testparts_id", $testparts_id)
-        ->where("exam_id", $exam_id)
-        ->latest("id")
-        ->firstOrFail();
+        Log::info('BAJ3検査回答登録開始', [
+            'exam_id' => $exam_id,
+            'testparts_id' => $testparts_id,
+            'page' => $request->page,
+            'ip' => $request->ip(),
+        ]);
 
-        if ($request->page == 2) {
-            $exam->starttime = date("Y-m-d H:i:s");
+        try {
+            DB::transaction(function () use ($request, $exam_id, $testparts_id) {
+                // 最新の受検データを取得
+                $exam = ExamBaj3::where('testparts_id', $testparts_id)
+                    ->where('exam_id', $exam_id)
+                    ->latest('id')
+                    ->firstOrFail();
+
+                // 2ページ目で開始時刻を更新
+                if ((int) $request->page === 2) {
+                    $exam->starttime = now();
+                }
+
+                // 回答を登録
+                foreach ($request->selectPoint as $key => $value) {
+                    $exam['q' . $key] = $value;
+                }
+
+                $exam->save();
+
+                // 最終ページなら採点・完了処理
+                if ((int) $request->page === 5) {
+                    // BAJ3結果を計算・保存
+                    $this->resultBaj3($testparts_id);
+
+                    Log::info('BAJ3採点結果保存成功', [
+                        'exam_id' => $exam_id,
+                        'testparts_id' => $testparts_id,
+                        'exambaj3_id' => $exam->id,
+                    ]);
+
+                    examfins::complete($exam_id, $testparts_id);
+
+                    Log::info('BAJ3検査完了登録成功', [
+                        'exam_id' => $exam_id,
+                        'testparts_id' => $testparts_id,
+                        'exambaj3_id' => $exam->id,
+                    ]);
+
+                    exam::setEndTime();
+
+                    Log::info('受検者終了時刻更新成功', [
+                        'exam_id' => $exam_id,
+                    ]);
+
+                    exam::sendRemainMail($request);
+
+                    Log::info('残数メール処理成功', [
+                        'exam_id' => $exam_id,
+                        'testparts_id' => $testparts_id,
+                    ]);
+                }
+            });
+
+            return response('success', 200);
+
+        } catch (\Throwable $e) {
+            Log::error('BAJ3検査回答登録失敗', [
+                'exam_id' => $exam_id,
+                'testparts_id' => $testparts_id,
+                'page' => $request->page,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'ip' => $request->ip(),
+            ]);
+
+            return response('error', 500);
         }
-
-        $selectPoint = $request->selectPoint;
-        foreach ($selectPoint as $key => $value) {
-            $q = "q".$key;
-            $exam[$q] = $value;
-        }
-        $exam->save();
-
-        // 最後のページ
-        if ($request->page == 5) {
-
-            // 計算
-            $this->resultBaj3($testparts_id);
-            // $params = [];
-            // $params[ 'exam_id' ] = $exam_id;
-            // $params[ 'testparts_id' ] = $testparts_id;
-            // $params[ 'status' ] = 1;
-            // $params[ 'created_at' ] = date("Y-m-d H:i:s");
-            // $params[ 'updated_at' ] = date("Y-m-d H:i:s");
-            //examfins::insert($params);
-            try {
-                examfins::complete($exam_id, $testparts_id);
-
-                // 最終登録データ確認
-                exam::setEndTime();
-                // メール配信受検者残数
-                exam::sendRemainMail($request);
-
-            } catch (\Exception $e) {
-                return response()->json([
-                    'message' => $e->getMessage()
-                ], 409); // Conflict
-            }
-        }
-        return response("success", 200);
     }
 
     public function resultBaj3($testparts_id)

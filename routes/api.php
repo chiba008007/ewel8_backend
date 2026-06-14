@@ -34,6 +34,7 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ExamBaj3Controller;
 use App\Http\Controllers\ExamVFJController;
 use App\Http\Controllers\ExamBEAController;
+use App\Http\Controllers\ExamEAIaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -86,6 +87,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("exam/getBEA", [ExamBEAController::class, 'getBEA']);
     Route::post("exam/setBEA", [ExamBEAController::class, 'setBEA']);
     Route::post("exam/editBEA", [ExamBEAController::class, 'editBEA']);
+
+    Route::post("exam/getBEA", [ExamEAIaController::class, 'getEAIa']);
+    Route::post("exam/setBEA", [ExamEAIaController::class, 'setEAIa']);
+    Route::post("exam/editBEA", [ExamEAIaController::class, 'editEAIa']);
 
     Route::post("csvupload/csvUploadFile", [csvUploadController::class, 'csvUploadFile']);
     Route::post("csvupload/updateCsvExam", [csvUploadController::class, 'updateCsvExam']);

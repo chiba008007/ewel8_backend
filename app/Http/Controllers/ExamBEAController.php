@@ -158,32 +158,6 @@ class ExamBEAController extends Controller
             return response([], 400);
         }
     }
-    /*
-    public function getTestDataExam(Request $request)
-    {
-        $loginUser = auth()->user()->currentAccessToken();
-        $examid = $loginUser->tokenable->id;
-        $customer_id = $loginUser->tokenable->customer_id;
-        $partner_id = $loginUser->tokenable->partner_id;
-        $params = $request->params;
-        $result = [];
-        try {
-            $result = Test::select(
-                "tests.*"
-            )
-            ->where([
-                "params" => $params,
-                "customer_id" => $customer_id,
-                "partner_id" => $partner_id,
-            ])
-            ->first();
-        } catch (Exception $e) {
-            return response([], 201);
-        }
-
-        return response($result, 200);
-    }
-*/
 
     public function getBEA(Request $request)
     {

@@ -696,6 +696,7 @@ class TestController extends UserController
             $codeBAJ3 = preg_replace("/\-/", "", $lisence[1]['list'][3]['code']);
             $vfj = preg_replace("/\-/", "", $lisence[4]['list'][1]['code']);
             $bea = strtoupper($lisence[25]['list'][1]['code']);
+            $eaia = preg_replace("/\-/", "", $lisence[2]['list'][6]['code']);
             // Log::info('BEA:' . json_encode($parts, JSON_PRETTY_PRINT));
 
             foreach ($parts as $key => $value) {
@@ -765,6 +766,28 @@ class TestController extends UserController
                 $params[ 'code'       ] = $bea;
                 $params[ 'status'     ] = $value[$bea]['status'] ? 1 : 0;
                 $params[ 'timelimit'  ] = (int)$value[$bea]['timelimit'] ;
+                $params[ 'created_at' ] = date("Y-m-d H:i:s");
+
+                if (!testparts::insert($params)) {
+                    throw new Exception();
+                }
+            }
+
+            // // EAIaのコードと受信データのキーを確認する
+            // Log::info('EAIa check', [
+            //     'eaia_code' => $eaia,
+            //     'parts_keys' => array_keys($value),
+            //     'exists' => isset($value[$eaia]),
+            //     'status' => $value[$eaia]['status'] ?? null,
+            // ]);
+            if (
+                (isset($value[$eaia]) && $value[$eaia] && $value[$eaia][ 'status' ]) //eaiaの登録
+            ) {
+                $params = [];
+                $params[ 'test_id'    ] = $id;
+                $params[ 'code'       ] = $eaia;
+                $params[ 'status'     ] = $value[$eaia]['status'] ? 1 : 0;
+                $params[ 'timelimit'  ] = (int)$value[$eaia]['timelimit'] ;
                 $params[ 'created_at' ] = date("Y-m-d H:i:s");
 
                 if (!testparts::insert($params)) {
@@ -907,6 +930,7 @@ class TestController extends UserController
             $codeBAJ3 = preg_replace("/\-/", "", $lisence[1]['list'][3]['code']);
             $vfj = preg_replace("/\-/", "", $lisence[4]['list'][1]['code']);
             $bea = strtoupper($lisence[25]['list'][1]['code']);
+            $eaia = preg_replace("/\-/", "", $lisence[2]['list'][6]['code']);
 
             foreach ($parts as $key => $value) {
                 $params = [];
@@ -976,6 +1000,22 @@ class TestController extends UserController
 
                 }
 
+                if (
+                    (
+                        isset($value[$eaia]) &&
+                        $value[$eaia] &&
+                        $value[$eaia][ 'status' ]
+                    ) //eaiaの登録
+                ) {
+
+                    $tp = testparts::where([
+                        'test_id' => $edit_id,
+                        'code' => $eaia,
+                        'status' => 1
+                    ])->first();
+                    $tp->timelimit = (int)$value[$eaia]['timelimit'];
+                    $tp->save();
+                }
             }
 
             DB::commit();

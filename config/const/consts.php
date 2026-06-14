@@ -1,7 +1,7 @@
 <?php
 
 return[
-    'PDF_PREFIX'=>'batchdownload_',
+    'PDF_PREFIX' => 'batchdownload_',
     'TAX' => 10,
     'BUSSINESS_NUMBER' => 'T4370001019528',
     'PAWAHARA' => [
@@ -112,16 +112,16 @@ return[
                     "text" => "感情能力検査"
                 ],
                 4 => [
-                    "code" => "感情能力検査Ib",
-                    "text" => "EA-Ib"
+                    "code" => "EA-Ib",
+                    "text" => "感情能力検査Ib"
                 ],
                 5 => [
                     "code" => "EA-BJ2",
                     "text" => "感情能力検査"
                 ],
                 6 => [
-                    "code" => "感情能力検査Ia",
-                    "text" => "EA-Ia"
+                    "code" => "EA-Ia",
+                    "text" => "感情能力検査Ia"
                 ]
             ]
         ],

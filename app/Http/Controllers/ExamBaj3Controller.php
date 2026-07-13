@@ -20,7 +20,7 @@ class ExamBaj3Controller extends Controller
         $request->validate([
             'testparts_id' => ['required', 'integer'],
             // URLで指定されたページ番号を検証する
-            'page' => ['required', 'integer', 'between:1,4'],
+            'page' => ['nullable', 'integer', 'between:1,4'],
         ]);
 
         $examId = auth()->id();
@@ -61,15 +61,16 @@ class ExamBaj3Controller extends Controller
         if ($last->q30 !== null) {
             $allowedPage = 4;
         }
+        if ($request->filled('page')) {
+            // 未到達ページへのアクセスを拒否する
+            $requestPage = (int) $request->input('page');
 
-        // 未到達ページへのアクセスを拒否する
-        $requestPage = (int) $request->input('page');
-
-        if ($requestPage > $allowedPage) {
-            return response()->json([
-                'message' => '未到達のページです。',
-                'allowed_page' => $allowedPage,
-            ], 403);
+            if ($requestPage > $allowedPage) {
+                return response()->json([
+                    'message' => '未到達のページです。',
+                    'allowed_page' => $allowedPage,
+                ], 403);
+            }
         }
 
         // 結果データがある場合

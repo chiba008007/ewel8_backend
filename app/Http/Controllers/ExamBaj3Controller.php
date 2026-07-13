@@ -19,6 +19,8 @@ class ExamBaj3Controller extends Controller
     {
         $request->validate([
             'testparts_id' => ['required', 'integer'],
+            // URLで指定されたページ番号を検証する
+            'page' => ['required', 'integer', 'between:1,4'],
         ]);
 
         $examId = auth()->id();
@@ -45,6 +47,29 @@ class ExamBaj3Controller extends Controller
             ]);
 
             return response()->json(null, 404);
+        }
+
+        // 回答済み範囲からアクセス可能な最大ページを算出する
+        $allowedPage = 1;
+
+        if ($last->q10 !== null) {
+            $allowedPage = 2;
+        }
+        if ($last->q20 !== null) {
+            $allowedPage = 3;
+        }
+        if ($last->q30 !== null) {
+            $allowedPage = 4;
+        }
+
+        // 未到達ページへのアクセスを拒否する
+        $requestPage = (int) $request->input('page');
+
+        if ($requestPage > $allowedPage) {
+            return response()->json([
+                'message' => '未到達のページです。',
+                'allowed_page' => $allowedPage,
+            ], 403);
         }
 
         // 結果データがある場合

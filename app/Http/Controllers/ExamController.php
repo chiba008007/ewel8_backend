@@ -77,35 +77,52 @@ class ExamController extends Controller
 
     }
 
+    // ログイン画面用：paramsだけ確認する
     public function getExam(Request $request)
     {
-        // 受信値を検証する
         $validated = $request->validate([
             'params' => ['required', 'string'],
-            'testparts_id' => ['required', 'integer'],
+            'testparts_id' => ['sometimes', 'required', 'integer'],
         ]);
 
-        $result = Test::select([
-                'users.company_name',
-                'tests.*',
-            ])
-            // URLのtestparts_idが対象検査に属するか確認する
-            ->join('testparts', 'testparts.test_id', '=', 'tests.id')
+        $result = Test::select(['users.company_name', 'tests.*'])
             ->leftJoin('users', 'users.id', '=', 'tests.user_id')
             ->where('tests.params', $validated['params'])
-            ->where('testparts.id', $validated['testparts_id'])
-            ->where('testparts.status', 1)
             ->where('tests.status', 1)
             ->where('tests.startdaytime', '<=', now())
             ->where('tests.enddaytime', '>=', now())
             ->first();
 
+        // 検査が存在しない場合
         if (!$result) {
-            // URLを書き換えた場合は404にする
+            return response()->json([], 404);
+        }
+
+        // testparts_idがある場合だけ所属を確認する
+        if (
+            isset($validated['testparts_id'])
+            && !$this->validateTestpart(
+                (int) $result->id,
+                (int) $validated['testparts_id']
+            )
+        ) {
             return response()->json([], 404);
         }
 
         return response()->json($result);
+    }
+
+    /**
+     * testparts_idが対象検査に属するか確認する
+     */
+    private function validateTestpart(
+        int $testId,
+        int $testpartsId
+    ): bool {
+        return testparts::where('id', $testpartsId)
+            ->where('test_id', $testId)
+            ->where('status', 1)
+            ->exists();
     }
 
     public function getExamList()

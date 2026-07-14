@@ -13,6 +13,13 @@ class exampfs extends Model
     use HasFactory;
     protected $table = 'exampfses';
 
+    // create()で登録を許可する項目
+    protected $fillable = [
+        'testparts_id',
+        'exam_id',
+        'status',
+    ];
+
     public function testpart()
     {
         return $this->belongsTo(testparts::class, 'testparts_id', 'id');

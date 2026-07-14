@@ -76,26 +76,38 @@ class ExamController extends Controller
 
 
     }
+
     public function getExam(Request $request)
     {
-        $now = date("Y-m-d H:i:s");
-        try {
-            $rlt = Test::select(["users.company_name","tests.*"])
-            ->where("params", $request->params)
-            ->where("status", 1)
-            ->where("startdaytime", "<=", $now)
-            ->where("enddaytime", ">=", $now)
-            ->leftjoin("users", "users.id", "=", "tests.user_id")
+        // 受信値を検証する
+        $validated = $request->validate([
+            'params' => ['required', 'string'],
+            'testparts_id' => ['required', 'integer'],
+        ]);
+
+        $result = Test::select([
+                'users.company_name',
+                'tests.*',
+            ])
+            // URLのtestparts_idが対象検査に属するか確認する
+            ->join('testparts', 'testparts.test_id', '=', 'tests.id')
+            ->leftJoin('users', 'users.id', '=', 'tests.user_id')
+            ->where('tests.params', $validated['params'])
+            ->where('testparts.id', $validated['testparts_id'])
+            ->where('testparts.status', 1)
+            ->where('tests.status', 1)
+            ->where('tests.startdaytime', '<=', now())
+            ->where('tests.enddaytime', '>=', now())
             ->first();
-            if ($rlt) {
-                return response($rlt, 200);
-            } else {
-                return response([], 201);
-            }
-        } catch (Exception $e) {
-            return response([], 201);
+
+        if (!$result) {
+            // URLを書き換えた場合は404にする
+            return response()->json([], 404);
         }
+
+        return response()->json($result);
     }
+
     public function getExamList()
     {
 
@@ -273,20 +285,103 @@ class ExamController extends Controller
         return response($result, 200);
     }
 
+    /**
+     * 回答済みの範囲を確認する
+     */
+    private function hasPfsAnswers(exampfs $exam, int $start, int $end): bool
+    {
+        for ($i = $start; $i <= $end; $i++) {
+            // 0を回答値として扱えるよう、nullだけを未回答とする
+            if ($exam->getAttribute('q'.$i) === null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 現在表示可能な最大ページを取得する
+     */
+    private function getAllowedPfsPage(exampfs $exam): int
+    {
+        if (!$this->hasPfsAnswers($exam, 1, 10)) {
+            return 1;
+        }
+
+        if (!$this->hasPfsAnswers($exam, 11, 20)) {
+            return 2;
+        }
+
+        if (!$this->hasPfsAnswers($exam, 21, 30)) {
+            return 3;
+        }
+
+        return 4;
+    }
+
     public function getPFS(Request $request)
     {
+        $validated = $request->validate([
+            'params' => ['required', 'string'],
+            'testparts_id' => ['required', 'integer'],
+            'page' => ['required', 'integer', 'between:1,4'],
+        ]);
 
-        $loginUser = auth()->user()->currentAccessToken();
-        $exam_id = $loginUser->tokenable->id;
-        $testparts_id = $request->testparts_id;
-        // 最後の1件を取得
-        $last = exampfs::select("*")->latest("id")->where("testparts_id", $testparts_id)->where("exam_id", $exam_id)->first();
-        // 結果データがあるときは結果をまとめて取得
-        if ($last->endtime) {
-            $ans_data = config('const.PFS3.PFS3');
-            $last->result = $ans_data[$last->soyo];
+        /** @var \App\Models\Exam $user */
+        $user = auth()->user();
+
+        // URLの検査IDとparamsの組み合わせを確認する
+        $validTestpart = Test::join(
+            'testparts',
+            'testparts.test_id',
+            '=',
+            'tests.id'
+        )
+            ->where('tests.params', $validated['params'])
+            ->where('tests.status', 1)
+            ->where('testparts.id', $validated['testparts_id'])
+            ->where('testparts.status', 1)
+            ->exists();
+
+        if (!$validTestpart) {
+            return response()->json([
+                'message' => '対象の検査が存在しません。',
+            ], 404);
         }
-        return response($last, 200);
+
+        $last = exampfs::where('testparts_id', $validated['testparts_id'])
+            ->where('exam_id', $user->id)
+            ->latest('id')
+            ->first();
+
+        // 検査開始前にtake画面へ直接アクセスした場合
+        if (!$last) {
+            return response()->json([
+                'message' => '検査が開始されていません。',
+            ], 404);
+        }
+
+        $allowedPage = $this->getAllowedPfsPage($last);
+
+        // 未回答ページを飛ばした場合
+        if ($validated['page'] > $allowedPage) {
+            return response()->json([
+                'message' => '前のページの回答が完了していません。',
+                'allowed_page' => $allowedPage,
+            ], 409);
+        }
+
+        if ($last->endtime && $last->soyo !== null) {
+            $answerData = config('const.PFS3.PFS3');
+
+            // 結果番号が存在する場合だけ設定する
+            $last->result = $answerData[$last->soyo] ?? null;
+        }
+
+        $last->allowed_page = $allowedPage;
+
+        return response()->json($last);
     }
 
     public function setPFS(Request $request)

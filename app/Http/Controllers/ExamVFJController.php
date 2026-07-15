@@ -182,44 +182,48 @@ class ExamVFJController extends Controller
 
     public function getVFJ(Request $request)
     {
-        /** @var \App\Models\Exam $user */
-        $user = auth()->user();
-
-        // 認証済みの受検者ID
-        $exam_id = $user->id;
-        $testparts_id = $request->testparts_id;
-
-        Log::info('VFJ取得API到達', [
-            'exam_id' => $exam_id,
-            'testparts_id' => $testparts_id,
-            'ip' => $request->ip(),
+        $validated = $request->validate([
+            'testparts_id' => ['required', 'integer'],
+            // 表示しようとしているページ
+            'page' => ['required', 'integer', 'between:1,7'],
         ]);
 
-        // 最新のVFJデータを取得
-        $last = Examvfj::where('testparts_id', $testparts_id)
-            ->where('exam_id', $exam_id)
+        $exam = Examvfj::where('testparts_id', $validated['testparts_id'])
+            ->where('exam_id', auth()->id())
             ->latest('id')
-            ->first();
+            ->firstOrFail();
 
-        // 開始データが無い場合
-        if (!$last) {
-            Log::warning('VFJデータ未作成', [
-                'exam_id' => $exam_id,
-                'testparts_id' => $testparts_id,
-                'ip' => $request->ip(),
-            ]);
+        // 最初の未回答ページを取得する
+        $allowedPage = $this->getAllowedPage($exam);
 
-            return response(null, 404);
+        // 未回答ページより先への直接アクセスを拒否する
+        if ($validated['page'] > $allowedPage) {
+            return response()->json([
+                'allowed_page' => $allowedPage,
+            ], 403);
         }
 
-        // 結果データがある場合
-        if ($last->endtime) {
-            $ans_data = config('const.PFS3.PFS3');
-            $last->result = $ans_data[$last->soyo] ?? null;
-        }
-
-        return response($last, 200);
+        return response($exam, 200);
     }
+
+    private function getAllowedPage(Examvfj $exam): int
+    {
+        for ($page = 1; $page <= 7; $page++) {
+            // 1～6ページは10問、7ページは6問
+            $start = ($page - 1) * 10 + 1;
+            $end = $page === 7 ? 66 : $page * 10;
+
+            for ($i = $start; $i <= $end; $i++) {
+                // 未回答があるページまでアクセス可能
+                if ($exam->{'q' . $i} === null) {
+                    return $page;
+                }
+            }
+        }
+
+        return 7;
+    }
+
     public function setVFJ(Request $request)
     {
         $loginUser = auth()->user();
@@ -250,42 +254,77 @@ class ExamVFJController extends Controller
 
     public function editVFJ(Request $request)
     {
+        $validated = $request->validate([
+            'testparts_id' => ['required', 'integer'],
+            // 次ページ番号。最終ページ完了時は8
+            'page' => ['required', 'integer', 'between:2,8'],
+            'selectPoint' => ['required', 'array'],
+            'selectPoint.*' => ['required', 'integer', 'between:1,4'],
+        ]);
+
         /** @var \App\Models\Exam $user */
         $user = auth()->user();
 
-        // 認証済み受検者ID
         $exam_id = $user->id;
-        $testparts_id = $request->testparts_id;
-
-        Log::info('VFJ検査回答登録開始', [
-            'exam_id' => $exam_id,
-            'testparts_id' => $testparts_id,
-            'page' => $request->page,
-            'ip' => $request->ip(),
-        ]);
+        $testparts_id = $validated['testparts_id'];
+        $nextPage = $validated['page'];
+        $currentPage = $nextPage - 1;
+        $selectPoint = $validated['selectPoint'];
 
         try {
-            DB::transaction(function () use ($request, $exam_id, $testparts_id) {
-                // 最新の受検データを取得
+            $result = DB::transaction(function () use (
+                $request,
+                $exam_id,
+                $testparts_id,
+                $currentPage,
+                $nextPage,
+                $selectPoint
+            ) {
+                // 同時更新を防止して最新データを取得する
                 $exam = Examvfj::where('testparts_id', $testparts_id)
                     ->where('exam_id', $exam_id)
-                    ->latest('id')
+                    ->orderByDesc('id')
+                    ->lockForUpdate()
                     ->firstOrFail();
 
-                // 2ページ目で開始時刻を更新
-                if ((int) $request->page === 2) {
-                    $exam->starttime = now();
+                // 完了済みデータは更新させない
+                if ($exam->endtime) {
+                    return ['status' => 'finished'];
                 }
 
-                // 回答を登録
-                foreach ($request->selectPoint as $key => $value) {
-                    $exam['q' . $key] = $value;
+                // 現在アクセス可能なページを取得する
+                $allowedPage = $this->getAllowedPage($exam);
+
+                // ページを飛ばした登録を拒否する
+                if ($currentPage > $allowedPage) {
+                    return [
+                        'status' => 'forbidden',
+                        'allowed_page' => $allowedPage,
+                    ];
+                }
+
+                // 現在ページの設問範囲を取得する
+                $start = ($currentPage - 1) * 10 + 1;
+                $end = $currentPage === 7 ? 66 : $currentPage * 10;
+
+                // 現在ページの回答だけを登録する
+                for ($i = $start; $i <= $end; $i++) {
+                    if (!array_key_exists($i, $selectPoint)) {
+                        return ['status' => 'incomplete'];
+                    }
+
+                    $exam->{'q' . $i} = $selectPoint[$i];
+                }
+
+                // 1ページ目完了時に開始時刻を更新する
+                if ($nextPage === 2) {
+                    $exam->starttime = now();
                 }
 
                 $exam->save();
 
-                // 最終ページなら採点・完了処理
-                if ((int) $request->page === 8) {
+                // 最終ページなら既存の採点・完了処理を実行する
+                if ($nextPage === 8) {
                     // 重み計算
                     $weight = $this->getResultVFJWeight($testparts_id);
 
@@ -294,14 +333,15 @@ class ExamVFJController extends Controller
 
                     $updateData = [];
 
-                    // w1〜w12 を保存
+                    // w1〜w12を保存
                     foreach ($weight as $i => $val) {
                         $updateData['w' . $i] = $val;
                     }
 
-                    // dev1〜dev12 を保存
+                    // dev1〜dev12を保存
                     foreach ($weight as $key => $val) {
-                        $updateData['dev' . $key] = isset($avg['top6'][$key]) ? $val : 0;
+                        $updateData['dev' . $key] =
+                            isset($avg['top6'][$key]) ? $val : 0;
                     }
 
                     $updateData['avg'] = $avg['avg'];
@@ -310,42 +350,37 @@ class ExamVFJController extends Controller
 
                     $exam->update($updateData);
 
-                    Log::info('VFJ採点結果保存成功', [
-                        'exam_id' => $exam_id,
-                        'testparts_id' => $testparts_id,
-                        'examvfj_id' => $exam->id,
-                    ]);
-
+                    // 検査完了を登録する
                     examfins::complete($exam_id, $testparts_id);
 
-                    Log::info('VFJ検査完了登録成功', [
-                        'exam_id' => $exam_id,
-                        'testparts_id' => $testparts_id,
-                        'examvfj_id' => $exam->id,
-                    ]);
-
+                    // 受検者終了時刻を更新する
                     exam::setEndTime();
 
-                    Log::info('受検者終了時刻更新成功', [
-                        'exam_id' => $exam_id,
-                    ]);
-
+                    // 残数メールを処理する
                     exam::sendRemainMail($request);
-
-                    Log::info('残数メール処理成功', [
-                        'exam_id' => $exam_id,
-                        'testparts_id' => $testparts_id,
-                    ]);
                 }
+
+                return ['status' => 'success'];
             });
 
-            return response('success', 200);
+            if ($result['status'] === 'forbidden') {
+                return response()->json($result, 403);
+            }
 
+            if ($result['status'] === 'incomplete') {
+                return response()->json($result, 422);
+            }
+
+            if ($result['status'] === 'finished') {
+                return response()->json($result, 409);
+            }
+
+            return response('success', 200);
         } catch (\Throwable $e) {
             Log::error('VFJ検査回答登録失敗', [
                 'exam_id' => $exam_id,
                 'testparts_id' => $testparts_id,
-                'page' => $request->page,
+                'page' => $nextPage,
                 'message' => $e->getMessage(),
                 'line' => $e->getLine(),
                 'ip' => $request->ip(),

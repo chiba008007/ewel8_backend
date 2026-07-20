@@ -35,6 +35,7 @@ use App\Http\Controllers\ExamBaj3Controller;
 use App\Http\Controllers\ExamVFJController;
 use App\Http\Controllers\ExamBEAController;
 use App\Http\Controllers\ExamEAIaController;
+use App\Http\Controllers\ExamEAIBController;
 
 /*
 |--------------------------------------------------------------------------
@@ -88,9 +89,15 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("exam/setBEA", [ExamBEAController::class, 'setBEA']);
     Route::post("exam/editBEA", [ExamBEAController::class, 'editBEA']);
 
-    Route::post("exam/getBEA", [ExamEAIaController::class, 'getEAIa']);
-    Route::post("exam/setBEA", [ExamEAIaController::class, 'setEAIa']);
-    Route::post("exam/editBEA", [ExamEAIaController::class, 'editEAIa']);
+    // ↓多分間違い eaiaに直した方がいい
+    Route::post("exam/getEAIA", [ExamEAIaController::class, 'getEAIa']);
+    Route::post("exam/setEAIa", [ExamEAIaController::class, 'setEAIa']);
+    Route::post("exam/editEAIa", [ExamEAIaController::class, 'editEAIa']);
+
+    Route::post("exam/getEAIB", [ExamEAIBController::class, 'getEAIB']);
+    Route::post("exam/setEAIB", [ExamEAIBController::class, 'setEAIB']);
+    Route::post("exam/editEAIB", [ExamEAIBController::class, 'editEAIB']);
+
 
     Route::post("csvupload/csvUploadFile", [csvUploadController::class, 'csvUploadFile']);
     Route::post("csvupload/updateCsvExam", [csvUploadController::class, 'updateCsvExam']);

@@ -166,12 +166,26 @@ class ExamBEAController extends Controller
         $testparts_id = $request->testparts_id;
         // 最後の1件を取得
         $last = Exambea::select("*")->latest("id")->where("testparts_id", $testparts_id)->where("exam_id", $exam_id)->first();
-        // 結果データがあるときは結果をまとめて取得
-        // if ($last->endtime) {
-        //     $ans_data = config('const.PFS3.PFS3');
-        //     $last->result = $ans_data[$last->soyo];
-        // }
+
+        if (!$last) {
+            return response(null, 200);
+        }
+
+        // 未回答の設問から進行可能ページを判定
+        $currentPage = 11;
+
+        for ($i = 1; $i <= 106; $i++) {
+            if ($last->{'q' . $i} === null) {
+                $currentPage = (int) ceil($i / 10);
+                break;
+            }
+        }
+
+        // Vueへ返却する値を追加
+        $last->current_page = $currentPage;
+
         return response($last, 200);
+
     }
     public function setBEA(Request $request)
     {

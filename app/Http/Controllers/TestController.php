@@ -697,6 +697,7 @@ class TestController extends UserController
             $vfj = preg_replace("/\-/", "", $lisence[4]['list'][1]['code']);
             $bea = strtoupper($lisence[25]['list'][1]['code']);
             $eaia = preg_replace("/\-/", "", $lisence[2]['list'][6]['code']);
+            $eaib = preg_replace("/\-/", "", $lisence[2]['list'][4]['code']);
             // Log::info('BEA:' . json_encode($parts, JSON_PRETTY_PRINT));
 
             foreach ($parts as $key => $value) {
@@ -788,6 +789,20 @@ class TestController extends UserController
                 $params[ 'code'       ] = $eaia;
                 $params[ 'status'     ] = $value[$eaia]['status'] ? 1 : 0;
                 $params[ 'timelimit'  ] = (int)$value[$eaia]['timelimit'] ;
+                $params[ 'created_at' ] = date("Y-m-d H:i:s");
+
+                if (!testparts::insert($params)) {
+                    throw new Exception();
+                }
+            }
+            if (
+                (isset($value[$eaib]) && $value[$eaib] && $value[$eaib][ 'status' ]) //eaiaの登録
+            ) {
+                $params = [];
+                $params[ 'test_id'    ] = $id;
+                $params[ 'code'       ] = $eaib;
+                $params[ 'status'     ] = $value[$eaib]['status'] ? 1 : 0;
+                $params[ 'timelimit'  ] = (int)$value[$eaib]['timelimit'] ;
                 $params[ 'created_at' ] = date("Y-m-d H:i:s");
 
                 if (!testparts::insert($params)) {

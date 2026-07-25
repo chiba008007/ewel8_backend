@@ -75,13 +75,14 @@ class Exam extends Authenticatable
 
         return $buldInsertKey;
     }
-    public static function getExamSpredData($temp,$codes)
+    public static function getExamSpredData($temp, $codes)
     {
 
         // codesに対応した利用テーブルの指定
         $map = [
             'PFS'  => 'exampfses',
             'BAJ3' => 'exam_baj3s',
+            'EAIb' => 'exam_eaib',
         ];
 
         $user = auth()->user();
@@ -121,7 +122,7 @@ class Exam extends Authenticatable
                 ->orderByDesc('id')
                 ->get()
                 ->groupBy('exam_id')
-                ->map(fn($rows) => $rows->first());
+                ->map(fn ($rows) => $rows->first());
 
             foreach ($exams as $exam) {
                 $exam->{$code[ 'code' ]} = $latestData[$exam->id] ?? null;

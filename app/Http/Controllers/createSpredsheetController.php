@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
 use App\Http\Controllers\TestExecController;
 use App\Services\Export\PFSSpredSheetService;
 use App\Services\Export\BAJ3SpredSheetService;
+use App\Services\Export\EAIBSpredSheetService;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use App\Services\Export\UserExportService;
 use App\Http\Controllers\TestController;
@@ -25,15 +26,18 @@ class createSpredsheetController extends Controller
     private $userExportService;
     private $pfsSpredSheetService;
     private $baj3SpredSheetService;
+    private $eaibSpredSheetService;
 
     public function __construct(
         UserExportService $userExportService,
         PFSSpredSheetService $pfsSpredSheetService,
-        BAJ3SpredSheetService $baj3SpredSheetService
+        BAJ3SpredSheetService $baj3SpredSheetService,
+        EAIBSpredSheetService $eaibSpredSheetService
     ) {
         $this->userExportService = $userExportService;
         $this->pfsSpredSheetService = $pfsSpredSheetService;
         $this->baj3SpredSheetService = $baj3SpredSheetService;
+        $this->eaibSpredSheetService = $eaibSpredSheetService;
     }
     //
     public function create(Request $request)
@@ -107,9 +111,9 @@ class createSpredsheetController extends Controller
         $message = config('const.spreadsheet.BAJ_Text');
         // スプレッドシートのtitleを指定
         foreach ($codes as $code) {
-            //PFS
             if (
                 $code['code'] === 'PFS' ||
+                $code['code'] === 'EAIb' ||
                 $code['code'] === 'BAJ3'
             ) {
                 $lastColumnLetter = $sheet->getHighestColumn();
@@ -120,7 +124,17 @@ class createSpredsheetController extends Controller
                     $sheet->setCellValue('P1', $message);
                     $sheet->duplicateStyle(clone $sheet1->getStyle('P1:S1'), 'P1:S1');
                 }
-                $this->pfsSpredSheetService->createTitle($sheet, $sheet1, $columnIndex, $code);
+                if ($code['code'] === 'EAIb') {
+                    $this->eaibSpredSheetService->createTitle(
+                        $sheet,
+                        $sheet1,
+                        $columnIndex,
+                        $code
+                    );
+                } else {
+                    // PFS / BAJ3
+                    $this->pfsSpredSheetService->createTitle($sheet, $sheet1, $columnIndex, $code);
+                }
                 // PFS専用
                 if ($code['code'] === 'PFS') {
                     $this->pfsSpredSheetService->createTitlePlus($sheet, $sheet1, $columnIndex);
@@ -197,6 +211,21 @@ class createSpredsheetController extends Controller
                     $plus++;
                 }
                 $plus = $this->baj3SpredSheetService->createBody(
+                    $sheet,
+                    $sheet1,
+                    $codes,
+                    $value,
+                    $lastColIndex,
+                    $plus,
+                    $row
+                );
+                $has = true;
+            }
+            if (!empty($value->EAIb)) {
+                if ($has) {
+                    $plus++;
+                }
+                $plus = $this->eaibSpredSheetService->createBody(
                     $sheet,
                     $sheet1,
                     $codes,

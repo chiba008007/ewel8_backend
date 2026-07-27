@@ -168,14 +168,18 @@ class TestController extends UserController
                 'tests.enddaytime',
                 DB::raw('
                 COUNT(CASE WHEN exams.started_at IS NOT NULL THEN 1 END) as syori,
-                COUNT(CASE WHEN exams.ended_at IS NULL THEN 1 END) as zan
+                GREATEST(
+                    tests.testcount
+                    - COUNT(CASE WHEN exams.ended_at IS NOT NULL THEN 1 END),
+                    0
+                ) AS zan
             ')
             )
             ->groupBy('tests.id')
             ->orderBy('tests.startdaytime', 'desc')
             ->orderBy('tests.id', 'desc')
             ->get();
-
+            Log::info('getTestList result', $result->toArray());
             return response($result, 200);
 
         } catch (Exception $e) {

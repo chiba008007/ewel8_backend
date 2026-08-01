@@ -698,6 +698,7 @@ class TestController extends UserController
 
             $codePfs = $lisence[1]['list'][5]['code'];
             $codeBAJ3 = preg_replace("/\-/", "", $lisence[1]['list'][3]['code']);
+            $codeBAJ4 = preg_replace("/\-/", "", $lisence[1]['list'][4]['code']);
             $vfj = preg_replace("/\-/", "", $lisence[4]['list'][1]['code']);
             $bea = strtoupper($lisence[25]['list'][1]['code']);
             $eaia = preg_replace("/\-/", "", $lisence[2]['list'][6]['code']);
@@ -738,6 +739,24 @@ class TestController extends UserController
                     for ($i = 1;$i <= 14;$i++) {
                         $w = "weight".$i;
                         $params[$w] = (isset($value[$codeBAJ3][ 'weight' ][$i])) ? $value[$codeBAJ3][ 'weight' ][$i] : 0;
+                    }
+
+                    if (!testparts::insert($params)) {
+                        throw new Exception();
+                    }
+                }
+                if (
+                    (isset($value[$codeBAJ4]) &&  $value[$codeBAJ4] && $value[ $codeBAJ4 ][ 'status' ]) //BAJ4の登録
+                ) {
+                    $params[ 'test_id' ] = $id;
+                    $params[ 'code' ] = $codeBAJ4;
+                    $params[ 'status' ] = $value[ $codeBAJ4 ][ 'status' ] ? 1 : 0;
+                    $params[ 'threeflag' ] = $value[ $codeBAJ4 ][ 'threeflag' ] ? 1 : 0;
+                    $params[ 'weightFlag' ] = $value[ $codeBAJ4 ][ 'weightFlag' ] ? 1 : 0;
+                    $params[ 'created_at' ] = date("Y-m-d H:i:s");
+                    for ($i = 1;$i <= 14;$i++) {
+                        $w = "weight".$i;
+                        $params[$w] = (isset($value[$codeBAJ4][ 'weight' ][$i])) ? $value[$codeBAJ4][ 'weight' ][$i] : 0;
                     }
 
                     if (!testparts::insert($params)) {

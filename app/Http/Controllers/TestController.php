@@ -263,6 +263,7 @@ class TestController extends UserController
         $pfsArray = [];
         $baj3Array = [];
         $beaArray = [];
+        $eaibArray = [];
 
         foreach ($testparts as $key => $value) {
             if ($value['code'] === 'PFS') {
@@ -276,6 +277,9 @@ class TestController extends UserController
             if ($value['code'] === 'BEA') {
                 $beaArray = $this->getBEADetail($test_id);
             }
+            if ($value['code'] === 'EAIb') {
+                $eaibArray = $this->getEABIDetail($test_id);
+            }
         }
         foreach ($rlt[ 'exams' ] as $key => $value) {
             // PFSデータの表示
@@ -284,6 +288,8 @@ class TestController extends UserController
             $rlt['exams'][$key]['baj3'] = (isset($baj3Array[$value->id])) ? $baj3Array[$value->id] : [];
             // BEAデータ
             $rlt['exams'][$key]['bea'] = (isset($beaArray[$value->id])) ? $beaArray[$value->id] : [];
+            // 検査2データ
+            $rlt['exams'][$key]['eaib'] = (isset($eaibArray[$value->id])) ? $eaibArray[$value->id] : [];
         }
         return response($rlt, 200);
     }
@@ -460,6 +466,37 @@ class TestController extends UserController
             $beaArray[$value->exam_id]['endtime'] = $value->endtime;
         }
         return $beaArray;
+    }
+    private function getEABIDetail($test_id)
+    {
+        $code = "EAIb";
+        $sql = "
+            SELECT *
+            FROM (
+                SELECT
+                    e.exam_id,
+                    e.testparts_id,
+                    DATE_FORMAT(e.starttime, '%Y/%m/%d') AS starttime,
+                    DATE_FORMAT(e.endtime, '%Y/%m/%d') AS endtime,
+
+                    ROW_NUMBER() OVER (
+                        PARTITION BY e.exam_id, e.testparts_id
+                        ORDER BY e.id DESC
+                    ) AS rn
+                FROM exam_eaib e
+                WHERE e.testparts_id = (
+                    SELECT id FROM testparts WHERE test_id = ? AND code = ?
+                )
+            ) t
+            WHERE t.rn = 1
+        ";
+        $eaibdetails = DB::select($sql, [$test_id, $code]);
+        $eaibArray = [];
+        foreach ($eaibdetails as $value) {
+            $eaibArray[$value->exam_id]['starttime'] = $value->starttime;
+            $eaibArray[$value->exam_id]['endtime'] = $value->endtime;
+        }
+        return $eaibArray;
     }
 
 

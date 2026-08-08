@@ -11,7 +11,9 @@ use App\Models\Testpdf;
 class Test extends Model
 {
     use HasFactory;
-
+    protected $appends = [
+        'license_text',
+    ];
     public function exams()
     {
         return $this->hasMany(Exam::class, 'test_id');
@@ -76,6 +78,27 @@ class Test extends Model
                      ->where('examfins.exam_id', $examId);
             })
             ->where('params', $params);
+    }
+
+    public function getLicenseTextAttribute(): string
+    {
+        // DB側のコードを正規化する
+        $code = strtoupper(str_replace('-', '', $this->code ?? ''));
+
+        foreach (config('const.consts.LISENCE', []) as $license) {
+            foreach ($license['list'] ?? [] as $item) {
+                // 設定側のコードも正規化する
+                $itemCode = strtoupper(
+                    str_replace('-', '', $item['code'] ?? '')
+                );
+
+                if ($itemCode === $code) {
+                    return $item['text'] ?? '';
+                }
+            }
+        }
+
+        return '';
     }
 
     public function testpdfs()

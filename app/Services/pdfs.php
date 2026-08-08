@@ -12,6 +12,9 @@ use App\Models\Exam;
 use App\Models\pdf_history;
 use App\Models\Test;
 use App\Models\User;
+use App\Services\Pdf\PdfInterviewHandler;
+use App\Services\Pdf\PdfSelfUnderstandingHandler;
+use App\Services\Pdf\PdfPowerHarassmentHandler;
 
 class pdfs extends Model
 {
@@ -22,8 +25,7 @@ class pdfs extends Model
     //
     public function __construct(
         $orientation = "P"
-    )
-    {
+    ) {
         require_once(public_path()."/PDF/pfsCreateGraph.php");
 
         $pdf = new \Mpdf\Mpdf(
@@ -99,7 +101,7 @@ class pdfs extends Model
             ['email', '=', $code],
         ])->first();
         // PDFの出力数の上限チェック
-        if(!$this->pdfCountLimit->pdfCountLimitCheck($exam[ 'test_id' ])){
+        if (!$this->pdfCountLimit->pdfCountLimitCheck($exam[ 'test_id' ])) {
             echo "PDF出力制限数エラー";
             exit();
         }
@@ -124,90 +126,39 @@ class pdfs extends Model
 
         $this->age = new Age();
         $this->linebreak = new LineBreak();
+
+        $handlers = [
+            1  => PdfInterviewHandler::class,
+            7  => PdfSelfUnderstandingHandler::class,
+            23 => PdfPowerHarassmentHandler::class,
+        ];
         $row = 0;
         foreach ($pdflist as $value) {
-            if (is_object($value) && $value->pdf_id == 7) { // 自己理解版
-
-                // 受検結果取得
-                $pfsObj = new Pfs();
-                $result = $pfsObj->getPfs($exam->id);
-                // 強みを取得
-                $strong = $pfsObj->getStrong($result, $value);
-                $age = $this->age->getAge($result->starttime, $birth);
-                // PFSグラフの画像作成
-                // chartグラフのパス
-                $fileDir = public_path()."/images/PDF/".$id."/";
-                if (!file_exists($fileDir)) {
-                    mkdir($fileDir);
-                }
-                $filePath = $fileDir.date('Ymdhis')."_radar_chart.png";
-                //require_once(public_path()."/PDF/pfsCreateGraph.php");
-                createRadarChart($filePath, $result);
-                $html = view(
-                    '/PDF/JIKORIKAI',
-                    [
-                    'row' => $row,
-                    'value' => $value,
-                    'exam' => $exam,
-                    'result' => $result,
-                    'age' => $age,
-                    'strong' => $strong,
-                    'pdfImagePath' => ltrim(parse_url($pdfImagePath, PHP_URL_PATH), '/'),
-                    'element1' => $this->linebreak->insert_line_breaks($value->element1, 10),
-                    'element2' => $this->linebreak->insert_line_breaks($value->element2, 10),
-                    'element3' => $this->linebreak->insert_line_breaks($value->element3, 10),
-                    'element4' => $this->linebreak->insert_line_breaks($value->element4, 10),
-                    'element5' => $this->linebreak->insert_line_breaks($value->element5, 10),
-                    'element6' => $this->linebreak->insert_line_breaks($value->element6, 10),
-                    'element7' => $this->linebreak->insert_line_breaks($value->element7, 10),
-                    'element8' => $this->linebreak->insert_line_breaks($value->element8, 10),
-                    'element9' => $this->linebreak->insert_line_breaks($value->element9, 10),
-                    'element10' => $this->linebreak->insert_line_breaks($value->element10, 10),
-                    'element11' => $this->linebreak->insert_line_breaks($value->element11, 10),
-                    'element12' => $this->linebreak->insert_line_breaks($value->element12, 10),
-                    ]
-                )->render();
-                $pdf->SetAutoPageBreak(false);
-                //$pdf->SetMargins(0, 0, 0);
-                $pdf->WriteHTML($html);
-                $pdf->Image(
-                    $filePath,
-                    50,    // X
-                    88,   // Y
-                    0,   // 幅
-                    0      // 高さ（自動）
-                );
-                $pdf->Text(106, 114, '80');
-                $pdf->Text(106, 121, '70');
-                $pdf->Text(106, 128, '60');
-                $pdf->Text(106, 133, '50');
-                $pdf->Text(106, 141, '40');
-                $pdf->Text(106, 147, '30');
-                $row++;
+            if (!is_object($value)) {
+                continue;
             }
 
-            if (is_object($value) && $value->pdf_id == 23) { // パワハラ
-                $result = [];
-                // 受検結果取得
-                $pfsObj = new Pfs();
-                $result = $pfsObj->getPfs($exam->id);
-                $risk = $pfsObj->getRiskPoint($result);
-                // パワハラ用棒グラフ画像作成
-                //require_once (public_path()."/PDF/pawaharaCreateGraph.php");
-                $html = view('/PDF/PAWAHARA', [
-                    'row' => $row,
-                    'value' => $value,
-                    'exam' => $exam,
-                    'result' => $result,
-                    'age' => $age,
-                    'risk' => $risk,
-                    'pdfImagePath' => ltrim(parse_url($pdfImagePath, PHP_URL_PATH), '/'),
-                    ])->render();
-                $pdf->SetAutoPageBreak(false);
-                //$pdf->SetMargins(0, 0, 0);
-                $pdf->WriteHTML($html);
-                $row++;
+            // PDF IDに対応するクラス名を取得する
+            $handlerClass = $handlers[(int) $value->pdf_id] ?? null;
+
+            if ($handlerClass === null) {
+                continue;
             }
+
+            // クラス名からインスタンスを生成する
+            $handler = app()->make($handlerClass);
+
+            // PDF固有処理を実行する
+            $handler->handle(
+                $pdf,
+                $value,
+                $exam,
+                $row,
+                $birth,
+                $pdfImagePath,
+                $id
+            );
+            $row++;
         }
 
         return $pdf;

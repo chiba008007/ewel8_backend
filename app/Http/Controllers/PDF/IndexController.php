@@ -12,32 +12,28 @@ class IndexController extends Controller
 {
     public $linebreak;
 
-    public function index(Request $request, $id, $code, $birth, $encode)
+    public function index($id, $code, $birth, $encode)
     {
-
-//        abort(403, 'PDF上限エラー');
-        Log::info('PDF@index called', compact('id', 'code', 'birth', 'encode'));
         try {
-            $this->checkedCode($encode, $code);
-            // PFS用のチャートグラフを生成するよう
-            require_once(public_path()."/PDF/pfsCreateGraph.php");
-            $obj = new pdfs();
-            // pdfのダウンロードログを保存
-            $pdf = $obj->addPageToPdf($id, $code, $birth);
+            // PDFを生成する
+            $pdfService = new \App\Services\pdfs();
+            $pdf = $pdfService->addPageToPdf($id, $code, $birth);
 
-            $filename = $code . "_" . date('Y') . date('m') . date('d') . ".pdf";
-            return $pdf->Output($filename, 'D');
-
-        } catch (DecryptException $e) {
-            Log::error('DecryptException: '.$e->getMessage());
-            abort(400, 'トークン復号エラー'); // ← 一旦 400 に
+            return response($pdf->Output('', 'S'))
+                ->header('Content-Type', 'application/pdf');
         } catch (\Throwable $e) {
+            // 詳細はログへ記録する
             Log::error('PDF@index failed: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
-            abort(500, 'PDF生成エラー');
-        }
 
+            // エラー内容を画面へ表示する
+            return response()->view(
+                'errors.pdf',
+                ['message' => $e->getMessage()],
+                422
+            );
+        }
     }
     // 証明書ダウンロード
     public function certificate(Request $request, $id, $code, $birth, $encode)

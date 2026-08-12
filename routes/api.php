@@ -15,6 +15,7 @@ use App\Http\Controllers\PdfController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\CsvsController;
 use App\Http\Controllers\CSVBaj3Controller;
+use App\Http\Controllers\CSVBaj4Controller;
 use App\Http\Controllers\CSVVfjController;
 use App\Http\Controllers\CSVBEAController;
 use App\Http\Controllers\CSVEAIBController;
@@ -33,6 +34,7 @@ use App\Http\Controllers\ExamLoginHistoryController;
 use App\Http\Controllers\InformationController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ExamBaj3Controller;
+use App\Http\Controllers\ExamBaj4Controller;
 use App\Http\Controllers\ExamVFJController;
 use App\Http\Controllers\ExamBEAController;
 use App\Http\Controllers\ExamEAIaController;
@@ -81,6 +83,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("exam/getBAJ3", [ExamBaj3Controller::class, 'getBAJ3']);
     Route::post("exam/setBAJ3", [ExamBaj3Controller::class, 'setBAJ3']);
     Route::post("exam/editBAJ3", [ExamBaj3Controller::class, 'editBAJ3']);
+
+    Route::post("exam/getBAJ4", [ExamBaj4Controller::class, 'getBAJ4']);
+    Route::post("exam/setBAJ4", [ExamBaj4Controller::class, 'setBAJ4']);
+    Route::post("exam/editBAJ4", [ExamBaj4Controller::class, 'editBAJ4']);
 
     Route::post("exam/getVFJ", [ExamVFJController::class, 'getVFJ']);
     Route::post("exam/setVFJ", [ExamVFJController::class, 'setVFJ']);
@@ -149,6 +155,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("test/getTestTableTh", [TestController::class, 'getTestTableTh']);
     Route::post("test/getPFSTestDetail", [TestController::class, 'getPFSTestDetail']);
     Route::post("test/getBaj3TestDetail", [TestController::class, 'getBaj3TestDetail']);
+    Route::post("test/getBaj4TestDetail", [TestController::class, 'getBaj4TestDetail']);
     Route::post("test/getSearchExam", [TestController::class, 'getSearchExam']);
     Route::post("test/getTest", [TestController::class, 'getTest']);
     Route::post("test/deleteTest", [TestController::class, 'deleteTest']);
@@ -170,6 +177,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post("csv/getPfs", [CsvsController::class, 'getPfs']);
     Route::post("csv/getBAJ3", [CSVBaj3Controller::class, 'getBAJ3']);
+    Route::post("csv/getBAJ4", [CSVBaj4Controller::class, 'getBAJ4']);
     Route::post("csv/getVFJ", [CSVVfjController::class, 'getVFJ']);
     Route::post("csv/getBEA", [CSVBEAController::class, 'getBEA']);
     Route::post("csv/getEAIb", [CSVEAIBController::class, 'getEAIb']);

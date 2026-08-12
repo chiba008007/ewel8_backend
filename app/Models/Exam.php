@@ -82,6 +82,7 @@ class Exam extends Authenticatable
         $map = [
             'PFS'  => 'exampfses',
             'BAJ3' => 'exam_baj3s',
+            'BAJ4' => 'exam_baj4s',
             'EAIb' => 'exam_eaib',
         ];
 

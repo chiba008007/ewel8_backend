@@ -262,6 +262,7 @@ class TestController extends UserController
             ->get();
         $pfsArray = [];
         $baj3Array = [];
+        $baj4Array = [];
         $beaArray = [];
         $eaibArray = [];
 
@@ -272,6 +273,9 @@ class TestController extends UserController
 
             if ($value['code'] === 'BAJ3') {
                 $baj3Array = $this->getBAJ3Detail($test_id, $value[ 'threeflag' ]);
+            }
+            if ($value['code'] === 'BAJ4') {
+                $baj4Array = $this->getBAJ4Detail($test_id, $value[ 'threeflag' ]);
             }
 
             if ($value['code'] === 'BEA') {
@@ -286,6 +290,8 @@ class TestController extends UserController
             $rlt['exams'][$key]['pfs'] = (isset($pfsArray[$value->id])) ? $pfsArray[$value->id] : [];
             // BAJ3データの表示
             $rlt['exams'][$key]['baj3'] = (isset($baj3Array[$value->id])) ? $baj3Array[$value->id] : [];
+            // BAJ4データの表示
+            $rlt['exams'][$key]['baj4'] = (isset($baj4Array[$value->id])) ? $baj4Array[$value->id] : [];
             // BEAデータ
             $rlt['exams'][$key]['bea'] = (isset($beaArray[$value->id])) ? $beaArray[$value->id] : [];
             // 検査2データ
@@ -435,7 +441,54 @@ class TestController extends UserController
         }
         return $baj3Array;
     }
-
+    private function getBAJ4Detail($test_id, $threeflag = 0)
+    {
+        $code = "BAJ4";
+        $sql = "
+            SELECT *
+            FROM (
+                SELECT
+                    e.exam_id,
+                    e.testparts_id,
+                    DATE_FORMAT(e.starttime, '%Y/%m/%d') AS starttime,
+                    DATE_FORMAT(e.endtime, '%Y/%m/%d') AS endtime,
+                    e.id,
+                    e.level,
+                    e.dev1,
+                    e.dev2,
+                    e.dev3,
+                    e.dev6,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY e.exam_id, e.testparts_id
+                        ORDER BY e.id DESC
+                    ) AS rn
+                FROM exam_baj4s e
+                WHERE e.testparts_id = (
+                    SELECT id FROM testparts WHERE test_id = ? AND code = ?
+                )
+            ) t
+            WHERE t.rn = 1
+        ";
+        $pfsdetails = DB::select($sql, [$test_id, $code]);
+        $baj4Array = [];
+        foreach ($pfsdetails as $value) {
+            $baj4Array[$value->exam_id]['starttime'] = $value->starttime;
+            $baj4Array[$value->exam_id]['endtime'] = $value->endtime;
+            $baj4Array[$value->exam_id]['level'] = $value->level;
+            $baj4Array[$value->exam_id]['dev1'] = $value->dev1;
+            $baj4Array[$value->exam_id]['dev2'] = $value->dev2;
+            $baj4Array[$value->exam_id]['dev3'] = $value->dev3;
+            $baj4Array[$value->exam_id]['dev6'] = $value->dev6;
+            if ($threeflag) {
+                list($lv, $score) = $this->getStress2($value->dev1, $value->dev2, $value->dev6);
+            } else {
+                list($lv, $score) = $this->getStress($value->dev1, $value->dev2);
+            }
+            $baj4Array[$value->exam_id]['lv'] = $lv;
+            $baj4Array[$value->exam_id]['score'] = $score;
+        }
+        return $baj4Array;
+    }
     private function getBEADetail($test_id)
     {
         $code = "BEA";
@@ -1193,6 +1246,25 @@ class TestController extends UserController
 
         $ans_data = config('const.PFS3.PFS3');
         $result = $ans_data[$baj3detail->soyo] ?? null;
+
+        return response($result, 200);
+    }
+    public function getBaj4TestDetail(Request $request)
+    {
+
+        $exam_id = $request->exam_id;
+
+        $baj4detail = DB::table('exam_baj4s')
+            ->where('exam_id', $exam_id)
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$baj4detail) {
+            return response()->json(null, 404);
+        }
+
+        $ans_data = config('const.PFS3.PFS3');
+        $result = $ans_data[$baj4detail->soyo] ?? null;
 
         return response($result, 200);
     }

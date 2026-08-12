@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
 use App\Http\Controllers\TestExecController;
 use App\Services\Export\PFSSpredSheetService;
 use App\Services\Export\BAJ3SpredSheetService;
+use App\Services\Export\BAJ4SpredSheetService;
 use App\Services\Export\EAIBSpredSheetService;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use App\Services\Export\UserExportService;
@@ -26,17 +27,20 @@ class createSpredsheetController extends Controller
     private $userExportService;
     private $pfsSpredSheetService;
     private $baj3SpredSheetService;
+    private $baj4SpredSheetService;
     private $eaibSpredSheetService;
 
     public function __construct(
         UserExportService $userExportService,
         PFSSpredSheetService $pfsSpredSheetService,
         BAJ3SpredSheetService $baj3SpredSheetService,
+        BAJ4SpredSheetService $baj4SpredSheetService,
         EAIBSpredSheetService $eaibSpredSheetService
     ) {
         $this->userExportService = $userExportService;
         $this->pfsSpredSheetService = $pfsSpredSheetService;
         $this->baj3SpredSheetService = $baj3SpredSheetService;
+        $this->baj4SpredSheetService = $baj4SpredSheetService;
         $this->eaibSpredSheetService = $eaibSpredSheetService;
     }
     //
@@ -114,7 +118,8 @@ class createSpredsheetController extends Controller
             if (
                 $code['code'] === 'PFS' ||
                 $code['code'] === 'EAIb' ||
-                $code['code'] === 'BAJ3'
+                $code['code'] === 'BAJ3' ||
+                $code['code'] === 'BAJ4'
             ) {
                 $lastColumnLetter = $sheet->getHighestColumn();
                 $columnIndex = Coordinate::columnIndexFromString($lastColumnLetter);
@@ -132,7 +137,7 @@ class createSpredsheetController extends Controller
                         $code
                     );
                 } else {
-                    // PFS / BAJ3
+                    // PFS / BAJ3 / BAJ4
                     $this->pfsSpredSheetService->createTitle($sheet, $sheet1, $columnIndex, $code);
                 }
                 // PFS専用
@@ -211,6 +216,21 @@ class createSpredsheetController extends Controller
                     $plus++;
                 }
                 $plus = $this->baj3SpredSheetService->createBody(
+                    $sheet,
+                    $sheet1,
+                    $codes,
+                    $value,
+                    $lastColIndex,
+                    $plus,
+                    $row
+                );
+                $has = true;
+            }
+            if (!empty($value->BAJ4)) {
+                if ($has) {
+                    $plus++;
+                }
+                $plus = $this->baj4SpredSheetService->createBody(
                     $sheet,
                     $sheet1,
                     $codes,

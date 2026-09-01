@@ -96,10 +96,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("exam/setBEA", [ExamBEAController::class, 'setBEA']);
     Route::post("exam/editBEA", [ExamBEAController::class, 'editBEA']);
 
-    // ↓多分間違い eaiaに直した方がいい
-    Route::post("exam/getEAIA", [ExamEAIaController::class, 'getEAIa']);
-    Route::post("exam/setEAIa", [ExamEAIaController::class, 'setEAIa']);
-    Route::post("exam/editEAIa", [ExamEAIaController::class, 'editEAIa']);
+    Route::post("exam/getEAIA", [ExamEAIaController::class, 'getEAIA']);
+    Route::post("exam/setEAIA", [ExamEAIaController::class, 'setEAIA']);
+    Route::post("exam/editEAIA", [ExamEAIaController::class, 'editEAIA']);
 
     Route::post("exam/getEAIB", [ExamEAIBController::class, 'getEAIB']);
     Route::post("exam/setEAIB", [ExamEAIBController::class, 'setEAIB']);

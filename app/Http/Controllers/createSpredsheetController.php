@@ -18,6 +18,7 @@ use App\Services\Export\PFSSpredSheetService;
 use App\Services\Export\BAJ3SpredSheetService;
 use App\Services\Export\BAJ4SpredSheetService;
 use App\Services\Export\EAIBSpredSheetService;
+use App\Services\Export\EAIASpredSheetService;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use App\Services\Export\UserExportService;
 use App\Http\Controllers\TestController;
@@ -29,19 +30,22 @@ class createSpredsheetController extends Controller
     private $baj3SpredSheetService;
     private $baj4SpredSheetService;
     private $eaibSpredSheetService;
+    private $eaiaSpredSheetService;
 
     public function __construct(
         UserExportService $userExportService,
         PFSSpredSheetService $pfsSpredSheetService,
         BAJ3SpredSheetService $baj3SpredSheetService,
         BAJ4SpredSheetService $baj4SpredSheetService,
-        EAIBSpredSheetService $eaibSpredSheetService
+        EAIBSpredSheetService $eaibSpredSheetService,
+        EAIASpredSheetService $eaiaSpredSheetService
     ) {
         $this->userExportService = $userExportService;
         $this->pfsSpredSheetService = $pfsSpredSheetService;
         $this->baj3SpredSheetService = $baj3SpredSheetService;
         $this->baj4SpredSheetService = $baj4SpredSheetService;
         $this->eaibSpredSheetService = $eaibSpredSheetService;
+        $this->eaiaSpredSheetService = $eaiaSpredSheetService;
     }
     //
     public function create(Request $request)
@@ -118,6 +122,7 @@ class createSpredsheetController extends Controller
             if (
                 $code['code'] === 'PFS' ||
                 $code['code'] === 'EAIb' ||
+                $code['code'] === 'EAIa' ||
                 $code['code'] === 'BAJ3' ||
                 $code['code'] === 'BAJ4'
             ) {
@@ -129,7 +134,14 @@ class createSpredsheetController extends Controller
                     $sheet->setCellValue('P1', $message);
                     $sheet->duplicateStyle(clone $sheet1->getStyle('P1:S1'), 'P1:S1');
                 }
-                if ($code['code'] === 'EAIb') {
+                if ($code['code'] === 'EAIa') {
+                    $this->eaiaSpredSheetService->createTitle(
+                        $sheet,
+                        $sheet1,
+                        $columnIndex,
+                        $code
+                    );
+                } elseif ($code['code'] === 'EAIb') {
                     $this->eaibSpredSheetService->createTitle(
                         $sheet,
                         $sheet1,
@@ -246,6 +258,21 @@ class createSpredsheetController extends Controller
                     $plus++;
                 }
                 $plus = $this->eaibSpredSheetService->createBody(
+                    $sheet,
+                    $sheet1,
+                    $codes,
+                    $value,
+                    $lastColIndex,
+                    $plus,
+                    $row
+                );
+                $has = true;
+            }
+            if (!empty($value->EAIa)) {
+                if ($has) {
+                    $plus++;
+                }
+                $plus = $this->eaiaSpredSheetService->createBody(
                     $sheet,
                     $sheet1,
                     $codes,

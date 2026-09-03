@@ -84,6 +84,7 @@ class Exam extends Authenticatable
             'BAJ3' => 'exam_baj3s',
             'BAJ4' => 'exam_baj4s',
             'EAIb' => 'exam_eaib',
+            'EAIa' => 'exam_eaia',
         ];
 
         $user = auth()->user();

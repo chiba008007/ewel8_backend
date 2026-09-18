@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\userlisence;
 use Illuminate\Support\Facades\DB;
+use App\Models\ExamLog;
 
 class userlicenseController extends Controller
 {
@@ -12,45 +13,64 @@ class userlicenseController extends Controller
     public function list()
     {
         $results = UserLisence::with(['triggerHistories', 'examLogs'])
-        ->get()
-        ->groupBy('code')
-        ->map(function ($group) {
-            $first = $group->first();
+            ->get()
+            ->groupBy('code')
+            ->map(function ($group) {
 
-            $total_num = $group->sum('num');
+                $first = $group->first();
 
-            $add = $first->triggerHistories
-                ->where('status', 'add')
-                ->sum('num');
+                // 購入ライセンス
+                $total_num = $group->sum('num');
 
-            $delete = $first->triggerHistories
-                ->where('status', 'delete')
-                ->sum('num');
+                $code = $first->code;
 
-            $exam_count = $add - $delete;
-            $available_license = $total_num - $exam_count;
+                $tests = DB::table('tests')
+                    ->join('testparts', 'testparts.test_id', '=', 'tests.id')
+                    ->where('testparts.code', $code)
+                    ->where('testparts.status', 1)
+                    ->where('tests.status', 1)
+                    ->select(
+                        'tests.id',
+                        'tests.testcount'
+                    )
+                    ->distinct()
+                    ->get();
 
-            $syori_count = $first->examLogs
-                ->whereIn('status', [1, 2])
-                ->count();
+                $testIds = $tests->pluck('id');
 
-            $zan = $exam_count - $syori_count;
+                $exam_count = $tests->sum('testcount');
 
-            return (object)[
-                'code' => $first->code,
-                'total_num' => $total_num,
-                'exam_count' => $exam_count,
-                'available_license' => $available_license,
-                'syori_count' => $syori_count,
-                'zan' => $zan,
-            ];
-        })
-        ->values();
+                $available_license = $total_num - $exam_count;
+
+                $syori_count = DB::table('exams')
+                    ->whereIn('test_id', $testIds)
+                    ->whereNull('deleted_at')
+                    ->whereNotNull('started_at')
+                    ->count();
+
+                $finished_count = DB::table('exams')
+                    ->whereIn('test_id', $testIds)
+                    ->whereNull('deleted_at')
+                    ->whereNotNull('ended_at')
+                    ->count();
+
+                $zan = max($exam_count - $finished_count, 0);
+
+                return (object)[
+                    'code' => $first->code,
+                    'total_num' => $total_num,
+                    'available_license' => $available_license,
+                    'exam_count' => $exam_count,
+                    'syori_count' => $syori_count,
+                    'zan' => $zan,
+                ];
+            })
+            ->values();
 
         return response()->json([
             'result' => true,
             'message' => 'get lisence successfully',
-            'data' =>  $results,
+            'data' => $results,
         ]);
     }
 }

@@ -8,12 +8,12 @@ use App\Models\AdminPageLog;
 
 class AdminPageLogController extends Controller
 {
-
     private $limit = 200;
 
-    public function getPageLog(Request $request){
+    public function getPageLog(Request $request)
+    {
 
-        $page = (int)$request->get("page",1);
+        $page = (int)$request->get("page", 1);
         $ceil = 0;
 
         // デフォルト値（必要に応じて調整）
@@ -31,7 +31,7 @@ class AdminPageLogController extends Controller
         ->limit($limit)
         ->offset($offset)
         ->get()
-        ->map(function($item){
+        ->map(function ($item) {
             $item->created_at_formatted = $item->created_at->format('Y-m-d H:xi:s');
 
             $item->partner_name = $item->user->company_name ?? null;
@@ -42,7 +42,7 @@ class AdminPageLogController extends Controller
 
         $response = [
             'success' => true,
-            "list" =>$list,
+            "list" => $list,
             'offset' => $offset,
             'ceil' => $ceil,
         ];
@@ -51,37 +51,63 @@ class AdminPageLogController extends Controller
 
     }
     //
-    public function setPageLog(Request $request){
+    public function setPageLog(Request $request)
+    {
+        $user = Auth::user();
 
-        $user = Auth::user(); // Sanctum 認証ユーザー
+        $userType = $user instanceof \App\Models\Exam
+            ? 'exam'
+            : 'admin';
 
-        $today = now()->format('Y-m-d');
-
-        // すでに同じ人・同じ日・同じページのログがあるか？
         $exists = AdminPageLog::where('user_id', $user->id)
-            ->whereDate('created_at', $today)
-            ->where('path', $request->path)
+            ->where('user_type', $userType)
+            ->whereDate('created_at', now()->toDateString())
+            ->where('path', $request->input('path'))
             ->exists();
 
         if ($exists) {
-            // すでに記録済み → 新規作成しない
-            return response(['success' => true, 'duplicated' => true], 200);
+            return response()->json([
+                'success' => true,
+                'duplicated' => true,
+            ]);
         }
 
         AdminPageLog::create([
-            'user_id'    => $user ? $user->id : null,
-            'route_name' => $request->route_name,
-            'title'      => $request->title,
-            'path'       => $request->path,
-            'params'     => $request->params,
+            'user_id'    => $user->id,
+            'user_type'  => $userType,
+            'route_name' => $request->input('route_name'),
+            'title'      => $request->input('title'),
+            'path'       => $request->input('path'),
+            'params'     => json_encode($request->input('params', [])),
             'ip'         => $request->ip(),
             'user_agent' => $request->userAgent(),
         ]);
 
-        $response = [
-            'success' => true,
-        ];
-
-        return response($response, 201);
+        return response()->json(['success' => true], 201);
     }
+
+    public function setExamPageLog(Request $request)
+    {
+        $data = $request->validate([
+            'route_name' => ['required', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'path' => ['required', 'string', 'max:2048',
+                'regex:~^/exam(?:/|\?|$)~'],
+            'params' => ['nullable', 'array'],
+        ]);
+
+        AdminPageLog::create([
+            'user_id' => null,
+            'user_type' => 'guest',
+            'route_name' => $data['route_name'],
+            'title' => $data['title'] ?? $data['route_name'],
+            'path' => $data['path'],
+            'params' => json_encode($data['params'] ?? []),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json(['success' => true], 201);
+    }
+
 }

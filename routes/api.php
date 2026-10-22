@@ -226,3 +226,7 @@ Route::post("exam/login", [ExamController::class, 'index']);
 Route::post("exam/getExam", [ExamController::class, 'getExam']);
 
 Route::post("examloginhistory/getData", [ExamLoginHistoryController::class, 'getData']);
+
+// 受検者ページのアクセスログ
+Route::post("exam/page/log", [AdminPageLogController::class, 'setExamPageLog'])
+    ->middleware('throttle:60,1');

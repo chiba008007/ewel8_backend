@@ -482,8 +482,22 @@ FROM (
             $items = $request->all();
             $updatedCount = 0;
 
+            // foreach ($items as $item) {
+            //     User::where('id', $item['id'])->update([
+            //         'login_id' => $item['login_id'],
+            //         'person' => $item['person'],
+            //         'person_address' => $item['person_address'],
+            //         'two_factor_enabled' => (int) filter_var(
+            //             $item['two_factor_enabled'],
+            //             FILTER_VALIDATE_BOOLEAN
+            //         ),
+            //     ]);
+
+            //     $updatedCount++;
+            // }
+
             foreach ($items as $item) {
-                User::where('id', $item['id'])->update([
+                $updateData = [
                     'login_id' => $item['login_id'],
                     'person' => $item['person'],
                     'person_address' => $item['person_address'],
@@ -491,7 +505,22 @@ FROM (
                         $item['two_factor_enabled'],
                         FILTER_VALIDATE_BOOLEAN
                     ),
-                ]);
+                ];
+
+                // 入力がある場合のみパスワードを更新
+                if (!empty($item['password'])) {
+                    $passwd = config('const.consts.PASSWORD');
+
+                    $updateData['password'] = openssl_encrypt(
+                        $item['password'],
+                        'aes-256-cbc',
+                        $passwd['key'],
+                        0,
+                        $passwd['iv']
+                    );
+                }
+
+                User::where('id', $item['id'])->update($updateData);
 
                 $updatedCount++;
             }

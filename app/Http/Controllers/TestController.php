@@ -830,6 +830,7 @@ class TestController extends UserController
             $bea = strtoupper($lisence[25]['list'][1]['code']);
             $eaia = preg_replace("/\-/", "", $lisence[2]['list'][6]['code']);
             $eaib = preg_replace("/\-/", "", $lisence[2]['list'][4]['code']);
+            $mhq = $lisence[29]['list'][1]['code'];
             // Log::info('BEA:' . json_encode($parts, JSON_PRETTY_PRINT));
 
             foreach ($parts as $key => $value) {
@@ -954,6 +955,22 @@ class TestController extends UserController
                 $params[ 'status'     ] = $value[$eaib]['status'] ? 1 : 0;
                 $params[ 'timelimit'  ] = (int)$value[$eaib]['timelimit'] ;
                 $params[ 'created_at' ] = date("Y-m-d H:i:s");
+
+                if (!testparts::insert($params)) {
+                    throw new Exception();
+                }
+            }
+
+            // MHQの登録
+            if (isset($value[$mhq]) && $value[$mhq]['status']) {
+                $params = [
+                    'test_id'    => $id,
+                    'code'       => $mhq,
+                    'status'     => 1,
+                    'timelimit'  => (int) $value[$mhq]['timelimit'],
+                    'mhqtype'    => $value[$mhq]['mhqtype'],
+                    'created_at' => date('Y-m-d H:i:s'),
+                ];
 
                 if (!testparts::insert($params)) {
                     throw new Exception();
@@ -1096,6 +1113,7 @@ class TestController extends UserController
             $vfj = preg_replace("/\-/", "", $lisence[4]['list'][1]['code']);
             $bea = strtoupper($lisence[25]['list'][1]['code']);
             $eaia = preg_replace("/\-/", "", $lisence[2]['list'][6]['code']);
+            $mhq = $lisence[29]['list'][1]['code'];
 
             foreach ($parts as $key => $value) {
                 $params = [];
@@ -1180,6 +1198,21 @@ class TestController extends UserController
                     ])->first();
                     $tp->timelimit = (int)$value[$eaia]['timelimit'];
                     $tp->save();
+                }
+
+                // MHQの更新
+                if (isset($value[$mhq]) && $value[$mhq]['status']) {
+                    $tp = testparts::where([
+                        'test_id' => $edit_id,
+                        'code' => $mhq,
+                        'status' => 1
+                    ])->first();
+
+                    if ($tp) {
+                        $tp->timelimit = (int)$value[$mhq]['timelimit'];
+                        $tp->mhqtype = $value[$mhq]['mhqtype'];
+                        $tp->save();
+                    }
                 }
             }
 

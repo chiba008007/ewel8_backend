@@ -715,9 +715,8 @@ FROM (
             // $loginUser = auth()->user()->currentAccessToken();
             // $admin_id = $loginUser->tokenable->id;
             $admin_id = auth()->id();
-            $user = User::where("id", $request->id)
-                ->where("admin_id", $admin_id)
-                ->where("type", $request->type)
+            $user = User::where('id', $request->id)
+                ->where('type', 'partner')
                 ->firstOrFail();
             $data = $request->only([
                 'name',
@@ -1259,28 +1258,37 @@ FROM (
             return response("error", 200);
         }
     }
+
     public function getUserData(Request $request)
     {
-        $loginUser = auth()->user()->currentAccessToken();
-        $admin_id = $loginUser->tokenable->id;
         try {
-            $user = User::where('admin_id', $admin_id)->where("id", $request->id)->first();
-            $license = userlisence::where("user_id", $user->id)->get();
+            $this->checkAdmin();
+
+            $user = User::where('id', $request->id)
+                ->where('type', 'partner')
+                ->firstOrFail();
+
+            $license = userlisence::where('user_id', $user->id)->get();
+
             $temp = [];
             foreach ($license as $value) {
                 $temp[$value->code] = $value->num;
             }
 
             $user->licenses = $temp;
-            if ($user) {
-                return response($user, 200);
-            } else {
-                throw new Exception();
-            }
-        } catch (Exception $e) {
-            return response("error", 201);
+
+            return response($user, 200);
+
+        } catch (\Exception $e) {
+            Log::error('パートナー情報取得エラー', [
+                'id' => $request->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json(['message' => '取得失敗'], 500);
         }
     }
+
     public function getUserElement(Request $request)
     {
         $user_id = $request->user_id;

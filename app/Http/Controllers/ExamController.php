@@ -85,7 +85,10 @@ class ExamController extends Controller
             'testparts_id' => ['sometimes', 'required', 'integer'],
         ]);
 
-        $result = Test::select(['users.company_name', 'tests.*'])
+        $result = Test::select([
+            'users.company_name',
+            'users.logoImagePath',
+            'tests.*'])
             ->leftJoin('users', 'users.id', '=', 'tests.user_id')
             ->where('tests.params', $validated['params'])
             ->where('tests.status', 1)

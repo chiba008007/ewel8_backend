@@ -1069,9 +1069,11 @@ FROM (
                 ->where([
                     'users.type' => 'customer',
                     'users.partner_id' => $partnerId,
-                    'users.admin_id' => $adminId,
                     'users.deleted_at' => null,
                 ])
+                ->when($loginUser->type !== 'admin', function ($query) use ($adminId) {
+                    $query->where('users.admin_id', $adminId);
+                })
                 ->groupBy('users.id');
 
             $result = User::fromSub($subQuery, 'A')

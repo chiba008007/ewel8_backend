@@ -15,16 +15,19 @@ class Controller extends BaseController
     public $admin_id;
     public function checkuser($user_id)
     {
-        $loginUser = auth()->user()->currentAccessToken();
+
+        /** @var \Illuminate\Contracts\Auth\Authenticatable&\Laravel\Sanctum\HasApiTokens $authUser */
+        $authUser = auth()->user();
+        $loginUser = $authUser->currentAccessToken();
         $this->admin_id = $loginUser->tokenable->id;
         // 顧客でログイン
         if ($loginUser->tokenable->type == "customer") {
-            if($this->admin_id != $user_id){
+            if ($this->admin_id != $user_id) {
                 return false;
             }
             $subquery = User::select("partner_id")->where([
                 "id" => $this->admin_id,
-                "type"=>'customer',
+                "type" => 'customer',
                 "deleted_at" => null
             ]);
             $result = User::whereIn("id", $subquery)
@@ -46,17 +49,22 @@ class Controller extends BaseController
         }
         // パートナーでログイン
         if ($loginUser->tokenable->type == "partner") {
-            $subquery = User::select("admin_id")->where([
-                "id" => $this->admin_id
-                ,"deleted_at" => null
-            ]);
-            $result = User::whereIn("admin_id", $subquery)
-            ->where("id", $user_id)
-            ->get();
-            if (count($result) < 1) {
+            $partnerId = $loginUser->tokenable->id;
+
+            $customer = User::where('id', $user_id)
+                ->where('type', 'customer')
+                ->where('partner_id', $partnerId)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$customer) {
                 return false;
             }
-            $this->admin_id = $result[0][ 'admin_id' ];
+
+            // 既存処理で使用する管理者IDを維持
+            $this->admin_id = User::where('id', $partnerId)
+                ->value('admin_id');
+
             return true;
         }
         return false;

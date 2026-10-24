@@ -1209,13 +1209,9 @@ FROM (
         // $admin = $loginUser->tokenable;
         // var_dump($admin->id);
         $customer = User::find($user_id);
-        $partner = User::where(
-            [
-                "admin_id" => $this->admin_id,
-                "id" => $customer->partner_id,
-                "deleted_at" => null
-            ]
-        )->first();
+        $partner = User::where("id", $customer->partner_id)
+            ->whereNull("deleted_at")
+            ->first();
         $result = userlisence::where("user_id", $partner->id)->orderby("code")->get();
         foreach ($result as $k => $value) {
             $result[ $k ][ 'jp' ] = $license[$value[ 'code' ]];
@@ -1496,4 +1492,18 @@ FROM (
         }
         return false;
     }
+
+    public function checkCustomerAccess(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer',
+        ]);
+
+        if (!$this->checkuser($request->user_id)) {
+            return response()->json(['allowed' => false], 403);
+        }
+
+        return response()->json(['allowed' => true], 200);
+    }
+
 }

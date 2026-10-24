@@ -403,12 +403,13 @@ FROM (
             $query = User::where('type', 'partner');
 
             if ($loginUser->type === 'partner') {
-                // partner は自分自身のみ取得
+                // パートナーは自分自身のみ取得
                 $query->where('id', $loginUser->id);
+            } elseif ($loginUser->type === 'admin') {
+                // 管理者は指定パートナーを取得
+                $query->where('id', $request->partnerId);
             } else {
-                // 管理者は自分の配下 partner のみ取得
-                $query->where('id', $request->partnerId)
-                      ->where('admin_id', $loginUser->id);
+                return response()->json(['message' => 'Forbidden'], 403);
             }
 
             $customer = $query->first();
@@ -434,6 +435,7 @@ FROM (
                 'partner_id' => $request->partnerId,
             ]);
 
+
             return response()->json(['message' => 'Server error'], 500);
         }
     }
@@ -442,7 +444,7 @@ FROM (
     {
         $response = [];
         // ログインしているユーザー情報取得
-        $loginUser = auth()->user()->currentAccessToken();
+        $loginUser = auth()->user();
         // 顧客画面から利用の場合は親のIDを取得
         $partner_id = $request->partnerId;
         $editid = $request->editId;
@@ -458,17 +460,32 @@ FROM (
                     ->where('id', $editid);
                 $user = $customer->first();
             }
-            if ($type === "customerTOP") { // 顧客管理画面一覧
-                $customer = User::where("type", "partner")
-                    ->where('id', $partner_id);
-                if ($loginUser->tokenable->type == "admin") {
-                    $customer->where("admin_id", $loginUser->tokenable->id);
+            if ($type === "customerTOP") {
+                if (!$loginUser) {
+                    return response("Unauthenticated", 401);
                 }
-                $user = $customer->first();
-            }
 
+                if ($loginUser->type === "admin") {
+                    $user = User::where("type", "partner")
+                        ->where("id", $partner_id)
+                        ->first();
+                } elseif ($loginUser->type === "partner"
+                    && (int) $loginUser->id === (int) $partner_id) {
+                    $user = User::where("type", "partner")
+                        ->where("id", $loginUser->id)
+                        ->first();
+                } else {
+                    return response("Forbidden", 403);
+                }
+            }
             return response($user, 201);
         } catch (\Exception $e) {
+
+            Log::error('getPartnerDetail エラー', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
 
             return response("error", 401);
         }

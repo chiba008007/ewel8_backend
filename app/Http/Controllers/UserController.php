@@ -465,15 +465,28 @@ FROM (
                     return response("Unauthenticated", 401);
                 }
 
-                if ($loginUser->type === "admin") {
-                    $user = User::where("type", "partner")
-                        ->where("id", $partner_id)
+                // 渡されたIDが顧客IDなら、親パートナーIDに変換
+                $customer = User::where('id', $partner_id)
+                    ->where('type', 'customer')
+                    ->first();
+
+                $targetPartnerId = $customer
+                    ? $customer->partner_id
+                    : $partner_id;
+
+                if ($loginUser->type === 'admin') {
+                    $user = User::where('type', 'partner')
+                        ->where('id', $targetPartnerId)
                         ->first();
-                } elseif ($loginUser->type === "partner"
-                    && (int) $loginUser->id === (int) $partner_id) {
-                    $user = User::where("type", "partner")
-                        ->where("id", $loginUser->id)
+
+                } elseif (
+                    $loginUser->type === 'partner' &&
+                    (int) $loginUser->id === (int) $targetPartnerId
+                ) {
+                    $user = User::where('type', 'partner')
+                        ->where('id', $targetPartnerId)
                         ->first();
+
                 } else {
                     return response("Forbidden", 403);
                 }
@@ -1144,6 +1157,16 @@ FROM (
 
             // 検索対象のユーザーIDを取得
             $targetUserId = $request->user_id;
+            // パートナーの存在確認
+            $partner = User::where('id', $targetUserId)
+                ->where('type', 'partner')
+                ->first();
+
+            if (!$partner) {
+                return response()->json([
+                    'message' => 'パートナーが存在しません'
+                ], 404);
+            }
 
             // API実行ログを出力
             Log::info('ライセンス一覧取得 開始', [
@@ -1153,26 +1176,50 @@ FROM (
                 'user_agent' => $request->userAgent(),
             ]);
 
-            $result = DB::table('exams as e')
-                ->leftJoin('testparts as t', 'e.test_id', '=', 't.test_id')
-                ->leftJoin('tests as ts', 't.test_id', '=', 'ts.id')
-                ->leftJoin('examfins as ef', function ($join) {
-                    $join->on('ef.exam_id', '=', 'e.id')
-                        ->on('ef.testparts_id', '=', 't.id');
-                })
-                ->leftJoin('userlisences as u', function ($join) use ($request) {
-                    $join->on(DB::raw('REPLACE(u.code, "-", "")'), '=', 't.code')
-                        ->where('u.user_id', $request->user_id);
-                })
-                ->where('e.partner_id', $request->user_id)
-                ->select(
-                    't.code',
-                    'u.num',
-                    DB::raw('COUNT(CASE WHEN e.started_at IS NOT NULL AND t.status = 1 THEN 1 END) as started_exam_count'),
-                    DB::raw('COUNT(CASE WHEN ef.status = 1 THEN 1 END) as ended_exam_count'),
-                    DB::raw('SUM(DISTINCT CASE WHEN t.status = 1 THEN ts.testcount ELSE 0 END) as exam_count')
+            $result = DB::table('userlisences as u')
+                ->leftJoinSub(
+                    DB::table('testparts as t')
+                        ->join('tests as ts', 'ts.id', '=', 't.test_id')
+                        ->leftJoin('exams as e', function ($join) {
+                            $join->on('e.test_id', '=', 'ts.id')
+                                ->whereNull('e.deleted_at');
+                        })
+                        ->leftJoin('examfins as ef', function ($join) {
+                            $join->on('ef.exam_id', '=', 'e.id')
+                                ->on('ef.testparts_id', '=', 't.id');
+                        })
+                        ->where('t.status', 1)
+                        ->where('ts.status', 1)
+                        ->where('ts.partner_id', $targetUserId)
+                        ->selectRaw('
+                            t.code,
+                            SUM(DISTINCT ts.testcount) AS exam_count,
+                            COUNT(DISTINCT CASE
+                                WHEN e.started_at IS NOT NULL THEN e.id
+                            END) AS started_exam_count,
+                            COUNT(DISTINCT CASE
+                                WHEN ef.status = 1 THEN e.id
+                            END) AS ended_exam_count
+                        ')
+                        ->groupBy('t.code'),
+                    'a',
+                    function ($join) {
+                        $join->on(
+                            DB::raw('REPLACE(u.code, "-", "")'),
+                            '=',
+                            'a.code'
+                        );
+                    }
                 )
-                ->groupBy('t.code', 'u.num')
+                ->where('u.user_id', $targetUserId)
+                ->select(
+                    DB::raw('REPLACE(u.code, "-", "") AS code'),
+                    'u.num',
+                    DB::raw('COALESCE(a.exam_count, 0) AS exam_count'),
+                    DB::raw('COALESCE(a.started_exam_count, 0) AS started_exam_count'),
+                    DB::raw('COALESCE(a.ended_exam_count, 0) AS ended_exam_count')
+                )
+                ->orderBy('u.id')
                 ->get();
 
             // API成功ログを出力
@@ -1370,16 +1417,28 @@ FROM (
         $partner_id = $request->partner_id;
         $id = $request->id;
 
-        if (!$this->checkuser($partner_id)) {
-            throw new Exception();
+        $loginUser = $request->user();
+
+        $allowed = $loginUser
+            && (
+                $loginUser->type === 'admin'
+                || ($loginUser->type === 'partner'
+                    && (int) $loginUser->id === (int) $partner_id)
+                || ($loginUser->type === 'customer'
+                    && (int) $loginUser->id === (int) $id
+                    && (int) $loginUser->partner_id === (int) $partner_id)
+            );
+
+        if (!$allowed) {
+            return response()->json(['message' => 'Forbidden'], 403);
         }
+
         try {
 
-            $user = User::where([
-                    'id' => $id,
-                    'partner_id' => $partner_id,
-                    'admin_id' => $this->admin_id
-                ])->first();
+            $user = User::where('id', $id)
+                ->where('partner_id', $partner_id)
+                ->where('type', 'customer')
+                ->first();
             if (!$user) {
                 Log::info('顧客情報編集対象なし');
                 return response(false, 404);

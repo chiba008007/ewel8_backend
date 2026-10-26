@@ -838,6 +838,24 @@ class ExamController extends Controller
 
     }
 
+    public function getTestExamList(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer',
+        ]);
+
+        $user_id = $request->integer('user_id');
+
+        if (!$this->checkuser($user_id)) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        return response()->json(
+            Exam::getTestExamList($user_id)
+        );
+    }
+
+
     public function test()
     {
         $loginUser = auth()->user()->currentAccessToken();

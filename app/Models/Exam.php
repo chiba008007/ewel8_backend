@@ -258,4 +258,47 @@ class Exam extends Authenticatable
         return $this->hasMany(exampfs::class, 'exam_id');
     }
 
+
+    public static function getTestExamList(int $customer_id)
+    {
+        return self::query()
+            ->leftJoin('tests', 'exams.test_id', '=', 'tests.id')
+            ->where('exams.customer_id', $customer_id)
+            ->whereNull('exams.deleted_at')
+            ->whereNotNull('exams.started_at')
+            ->select([
+                'exams.id',
+                'exams.test_id',
+                'exams.name',
+                'exams.kana',
+                'exams.gender',
+                'exams.email',
+                'exams.password',
+                'exams.memo1',
+                'exams.memo2',
+                'exams.started_at',
+                'exams.ended_at',
+                'tests.testname',
+            ])
+            ->orderBy('exams.id')
+            ->get()
+            ->map(function ($exam) {
+                $passwd = config('const.consts.PASSWORD');
+
+                $exam->birthdate = $exam->password
+                    ? (openssl_decrypt(
+                        $exam->password,
+                        'aes-256-cbc',
+                        $passwd['key'],
+                        0,
+                        $passwd['iv']
+                    ) ?: null)
+                    : null;
+
+                unset($exam->password);
+
+                return $exam;
+            });
+    }
+
 }

@@ -163,7 +163,6 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post("test/getSearchExam", [TestController::class, 'getSearchExam']);
     Route::post("test/getTest", [TestController::class, 'getTest']);
     Route::post("test/deleteTest", [TestController::class, 'deleteTest']);
-
     Route::post("testhistory/index", [TriggerHistoryController::class, 'index']);
     Route::post("pdfhistory/index", [pdfHistoryController::class, 'index']);
     Route::post("bill/index", [billController::class, 'index']);
@@ -212,6 +211,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     // 企業一覧ダウンロード
     Route::post("company/download/", [CompanyController::class, 'download']);
+
+    Route::post("exam/getTestExamList", [ExamController::class, 'getTestExamList']);
 
 });
 Route::post("user/upload", [UserController::class, 'upload']);

@@ -166,6 +166,8 @@ class TestController extends UserController
                 'tests.testcount',
                 'tests.startdaytime',
                 'tests.enddaytime',
+                'tests.mailinfoflag',
+                'tests.pdflogflag',
                 DB::raw('
                 COUNT(CASE WHEN exams.started_at IS NOT NULL THEN 1 END) as syori,
                 GREATEST(
@@ -1428,6 +1430,48 @@ class TestController extends UserController
             return response($e, 400);
         }
     }
+
+    public function updateTestFlag(Request $request)
+    {
+        $data = $request->validate([
+            'user_id' => 'required',
+            'test_id' => 'required|integer',
+            'flag' => 'required|in:mailinfoflag,pdflogflag',
+            'value' => 'required|boolean',
+        ]);
+
+        if (!$this->checkuser($data['user_id'])) {
+            return response('権限がありません', 403);
+        }
+
+        // PDFログは管理者のみ更新可能
+        $type = $request->user()->currentAccessToken()->tokenable->type;
+
+        if ($data['flag'] === 'pdflogflag' && $type !== 'admin') {
+            return response('権限がありません', 403);
+        }
+
+        try {
+            $test = Test::where('id', $data['test_id'])
+                ->where('user_id', $data['user_id'])
+                ->firstOrFail();
+
+            $test->{$data['flag']} = $data['value'];
+            $test->save();
+
+            Log::info('フラグ更新成功', $data);
+
+            return response('success', 200);
+
+        } catch (\Exception $e) {
+            Log::error('フラグ更新失敗', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return response('error', 500);
+        }
+    }
+
     public function getTest(Request $request)
     {
         $user_id = $request->user_id;
@@ -1444,6 +1488,8 @@ class TestController extends UserController
                     pdfstartday,
                     pdfendday,
                     pdfuseflag,
+                    pdflogflag,
+                    mailinfoflag,
                     DATE_FORMAT(startdaytime, '%Y/%m/%d') as formatted_startdaytime,DATE_FORMAT(enddaytime, '%Y/%m/%d') as formatted_enddaytime"
             )
             ->withCount([
@@ -1455,6 +1501,12 @@ class TestController extends UserController
                 'id' => $test_id,
                 'user_id' => $user_id
             ])->first();
+
+            // PDF出力件数の上限チェック
+            $data->pdf_count_limit_ok =
+                (new \App\Libraries\PdfCountLimit())
+                    ->pdfCountLimitCheck($test_id);
+
             DB::commit();
             return response($data, 200);
         } catch (Exception $e) {

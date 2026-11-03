@@ -1268,14 +1268,36 @@ FROM (
     public function getUserLisenceCalc(Request $request)
     {
         $license = $this->getLicenseListsJP();
-        $customer_id = $request->customer_id;
+        $partnerId = $request->customer_id;
 
-        $result = userlisence::where("user_id", $customer_id)->orderby("code")->get();
-        foreach ($result as $k => $value) {
-            $result[ $k ][ 'jp' ] = $license[$value[ 'code' ]];
+        // 検査種別ごとの使用ライセンス数
+        $used = DB::table('tests')
+            ->join('testparts', 'tests.id', '=', 'testparts.test_id')
+            ->where('tests.partner_id', $partnerId)
+            ->where('tests.status', 1)
+            ->where('testparts.status', 1)
+            ->selectRaw("UPPER(REPLACE(testparts.code, '-', '')) AS code")
+            ->selectRaw('SUM(tests.testcount) AS used_count')
+            ->groupByRaw("UPPER(REPLACE(testparts.code, '-', ''))")
+            ->pluck('used_count', 'code');
+
+        $result = userlisence::where('user_id', $partnerId)
+            ->orderBy('code')
+            ->get();
+
+        foreach ($result as $value) {
+            $code = strtoupper(str_replace('-', '', $value->code));
+
+            $value->jp = $license[$value->code] ?? $value->code;
+            $value->num = max(
+                0,
+                (int) $value->num - (int) ($used[$code] ?? 0)
+            );
         }
+
         return response($result, 200);
     }
+
     public function getLicenseListsJP()
     {
         $data = [];
@@ -1353,12 +1375,18 @@ FROM (
 
     public function getUserElement(Request $request)
     {
-        $user_id = $request->user_id;
-        $test_id = $request->test_id;
-        $loginUser = $request->user()->currentAccessToken();
-        $admin_id = $loginUser->tokenable->id;
-        $partner_id = User::find($user_id)->partner_id;
-        $partner = User::where("id", $partner_id)->where("admin_id", $admin_id)->first();
+        $loginUser = $request->user()->currentAccessToken()->tokenable;
+        $customer = User::findOrFail($request->user_id);
+        $partner = User::findOrFail($customer->partner_id);
+
+        $allowed = match ($loginUser->type) {
+            'admin' => true,
+            'partner' => $customer->partner_id == $loginUser->id,
+            default => false,
+        };
+
+        abort_unless($allowed, 403);
+
         return response($partner, 200);
     }
     public function getCustomerEdit(Request $request)

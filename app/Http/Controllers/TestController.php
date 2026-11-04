@@ -261,6 +261,7 @@ class TestController extends UserController
             return response([], 200);
         }
         $testparts = testparts::where("testparts.test_id", $test_id)
+            ->where("testparts.status", 1)
             ->get();
         $pfsArray = [];
         $baj3Array = [];
@@ -376,7 +377,7 @@ class TestController extends UserController
                     ) AS rn
                 FROM exampfses e
                 WHERE e.testparts_id = (
-                    SELECT id FROM testparts WHERE test_id = ? AND code = ?
+                    SELECT id FROM testparts WHERE test_id = ? AND code = ? AND status = 1
                 )
             ) t
             WHERE t.rn = 1
@@ -424,7 +425,7 @@ class TestController extends UserController
                     ) AS rn
                 FROM exam_baj3s e
                 WHERE e.testparts_id = (
-                    SELECT id FROM testparts WHERE test_id = ? AND code = ?
+                    SELECT id FROM testparts WHERE test_id = ? AND code = ? AND status = 1
                 )
             ) t
             WHERE t.rn = 1
@@ -472,7 +473,7 @@ class TestController extends UserController
                     ) AS rn
                 FROM exam_baj4s e
                 WHERE e.testparts_id = (
-                    SELECT id FROM testparts WHERE test_id = ? AND code = ?
+                    SELECT id FROM testparts WHERE test_id = ? AND code = ? AND status = 1
                 )
             ) t
             WHERE t.rn = 1
@@ -515,7 +516,7 @@ class TestController extends UserController
                     ) AS rn
                 FROM exam_bea e
                 WHERE e.testparts_id = (
-                    SELECT id FROM testparts WHERE test_id = ? AND code = ?
+                    SELECT id FROM testparts WHERE test_id = ? AND code = ? AND status = 1
                 )
             ) t
             WHERE t.rn = 1
@@ -546,7 +547,7 @@ class TestController extends UserController
                     ) AS rn
                 FROM exam_eaib e
                 WHERE e.testparts_id = (
-                    SELECT id FROM testparts WHERE test_id = ? AND code = ?
+                    SELECT id FROM testparts WHERE test_id = ? AND code = ? AND status = 1
                 )
             ) t
             WHERE t.rn = 1
@@ -577,7 +578,7 @@ class TestController extends UserController
                     ) AS rn
                 FROM exam_eaia e
                 WHERE e.testparts_id = (
-                    SELECT id FROM testparts WHERE test_id = ? AND code = ?
+                    SELECT id FROM testparts WHERE test_id = ? AND code = ? AND status = 1
                 )
             ) t
             WHERE t.rn = 1

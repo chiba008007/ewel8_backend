@@ -1193,7 +1193,7 @@ FROM (
                         ->where('ts.partner_id', $targetUserId)
                         ->selectRaw('
                             t.code,
-                            SUM(DISTINCT ts.testcount) AS exam_count,
+                            COUNT(DISTINCT e.id) AS exam_count,
                             COUNT(DISTINCT CASE
                                 WHEN e.started_at IS NOT NULL THEN e.id
                             END) AS started_exam_count,

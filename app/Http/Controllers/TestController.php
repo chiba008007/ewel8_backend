@@ -181,6 +181,23 @@ class TestController extends UserController
             ->orderBy('tests.startdaytime', 'desc')
             ->orderBy('tests.id', 'desc')
             ->get();
+
+            // 利用中の検査種別を取得
+            $testparts = DB::table('testparts')
+                ->whereIn('test_id', $result->pluck('id'))
+                ->where('status', 1)
+                ->get(['test_id', 'code'])
+                ->groupBy('test_id');
+
+            // 各検査に選択済みの検査種別を追加
+            $result->each(function ($test) use ($testparts) {
+                $test->selectedTests = $testparts
+                    ->get($test->id, collect())
+                    ->pluck('code')
+                    ->values()
+                    ->all();
+            });
+
             Log::info('getTestList result', $result->toArray());
             return response($result, 200);
 

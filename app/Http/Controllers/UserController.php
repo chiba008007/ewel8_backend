@@ -25,6 +25,7 @@ use App\Services\MailService;
 use App\Services\UserService;
 use App\Services\PasswordService;
 use App\Models\Test;
+use App\Models\PasswordReminder;
 
 class UserController extends Controller
 {
@@ -48,6 +49,135 @@ class UserController extends Controller
             throw new Exception();
         }
     }
+
+    public function passwordRemind(Request $request)
+    {
+        $data = $request->validate([
+            'login_id' => 'required|string|max:128',
+            'email' => 'required|email|max:255',
+        ]);
+
+        $user = User::where('login_id', $data['login_id'])
+            ->whereNull('deleted_at')
+            ->first();
+
+        if ($user) {
+            $registeredEmail = match ($user->type) {
+                'partner' => $user->person_address,
+                'customer' => $user->tanto_address,
+                default => null,
+            };
+
+            if (
+                $registeredEmail &&
+                strcasecmp($registeredEmail, $data['email']) === 0
+            ) {
+                // 再設定用トークン生成
+                $token = bin2hex(random_bytes(32));
+
+                // DBにはハッシュ値を保存
+                PasswordReminder::updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'token' => hash('sha256', $token),
+                        'expires_at' => now()->addMinutes(30),
+                        'created_at' => now(),
+                    ]
+                );
+
+                // 再設定URL生成
+                $resetUrl = rtrim(config('app.url'), '/')
+                    . '/password-reset?token=' . urlencode($token)
+                    . '&login_id=' . urlencode($user->login_id);
+
+                // メール送信
+                $this->mailService->sendPasswordReminder(
+                    $user,
+                    $registeredEmail,
+                    $resetUrl
+                );
+            }
+        }
+
+        // アカウントの存在を外部に知らせない
+        return response()->json([
+            'message' => '申請を受け付けました。'
+        ]);
+    }
+
+    public function passwordReset(Request $request)
+    {
+        $data = $request->validate([
+            'login_id' => ['required', 'string', 'max:128'],
+            'token' => ['required', 'regex:/^[a-f0-9]{64}$/i'],
+            'password' => [
+                'required',
+                'confirmed',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])[a-zA-Z0-9]{8,15}$/',
+            ],
+        ]);
+
+        $updated = DB::transaction(function () use ($data) {
+            $user = User::where('login_id', $data['login_id'])
+                ->whereIn('type', ['partner', 'customer'])
+                ->whereNull('deleted_at')
+                ->lockForUpdate()
+                ->first();
+
+            if (!$user) {
+                return false;
+            }
+
+            $reminder = PasswordReminder::where('user_id', $user->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (
+                !$reminder ||
+                $reminder->expires_at->isPast() ||
+                !hash_equals($reminder->token, hash('sha256', $data['token']))
+            ) {
+                return false;
+            }
+
+            // 既存のパスワード保存方式に合わせる
+            $passwd = config('const.consts.PASSWORD');
+
+            $encrypted = openssl_encrypt(
+                $data['password'],
+                'aes-256-cbc',
+                $passwd['key'],
+                0,
+                $passwd['iv']
+            );
+
+            if ($encrypted === false) {
+                throw new \RuntimeException('Password encryption failed');
+            }
+
+            $user->password = $encrypted;
+            $user->save();
+
+            // 使用済みトークンを削除
+            $reminder->delete();
+
+            // 既存のログインセッションを無効化
+            $user->tokens()->delete();
+
+            return true;
+        });
+
+        if (!$updated) {
+            return response()->json([
+                'message' => '再設定URLが無効、または有効期限切れです。',
+            ], 422);
+        }
+
+        return response()->json([
+            'message' => 'パスワードを変更しました。',
+        ]);
+    }
+
     //
     public function index(Request $request)
     {

@@ -219,6 +219,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
 });
 Route::post("user/upload", [UserController::class, 'upload']);
+Route::post("user/passwordRemind", [UserController::class, 'passwordRemind']);
+Route::post("user/passwordReset", [UserController::class, 'passwordReset']);
 Route::post("pdf/download", [PdfDownloadController::class, 'index']);
 
 Route::post("login", [UserController::class, 'index']);

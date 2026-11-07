@@ -197,5 +197,8 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'partner_id', 'id');
     }
 
-
+    public function customerExams()
+    {
+        return $this->hasMany(Exam::class, 'customer_id');
+    }
 }

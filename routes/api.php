@@ -137,6 +137,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('user/getUserData', [UserController::class, 'getUserData']);
     Route::post('user/customerEdit', [UserController::class, 'customerEdit']);
     Route::post('user/getCustomerEdit', [UserController::class, 'getCustomerEdit']);
+    Route::post('user/canHideCustomer', [UserController::class, 'canHideCustomer']);
+    Route::post('user/getCustomerDeleteList', [UserController::class, 'getCustomerDeleteList']);
 
     Route::post('testExec/getCustomerExec', [TestExecController::class, 'getCustomerExec']);
     Route::post('testExec/getExec', [TestExecController::class, 'getExec']);

@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Log;
 use App\Services\MailService;
 use App\Services\UserService;
 use App\Services\PasswordService;
+use App\Models\Test;
 
 class UserController extends Controller
 {
@@ -196,7 +197,7 @@ class UserController extends Controller
 SELECT
     *,
     (jyuken - syori) AS zan,
-    (total - syori - jyuken) AS buy
+    (total - jyuken) AS buy
 FROM (
     SELECT
         users.id,
@@ -1100,6 +1101,7 @@ FROM (
                     'users.type' => 'customer',
                     'users.partner_id' => $partnerId,
                     'users.deleted_at' => null,
+                    'users.displayFlag' => 1,
                 ])
                 ->when($loginUser->type !== 'admin', function ($query) use ($adminId) {
                     $query->where('users.admin_id', $adminId);
@@ -1107,7 +1109,7 @@ FROM (
                 ->groupBy('users.id');
 
             $result = User::fromSub($subQuery, 'A')
-                ->selectRaw('A.*, (A.count - A.ended) as zan')
+                ->selectRaw('A.*, (A.count - A.syori) as zan')
                 ->get();
 
             // 顧客一覧取得の成功ログ
@@ -1273,11 +1275,15 @@ FROM (
         // 検査種別ごとの使用ライセンス数
         $used = DB::table('tests')
             ->join('testparts', 'tests.id', '=', 'testparts.test_id')
+            ->leftJoin('exams', function ($join) {
+                $join->on('tests.id', '=', 'exams.test_id')
+                     ->whereNull('exams.deleted_at');
+            })
             ->where('tests.partner_id', $partnerId)
             ->where('tests.status', 1)
             ->where('testparts.status', 1)
             ->selectRaw("UPPER(REPLACE(testparts.code, '-', '')) AS code")
-            ->selectRaw('SUM(tests.testcount) AS used_count')
+            ->selectRaw('COUNT(DISTINCT exams.id) AS used_count')
             ->groupByRaw("UPPER(REPLACE(testparts.code, '-', ''))")
             ->pluck('used_count', 'code');
 
@@ -1591,6 +1597,75 @@ FROM (
         }
 
         return response()->json(['allowed' => true], 200);
+    }
+
+    public function canHideCustomer(Request $request)
+    {
+        $request->validate([
+            'id' => ['required', 'integer'],
+        ]);
+
+        $canHideCustomer = !Test::where(
+            'customer_id',
+            $request->id
+        )
+            ->where('status', 1)
+            ->exists();
+
+        return response()->json([
+            'canHideCustomer' => $canHideCustomer,
+        ]);
+    }
+    public function getCustomerDeleteList(Request $request)
+    {
+        $user = $request->user('sanctum');
+
+        if (!$user) {
+            return response([], 401);
+        }
+        Log::info('非表示顧客一覧の権限確認', [
+            'type' => $user->type,
+            'login_id' => $user->id,
+            'partner_id' => $request->partner_id,
+        ]);
+
+        $partner = User::where('id', $request->partner_id)
+            ->where('type', 'partner')
+            ->first();
+        if (
+            !$partner ||
+            !(
+                ($user->type === 'admin' &&
+                 (int) $partner->admin_id === (int) $user->id)
+                ||
+                ($user->type === 'partner' &&
+                 (int) $partner->id === (int) $user->id)
+            )
+        ) {
+            return response([], 403);
+        }
+
+        $result = User::query()
+            ->select('id', 'name', 'updated_at')
+            ->where('type', 'customer')
+            ->where('partner_id', $partner->id)
+            ->when($user->type === 'partner', function ($query) use ($user) {
+                $query->where('admin_id', $user->admin_id);
+            })
+            ->where('displayFlag', 0)
+            ->whereNull('deleted_at')
+            ->withCount([
+                    'customerExams as count',
+                    'customerExams as syori' => fn ($q) =>
+                        $q->whereNotNull('started_at'),
+                ])
+            ->get();
+
+        $result->each(function ($row) {
+            $row->zan = $row->count - $row->syori;
+        });
+
+        return response()->json($result);
     }
 
 }

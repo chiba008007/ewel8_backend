@@ -351,6 +351,7 @@ FROM (
         LEFT JOIN exams ON exams.partner_id = users.id
     WHERE
         users.type = ?
+        AND users.deleted_at IS NULL
     GROUP BY
         users.id
 ) AS a

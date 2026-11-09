@@ -86,7 +86,7 @@ class UserController extends Controller
                 );
 
                 // 再設定URL生成
-                $resetUrl = rtrim(config('app.url'), '/')
+                $resetUrl = rtrim(config('app.remaind'), '/')
                     . '/password-reset?token=' . urlencode($token)
                     . '&login_id=' . urlencode($user->login_id);
 

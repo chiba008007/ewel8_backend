@@ -13,6 +13,11 @@ class userlicenseController extends Controller
     public function list()
     {
         $results = UserLisence::with(['triggerHistories', 'examLogs'])
+            ->whereIn('user_id', function ($query) {
+                $query->select('id')
+                    ->from('users')
+                    ->whereNull('deleted_at');
+            })
             ->get()
             ->groupBy('code')
             ->map(function ($group) {

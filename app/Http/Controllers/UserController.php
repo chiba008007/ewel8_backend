@@ -80,7 +80,7 @@ class UserController extends Controller
                     ['user_id' => $user->id],
                     [
                         'token' => hash('sha256', $token),
-                        'expires_at' => now()->addMinutes(30),
+                        'expires_at' => now()->addHours(24),
                         'created_at' => now(),
                     ]
                 );

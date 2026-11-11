@@ -1,6 +1,13 @@
 <?php
 
 return[
+    'MAIL_FOOTER' => '
+━━━━━━━━━━━━━━━━━━━━━━━
+株式会社イノベーションゲート
+Web適性検査 サポート窓口
+E-mail：info@v-gate.jp
+━━━━━━━━━━━━━━━━━━━━━━━
+    ',
     'PDF_PREFIX' => 'batchdownload_',
     'TAX' => 10,
     'BUSSINESS_NUMBER' => 'T4370001019528',

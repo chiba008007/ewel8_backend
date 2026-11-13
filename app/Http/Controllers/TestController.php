@@ -160,6 +160,9 @@ class TestController extends UserController
                 'tests.partner_id' => $partner_id,
                 'tests.status' => 1,
             ])
+            ->when($loginUser?->type === 'customer', function ($query) {
+                $query->where('tests.examdisplayflag', 1);
+            })
             ->select(
                 'tests.id',
                 'tests.testname',
@@ -367,6 +370,15 @@ class TestController extends UserController
             ->count();
 
             $rlt['done'] = $examcount;
+
+            $rlt['unexamined_count'] = Exam::where([
+                'test_id' => $id,
+                'customer_id' => $user_id,
+            ])
+            ->whereNull('started_at')
+            ->whereNull('deleted_at')
+            ->count();
+
             return response($rlt, 200);
         }
         return response([], 201);
@@ -799,6 +811,7 @@ class TestController extends UserController
             $params["user_id"] = $request->user_id;
             $params["testname"] = $request->testname;
             $params["testcount"] = $request->testcount;
+            $params["examdisplayflag"] = $request->examdisplayflag;
             $params["nameuseflag"] = $request->nameuseflag;
             $params["genderuseflag"] = $request->genderuseflag;
             $params["mailremaincount"] = $request->mailremaincount;
@@ -1049,43 +1062,46 @@ class TestController extends UserController
             // 登録元の人数より少ない人数を指定するとき
             $deleteCount = 0;
             $addCount = 0;
-            if ($request->testcount === 0) {
-                return response('zero success', 200);
-            }
+
 
             if ($basetestcount > $request->testcount) {
-                $usedTestCount = Exam::where([
-                    "test_id" => $edit_id,
-                    "customer_id" => $customer_id,
-                    "deleted_at" => null,
-                    "name" => null
-                    ])->count();
-                if ($basetestcount - $usedTestCount > $request->testcount) {
-                    // 想定以上の数の削除を行っているためエラー
-                    throw new Exception();
-                }
                 $deleteCount = $basetestcount - $request->testcount;
+
+                $unusedCount = Exam::where('test_id', $edit_id)
+                    ->where('customer_id', $customer_id)
+                    ->whereNull('started_at')
+                    ->whereNull('deleted_at')
+                    ->count();
+
+                if ($deleteCount > $unusedCount) {
+                    throw new Exception('削除可能な未受検者数を超えています。');
+                }
             }
+
             if ($basetestcount < $request->testcount) {
                 $addCount = $request->testcount - $basetestcount;
             }
             // テストを減らしたさいのテスト削除
-            $ids = Exam::select("exams.id")
-                ->where([
-                    "test_id" => $edit_id,
-                    "customer_id" => $customer_id,
-                    "deleted_at" => null,
-                    "name" => null
-                ])
-                ->orderBy('id', 'desc')
+            $ids = Exam::where('test_id', $edit_id)
+                ->where('customer_id', $customer_id)
+                ->whereNull('started_at')
+                ->whereNull('deleted_at')
+                ->orderByDesc('id')
                 ->take($deleteCount)
                 ->pluck('id');
-            Exam::whereIn('id', $ids)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+
+            Exam::whereIn('id', $ids)
+                ->where('test_id', $edit_id)
+                ->where('customer_id', $customer_id)
+                ->whereNull('started_at')
+                ->whereNull('deleted_at')
+                ->update(['deleted_at' => now()]);
             $this->testExamsInsert($params, $request, $edit_id, $addCount);
 
             $test->testname = $request->testname;
             $test->testcount = $request->testcount;
             $test->nameuseflag = $request->nameuseflag;
+            $test->examdisplayflag = $request->examdisplayflag;
             $test->genderuseflag = $request->genderuseflag;
             $test->mailremaincount = $request->mailremaincount;
             $test->startdaytime = $request->startdaytime;
